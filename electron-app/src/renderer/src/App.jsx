@@ -5,6 +5,10 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 import LoginPage from './pages/Auth/LoginPage';
 import RegisterPage from './pages/Auth/RegisterPage';
 import Dashboard from './pages/Dashboard';
+import Clientes from './pages/Clientes';
+import Productos from './pages/Productos';
+import Facturas from './pages/Facturas';
+import Reportes from './pages/Reportes';
 import Layout from './components/layout/Layout';
 import ChangePassword from './pages/Configuracion/ChangePassword';
 
@@ -22,6 +26,50 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <Dashboard />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/clientes"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Clientes />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/productos"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Productos />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/facturas"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Facturas />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/reportes"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Reportes />
                 </Layout>
               </ProtectedRoute>
             }

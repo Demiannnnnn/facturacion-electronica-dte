@@ -17,6 +17,17 @@ function LoginPage() {
     }
   }, [isFirstRun, navigate]);
 
+  // Fix: Auto-focus en el campo de usuario al montar el componente
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const usernameInput = document.querySelector('input[type="text"]');
+      if (usernameInput) {
+        usernameInput.focus();
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');

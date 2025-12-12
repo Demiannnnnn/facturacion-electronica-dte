@@ -21,7 +21,7 @@ contextBridge.exposeInMainWorld('api', {
     getAll: () => ipcRenderer.invoke('clientes:getAll'),
     getById: (id) => ipcRenderer.invoke('clientes:getById', id),
     search: (term) => ipcRenderer.invoke('clientes:search', term),
-    update: (id, cliente) => ipcRenderer.invoke('clientes:update', id, cliente),
+    update: (data) => ipcRenderer.invoke('clientes:update', data),
     delete: (id) => ipcRenderer.invoke('clientes:delete', id)
   },
 
@@ -29,7 +29,11 @@ contextBridge.exposeInMainWorld('api', {
   productos: {
     create: (producto) => ipcRenderer.invoke('productos:create', producto),
     getAll: () => ipcRenderer.invoke('productos:getAll'),
-    search: (term) => ipcRenderer.invoke('productos:search', term)
+    getById: (id) => ipcRenderer.invoke('productos:getById', id),
+    search: (term) => ipcRenderer.invoke('productos:search', term),
+    update: (data) => ipcRenderer.invoke('productos:update', data),
+    delete: (id) => ipcRenderer.invoke('productos:delete', id),
+    updateStock: (data) => ipcRenderer.invoke('productos:updateStock', data)
   },
 
   // Facturas

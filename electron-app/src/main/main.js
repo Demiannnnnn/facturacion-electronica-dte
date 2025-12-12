@@ -6,6 +6,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { initDatabase } from './database/connection.js';
 import { registerAuthHandlers } from './ipc/auth.js';
+import { registerClientesHandlers } from './ipc/clientes.js';
+import { registerProductosHandlers } from './ipc/productos.js';
 import { createMenu } from './menu.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -48,6 +50,8 @@ app.whenReady().then(() => {
 
   // Registrar handlers IPC
   registerAuthHandlers();
+  registerClientesHandlers();
+  registerProductosHandlers();
 
   // Crear menú en español
   createMenu();
