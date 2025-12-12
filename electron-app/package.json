@@ -5,7 +5,9 @@
   "main": "src/main/main.js",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
+    "dev:vite": "vite",
+    "dev:electron": "wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .",
     "build:renderer": "vite build",
     "build": "npm run build:renderer && electron-builder",
     "start": "electron ."
@@ -19,18 +21,24 @@
   "author": "Demian Maturana",
   "license": "UNLICENSED",
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "better-sqlite3": "^9.2.2",
     "jspdf": "^2.5.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-router-dom": "^7.10.1",
     "uuid": "^9.0.1",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.1",
+    "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
     "electron": "^28.1.0",
     "electron-builder": "^24.9.1",
-    "vite": "^5.0.8"
+    "electron-rebuild": "^3.2.9",
+    "vite": "^5.0.8",
+    "wait-on": "^7.2.0"
   },
   "build": {
     "appId": "cl.facturacion.app",

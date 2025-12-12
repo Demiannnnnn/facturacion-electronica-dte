@@ -1,0 +1,126 @@
+================================================================================
+COMANDOS RÁPIDOS - SISTEMA FACTURACIÓN
+================================================================================
+
+DESARROLLO:
+-----------
+cd electron-app && npm run dev          # Inicia app en desarrollo
+cd server && npm run dev                # Inicia servidor
+
+TESTEAR:
+--------
+npm run dev                             # Testeo manual en la app
+F12                                     # DevTools (logs renderer)
+Terminal                                # Logs main process
+
+# Ver base de datos:
+DB Browser for SQLite → Abrir:
+~/AppData/Roaming/sistema-facturacion/facturacion.db
+
+# Query manual:
+sqlite3 ~/AppData/Roaming/sistema-facturacion/facturacion.db
+.tables
+SELECT * FROM clientes LIMIT 5;
+.exit
+
+COMPILAR/BUILD:
+---------------
+cd electron-app
+npm run build:renderer                  # Solo React
+npm run build                           # Instalador completo
+# Resultado: dist/Sistema-Facturacion-Setup-1.0.0.exe
+
+LIMPIAR:
+--------
+rm -rf dist dist-renderer node_modules
+npm install
+
+REINSTALAR:
+-----------
+rm -rf node_modules package-lock.json
+npm install
+
+RESETEAR DB:
+------------
+rm -rf ~/AppData/Roaming/sistema-facturacion
+npm run dev
+
+GIT:
+----
+git status
+git add .
+git commit -m "feat: Descripción"
+git push
+
+INSTALAR PAQUETE:
+-----------------
+cd electron-app
+npm install <paquete>
+
+cd server
+npm install <paquete>
+
+DEBUGGING:
+----------
+# Main process: console.log() → Terminal
+# Renderer: console.log() → F12 > Console
+# Forzar DevTools: Ctrl+Shift+I
+
+ESTRUCTURA ARCHIVO TÍPICO:
+---------------------------
+
+IPC Handler (src/main/ipc/algo.js):
+import { ipcMain } from 'electron';
+import { getDatabase } from '../database/connection.js';
+
+export function registerAlgoHandlers() {
+  ipcMain.handle('algo:create', async (event, data) => {
+    const db = getDatabase();
+    const stmt = db.prepare('INSERT INTO tabla (...) VALUES (...)');
+    return stmt.run(data);
+  });
+}
+
+Preload (src/preload/preload.js):
+contextBridge.exposeInMainWorld('api', {
+  algo: {
+    create: (data) => ipcRenderer.invoke('algo:create', data)
+  }
+});
+
+React Component (src/renderer/src/pages/Algo.jsx):
+function Algo() {
+  const [items, setItems] = useState([]);
+
+  const loadItems = async () => {
+    const data = await window.api.algo.getAll();
+    setItems(data);
+  };
+
+  useEffect(() => { loadItems(); }, []);
+
+  return <div>{items.map(i => <p key={i.id}>{i.nombre}</p>)}</div>;
+}
+
+PRÓXIMOS PASOS:
+---------------
+1. Leer: docs/GUIA_IA.txt (completa)
+2. Leer: documentacion/latex.pdf (páginas 2-13, 21-36)
+3. Implementar: database/connection.js
+4. Implementar: CRUD Clientes
+5. Testear todo antes de continuar
+
+PRIORIDAD:
+----------
+Cliente funcionando localmente > Servidor > Licencias > Deploy
+
+NO implementar servidor hasta tener cliente completo.
+
+¿BLOQUEADO?
+-----------
+1. Leer sección correspondiente en docs/GUIA_IA.txt
+2. Ver código de ejemplo en documentacion/latex.pdf
+3. Revisar Troubleshooting (sección 6 de GUIA_IA.txt)
+4. Máximo 2 horas en mismo problema → Preguntar
+
+¡ÉXITO! 🚀

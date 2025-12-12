@@ -1,0 +1,259 @@
+================================================================================
+ESTADO DEL PROYECTO - SISTEMA FACTURACIÓN ELECTRÓNICA B2B
+================================================================================
+Última actualización: 2025-12-12
+Versión: 0.1.0 (Setup inicial)
+
+================================================================================
+COMPLETADO ✅
+================================================================================
+
+ESTRUCTURA BASE:
+[✅] Estructura de carpetas creada
+[✅] package.json configurados (electron-app y server)
+[✅] vite.config.js
+[✅] electron-builder.yml
+[✅] .gitignore
+[✅] README.md
+[✅] Archivos base (main.js, preload.js, App.jsx, index.js)
+[✅] Documentación para IA (GUIA_IA.txt)
+[✅] Comandos rápidos (COMANDOS_RAPIDOS.txt)
+[✅] Este archivo de estado
+
+================================================================================
+EN PROGRESO 🔄
+================================================================================
+
+NADA - Listo para comenzar desarrollo
+
+================================================================================
+PENDIENTE ⏳
+================================================================================
+
+SEMANA 1-2: FUNDACIÓN
+----------------------
+[ ] Día 1-2: Setup Proyecto
+    [ ] Instalar dependencias (npm install)
+    [ ] Probar que Electron abre ventana
+    [ ] Verificar hot-reload funciona
+
+[ ] Día 3-4: Base de Datos SQLite
+    [ ] Implementar database/connection.js
+    [ ] Función initDatabase()
+    [ ] Función getDatabase()
+    [ ] Crear tablas: clientes, productos
+    [ ] Probar con DB Browser for SQLite
+
+[ ] Día 5-7: CRUD Clientes
+    [ ] IPC handlers (src/main/ipc/clientes.js)
+    [ ] Registrar handlers en main.js
+    [ ] Exponer API en preload.js
+    [ ] Hook useClientes.js
+    [ ] Componente Clientes.jsx
+    [ ] Formulario crear/editar
+    [ ] Lista clientes
+    [ ] Búsqueda
+    [ ] Testing manual completo
+
+[ ] Día 8-10: CRUD Productos
+    [ ] IPC handlers productos
+    [ ] Hook useProductos.js
+    [ ] Componente Productos.jsx
+    [ ] Validaciones (precio > 0, stock >= 0)
+    [ ] Testing manual
+
+[ ] Día 11-14: Importación Excel
+    [ ] Instalar xlsx
+    [ ] Función importar clientes
+    [ ] Función importar productos
+    [ ] Validación datos
+    [ ] Resumen importación
+    [ ] Testing con archivos reales
+
+SEMANA 3-4: FACTURACIÓN CORE
+-----------------------------
+[ ] Día 15-17: Formulario Crear Factura
+    [ ] Tablas facturas y factura_items
+    [ ] Selector cliente (autocomplete)
+    [ ] Tabla productos (múltiples items)
+    [ ] Cálculo automático IVA (19%)
+    [ ] Validar stock suficiente
+    [ ] Descuento stock automático
+
+[ ] Día 18-20: Sistema Folios
+    [ ] Generador folios auto-increment
+    [ ] Tabla config para último folio
+    [ ] UUID idempotency_key
+    [ ] Validación no duplicar
+
+[ ] Día 21-24: Generación XML DTE
+    [ ] Estudiar formato DTE SII
+    [ ] Función generarXML()
+    [ ] Template XML con todos los campos
+    [ ] Guardar en userData/facturas/
+    [ ] Validar XML generado
+
+[ ] Día 25-28: Generación PDF
+    [ ] Instalar jsPDF
+    [ ] Diseñar layout PDF
+    [ ] Función generarPDF()
+    [ ] Botón "Ver PDF"
+    [ ] Testing impresión
+
+SEMANA 5: FEATURES COMPLEMENTARIAS
+-----------------------------------
+[ ] Día 29-31: Guías de Despacho
+    [ ] Tabla guias_despacho
+    [ ] Formulario (sin precios)
+    [ ] PDF guía
+    [ ] Folio independiente
+
+[ ] Día 32-34: Ventas a Crédito
+    [ ] Campo tipo_pago en facturas
+    [ ] Tabla pagos_credito
+    [ ] Página "Cuentas por Cobrar"
+    [ ] Registrar pagos
+    [ ] Alertas vencidas
+
+[ ] Día 35-38: Dashboard y Reportes
+    [ ] Total vendido hoy/mes
+    [ ] Facturas pendientes SII
+    [ ] Créditos por vencer
+    [ ] Productos bajo stock
+    [ ] Reportes ventas diarias/mensuales
+
+SEMANA 6: SERVIDOR Y DEPLOY
+----------------------------
+[ ] Día 39-41: Servidor Backend
+    [ ] Setup proyecto server/
+    [ ] Express + PostgreSQL
+    [ ] Endpoints licencias
+    [ ] Endpoint enviar facturas
+    [ ] Deploy Railway
+
+[ ] Día 42-43: Sistema Licencias
+    [ ] Validación licencia local
+    [ ] Ventana activación
+    [ ] Machine ID fingerprinting
+    [ ] Validar con servidor
+    [ ] Script generar licencias
+
+[ ] Día 44-45: Cron Job Envío SII
+    [ ] Instalar node-cron
+    [ ] Job cada hora
+    [ ] Procesar facturas PENDING
+    [ ] Llamar ChileAPI
+    [ ] Actualizar estados
+
+[ ] Día 46-47: Electron Builder
+    [ ] Configurar builder
+    [ ] Agregar icono
+    [ ] Generar Setup.exe
+    [ ] Probar en VM/PC limpia
+
+[ ] Día 48-50: Beta Test
+    [ ] Instalar en PC usuario real
+    [ ] Capacitación básica
+    [ ] Uso real 1 semana
+    [ ] Recopilar feedback
+    [ ] Fixes urgentes
+
+================================================================================
+DECISIONES TÉCNICAS TOMADAS
+================================================================================
+
+1. TECNOLOGÍAS:
+   - Electron 28.x + React 18.x + Vite 5.x
+   - SQLite (local) + PostgreSQL (servidor)
+   - better-sqlite3 (síncrono, más rápido)
+   - jsPDF para PDFs
+   - xlsx para Excel
+   - Express para servidor
+   - Railway para hosting
+
+2. ARQUITECTURA:
+   - Cliente-servidor con DB local
+   - Idempotency keys para prevenir duplicados
+   - Batch processing cada hora para envío SII
+   - Sistema de licencias con machine ID
+
+3. PRIORIDADES:
+   - Funcionalidad > Perfección
+   - Cliente completo antes que servidor
+   - Testing manual continuo
+   - Commits frecuentes
+
+4. SEGURIDAD:
+   - contextIsolation: true
+   - nodeIntegration: false
+   - Preload script como bridge único
+   - Prepared statements (SQL injection)
+   - Variables entorno para secretos
+
+================================================================================
+MÉTRICAS
+================================================================================
+
+ARCHIVOS CREADOS: 15+
+LÍNEAS DE CÓDIGO: ~500 (setup inicial)
+COMMITS: 1 (Initial commit)
+SEMANAS ESTIMADAS: 4
+PROGRESO GENERAL: 5%
+
+================================================================================
+PRÓXIMA ACCIÓN INMEDIATA
+================================================================================
+
+1. Instalar dependencias:
+   cd electron-app && npm install
+
+2. Probar que funciona:
+   npm run dev
+
+3. Implementar database/connection.js siguiendo GUIA_IA.txt sección 5
+
+4. Crear primera tabla (clientes)
+
+5. Testear con DB Browser
+
+================================================================================
+BLOQUEADORES CONOCIDOS
+================================================================================
+
+NINGUNO
+
+Si aparece algún bloqueador, documentarlo aquí con:
+- Descripción del problema
+- Intentos de solución
+- Estado (resuelto/pendiente)
+
+================================================================================
+NOTAS IMPORTANTES
+================================================================================
+
+- NO implementar servidor hasta tener cliente funcionando 100% local
+- ChileAPI se puede mockear hasta tener la key real
+- Priorizar features core antes que extras
+- Documentar cambios arquitectónicos importantes en este archivo
+- Actualizar estado después de cada milestone completado
+
+================================================================================
+CONTACTOS/RECURSOS
+================================================================================
+
+- Documentación técnica: documentacion/latex.pdf
+- Guía para IA: docs/GUIA_IA.txt
+- Comandos rápidos: docs/COMANDOS_RAPIDOS.txt
+- ChileAPI: [agregar URL cuando tengas]
+- Railway: railway.app
+- SII Formato DTE: [agregar URL oficial]
+
+================================================================================
+
+ACTUALIZAR ESTE ARCHIVO CADA VEZ QUE:
+- Se complete un milestone
+- Se tome una decisión técnica importante
+- Aparezca un bloqueador
+- Cambie el roadmap
+
+================================================================================

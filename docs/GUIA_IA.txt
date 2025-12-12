@@ -1,0 +1,849 @@
+================================================================================
+GUÍA COMPLETA PARA IA - SISTEMA DE FACTURACIÓN ELECTRÓNICA B2B
+================================================================================
+Versión: 1.0
+Última actualización: Diciembre 2025
+Autor: Demian Maturana
+
+================================================================================
+1. RESUMEN EJECUTIVO DEL PROYECTO
+================================================================================
+
+PROPÓSITO:
+Sistema de facturación electrónica desktop para PyMEs chilenas. Integración
+con SII (Servicio de Impuestos Internos) vía ChileAPI. Producto comercial
+para venta, NO educativo.
+
+OBJETIVO DE DESARROLLO:
+3-4 semanas con IA vs 6+ meses manual. Prioridad: funcionalidad > perfección.
+
+TECNOLOGÍAS PRINCIPALES:
+- Electron 28.x (app desktop)
+- React 18.x (UI)
+- SQLite3 (base de datos local)
+- Node.js/Express (servidor backend)
+- PostgreSQL (base de datos servidor)
+
+ARQUITECTURA:
+Cliente (Electron) ←→ SQLite (local)
+       ↕
+Servidor (Railway) ←→ PostgreSQL
+       ↕
+ChileAPI ←→ SII (Gobierno)
+
+================================================================================
+2. ESTRUCTURA DEL PROYECTO
+================================================================================
+
+Sistema-facturaje-inventario/
+│
+├── electron-app/                    # APLICACIÓN DESKTOP
+│   ├── src/
+│   │   ├── main/                   # Proceso principal (Node.js)
+│   │   │   ├── main.js            # Entry point
+│   │   │   ├── database/          # SQLite connection & queries
+│   │   │   ├── ipc/               # Comunicación renderer ↔ main
+│   │   │   ├── services/          # PDF, XML, Excel generators
+│   │   │   └── utils/             # Helpers, validators
+│   │   │
+│   │   ├── renderer/               # Proceso renderer (React)
+│   │   │   ├── index.html         # HTML base
+│   │   │   └── src/
+│   │   │       ├── main.jsx       # Entry point React
+│   │   │       ├── App.jsx        # Componente raíz
+│   │   │       ├── pages/         # Páginas (Dashboard, Clientes, etc)
+│   │   │       ├── components/    # Componentes reutilizables
+│   │   │       ├── hooks/         # Custom hooks
+│   │   │       └── styles/        # CSS
+│   │   │
+│   │   └── preload/
+│   │       └── preload.js         # Bridge seguro main ↔ renderer
+│   │
+│   ├── assets/                     # Recursos estáticos
+│   ├── vite.config.js             # Config Vite
+│   ├── electron-builder.yml       # Config instalador
+│   └── package.json
+│
+├── server/                         # BACKEND (RAILWAY)
+│   ├── src/
+│   │   ├── index.js               # Entry point
+│   │   ├── config/                # DB, env vars
+│   │   ├── routes/                # Endpoints API
+│   │   ├── controllers/           # Lógica negocio
+│   │   ├── services/              # ChileAPI wrapper
+│   │   ├── cron/                  # Jobs programados
+│   │   └── db/                    # Schema SQL
+│   ├── .env                       # Variables entorno (NO COMMITEAR)
+│   └── package.json
+│
+├── docs/
+│   └── GUIA_IA.txt               # ESTE ARCHIVO
+│
+├── documentacion/
+│   └── latex.pdf                  # Documentación técnica completa
+│
+└── README.md
+
+================================================================================
+3. ELECTRON: CONCEPTOS BÁSICOS
+================================================================================
+
+ELECTRON = Chromium + Node.js en un ejecutable desktop
+
+PROCESOS:
+1. Main Process (Node.js):
+   - Corre en background
+   - Acceso completo al sistema (archivos, DB, etc)
+   - Crea ventanas (BrowserWindow)
+   - Archivo: src/main/main.js
+
+2. Renderer Process (Navegador):
+   - Es tu UI (React)
+   - Corre en cada ventana
+   - NO tiene acceso directo al sistema (seguridad)
+   - Archivo: src/renderer/src/main.jsx
+
+3. Preload Script:
+   - Bridge seguro entre main y renderer
+   - Expone APIs específicas al renderer
+   - Archivo: src/preload/preload.js
+
+COMUNICACIÓN:
+Renderer → Main: ipcRenderer.invoke('channel', data)
+Main → Renderer: ipcMain.handle('channel', handler)
+
+EJEMPLO FLUJO:
+1. Usuario hace click "Guardar Cliente" (Renderer/React)
+2. React llama: window.api.clientes.create(cliente)
+3. Preload traduce: ipcRenderer.invoke('clientes:create', cliente)
+4. Main recibe: ipcMain.handle('clientes:create', (event, cliente) => {...})
+5. Main guarda en SQLite
+6. Main retorna resultado
+7. React actualiza UI
+
+================================================================================
+4. COMANDOS BÁSICOS
+================================================================================
+
+INSTALACIÓN INICIAL:
+---------------------
+cd electron-app
+npm install
+
+cd ../server
+npm install
+cp .env.example .env
+# Editar .env con credenciales
+
+DESARROLLO:
+-----------
+# Terminal 1 - Electron App
+cd electron-app
+npm run dev
+# Abre Vite (localhost:5173) + Electron app
+
+# Terminal 2 - Servidor (cuando lo necesites)
+cd server
+npm run dev
+
+TESTEAR:
+--------
+# Testeo manual:
+1. npm run dev
+2. Interactuar con la app
+3. Verificar en DevTools (F12)
+4. Verificar DB con: DB Browser for SQLite
+
+# Verificar DB:
+sqlite3 ~/AppData/Roaming/sistema-facturacion/facturacion.db
+.tables
+SELECT * FROM clientes;
+
+BUILD/COMPILAR:
+---------------
+cd electron-app
+npm run build:renderer    # Compila React
+npm run build             # Genera instalador
+
+# Resultado:
+dist/Sistema-Facturacion-Setup-1.0.0.exe
+
+LIMPIAR BUILD:
+--------------
+rm -rf dist dist-renderer node_modules
+npm install
+
+GIT:
+----
+git add .
+git commit -m "Descripción del cambio"
+git push
+
+================================================================================
+5. FLUJO DE DESARROLLO TÍPICO
+================================================================================
+
+AGREGAR UNA NUEVA FEATURE (EJEMPLO: CRUD CLIENTES):
+
+PASO 1: Base de Datos (src/main/database/connection.js)
+---------------------------------------------------------
+- Agregar tabla en createTables()
+- Ejemplo:
+  CREATE TABLE IF NOT EXISTS clientes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    rut TEXT UNIQUE NOT NULL,
+    razon_social TEXT NOT NULL,
+    email TEXT
+  );
+
+PASO 2: IPC Handlers (src/main/ipc/clientes.js)
+------------------------------------------------
+- Crear handlers para cada operación:
+  export function registerClientesHandlers() {
+    ipcMain.handle('clientes:create', async (event, cliente) => {
+      const db = getDatabase();
+      // INSERT INTO clientes...
+      return result;
+    });
+
+    ipcMain.handle('clientes:getAll', async () => {
+      const db = getDatabase();
+      // SELECT * FROM clientes
+      return clientes;
+    });
+  }
+
+- Registrar en main.js:
+  import { registerClientesHandlers } from './ipc/clientes.js';
+  app.whenReady().then(() => {
+    registerClientesHandlers();
+  });
+
+PASO 3: Preload API (src/preload/preload.js)
+---------------------------------------------
+- Exponer API al renderer:
+  contextBridge.exposeInMainWorld('api', {
+    clientes: {
+      create: (cliente) => ipcRenderer.invoke('clientes:create', cliente),
+      getAll: () => ipcRenderer.invoke('clientes:getAll')
+    }
+  });
+
+PASO 4: React Hook (src/renderer/src/hooks/useClientes.js)
+-----------------------------------------------------------
+- Crear hook para manejar estado:
+  export function useClientes() {
+    const [clientes, setClientes] = useState([]);
+
+    const loadClientes = async () => {
+      const data = await window.api.clientes.getAll();
+      setClientes(data);
+    };
+
+    const createCliente = async (cliente) => {
+      await window.api.clientes.create(cliente);
+      await loadClientes();
+    };
+
+    return { clientes, createCliente, loadClientes };
+  }
+
+PASO 5: Componente React (src/renderer/src/pages/Clientes/index.jsx)
+---------------------------------------------------------------------
+- Crear UI:
+  function Clientes() {
+    const { clientes, createCliente } = useClientes();
+
+    return (
+      <div>
+        <button onClick={() => createCliente({...})}>Crear</button>
+        <ul>
+          {clientes.map(c => <li key={c.id}>{c.razon_social}</li>)}
+        </ul>
+      </div>
+    );
+  }
+
+PASO 6: Probar
+--------------
+1. npm run dev
+2. Navegar a la página
+3. Crear un cliente
+4. Verificar en DB Browser
+5. Verificar en DevTools (Console/Network)
+
+================================================================================
+6. DEBUGGING Y TROUBLESHOOTING
+================================================================================
+
+ABRIR DEVTOOLS:
+---------------
+- En desarrollo: Se abre automáticamente
+- Forzar: Ctrl+Shift+I o F12
+- En código: mainWindow.webContents.openDevTools()
+
+VER LOGS:
+---------
+# Main process (Node.js):
+console.log() → Se ve en la terminal donde corriste npm run dev
+
+# Renderer process (React):
+console.log() → Se ve en DevTools (F12) > Console
+
+VER BASE DE DATOS:
+------------------
+1. Descargar: DB Browser for SQLite
+2. Abrir: ~/AppData/Roaming/sistema-facturacion/facturacion.db
+3. Ver tablas y datos
+
+ERRORES COMUNES:
+----------------
+
+ERROR: "window.api is undefined"
+SOLUCIÓN: Verificar que preload.js está cargado en main.js:
+  webPreferences: {
+    preload: path.join(__dirname, '../preload/preload.js')
+  }
+
+ERROR: "Database not initialized"
+SOLUCIÓN: Llamar initDatabase() antes de usar getDatabase()
+
+ERROR: "Module not found"
+SOLUCIÓN:
+  cd electron-app
+  npm install <paquete-faltante>
+
+ERROR: Vite no conecta
+SOLUCIÓN: Verificar puerto 5173 libre, o cambiar en vite.config.js
+
+ERROR: Electron no abre
+SOLUCIÓN:
+  rm -rf node_modules
+  npm install
+  npm run dev
+
+LIMPIAR CACHE:
+--------------
+rm -rf ~/AppData/Roaming/sistema-facturacion
+npm run dev
+
+================================================================================
+7. SQLITE: GUÍA RÁPIDA
+================================================================================
+
+CONEXIÓN:
+---------
+import Database from 'better-sqlite3';
+const db = new Database('path/to/db.db');
+
+QUERIES BÁSICAS:
+----------------
+// SELECT (múltiples)
+const stmt = db.prepare('SELECT * FROM clientes WHERE id = ?');
+const clientes = stmt.all(); // Array
+
+// SELECT (uno)
+const cliente = stmt.get(1); // Object o undefined
+
+// INSERT
+const stmt = db.prepare('INSERT INTO clientes (rut, nombre) VALUES (?, ?)');
+const result = stmt.run('12345678-9', 'Empresa XYZ');
+console.log(result.lastInsertRowid); // ID insertado
+
+// UPDATE
+const stmt = db.prepare('UPDATE clientes SET nombre = ? WHERE id = ?');
+stmt.run('Nuevo Nombre', 1);
+
+// DELETE
+const stmt = db.prepare('DELETE FROM clientes WHERE id = ?');
+stmt.run(1);
+
+TRANSACCIONES:
+--------------
+const insert = db.prepare('INSERT INTO clientes (...) VALUES (...)');
+const insertMany = db.transaction((clientes) => {
+  for (const cliente of clientes) {
+    insert.run(cliente);
+  }
+});
+insertMany([cliente1, cliente2, cliente3]);
+
+IMPORTANTE:
+- better-sqlite3 es SÍNCRONO (no usa async/await)
+- Siempre usa prepared statements (?) para prevenir SQL injection
+- db.pragma('foreign_keys = ON') para integridad referencial
+
+================================================================================
+8. REACT: GUÍA RÁPIDA
+================================================================================
+
+COMPONENTE BÁSICO:
+------------------
+import React, { useState, useEffect } from 'react';
+
+function MiComponente() {
+  const [data, setData] = useState([]);
+
+  useEffect(() => {
+    // Cargar datos al montar
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    const result = await window.api.algo.getAll();
+    setData(result);
+  };
+
+  return <div>{data.map(item => <p key={item.id}>{item.nombre}</p>)}</div>;
+}
+
+export default MiComponente;
+
+HOOKS IMPORTANTES:
+------------------
+- useState: Estado del componente
+- useEffect: Efectos secundarios (cargar datos, etc)
+- useCallback: Memorizar funciones
+- useMemo: Memorizar valores calculados
+
+FORMULARIOS:
+------------
+const [form, setForm] = useState({ nombre: '', email: '' });
+
+const handleChange = (e) => {
+  setForm({ ...form, [e.target.name]: e.target.value });
+};
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  await window.api.clientes.create(form);
+  setForm({ nombre: '', email: '' });
+};
+
+<form onSubmit={handleSubmit}>
+  <input name="nombre" value={form.nombre} onChange={handleChange} />
+  <input name="email" value={form.email} onChange={handleChange} />
+  <button type="submit">Guardar</button>
+</form>
+
+================================================================================
+9. GENERACIÓN PDF (jsPDF)
+================================================================================
+
+INSTALACIÓN:
+npm install jspdf
+
+USO BÁSICO:
+-----------
+import jsPDF from 'jspdf';
+
+function generarPDF(factura) {
+  const doc = new jsPDF();
+
+  // Título
+  doc.setFontSize(20);
+  doc.text('Factura Electrónica', 20, 20);
+
+  // Datos
+  doc.setFontSize(12);
+  doc.text(`Folio: ${factura.folio}`, 20, 40);
+  doc.text(`Cliente: ${factura.cliente}`, 20, 50);
+  doc.text(`Total: $${factura.total}`, 20, 60);
+
+  // Guardar
+  const pdfPath = path.join(userDataPath, `factura-${factura.folio}.pdf`);
+  doc.save(pdfPath);
+
+  return pdfPath;
+}
+
+ABRIR PDF:
+----------
+import { shell } from 'electron';
+shell.openPath(pdfPath);
+
+================================================================================
+10. IMPORTACIÓN EXCEL (xlsx)
+================================================================================
+
+INSTALACIÓN:
+npm install xlsx
+
+LEER EXCEL:
+-----------
+import XLSX from 'xlsx';
+
+function importarExcel(filePath) {
+  const workbook = XLSX.readFile(filePath);
+  const sheetName = workbook.SheetNames[0];
+  const sheet = workbook.Sheets[sheetName];
+
+  // Convertir a JSON
+  const data = XLSX.utils.sheet_to_json(sheet);
+
+  // data = [
+  //   { RUT: '12345678-9', 'Razón Social': 'Empresa 1', ... },
+  //   { RUT: '98765432-1', 'Razón Social': 'Empresa 2', ... }
+  // ]
+
+  return data;
+}
+
+VALIDAR Y GUARDAR:
+------------------
+const clientes = importarExcel(filePath);
+let importados = 0;
+let duplicados = 0;
+
+for (const c of clientes) {
+  try {
+    await window.api.clientes.create({
+      rut: c.RUT,
+      razonSocial: c['Razón Social'],
+      email: c.Email
+    });
+    importados++;
+  } catch (err) {
+    if (err.message.includes('UNIQUE')) {
+      duplicados++;
+    }
+  }
+}
+
+alert(`Importados: ${importados}, Duplicados: ${duplicados}`);
+
+================================================================================
+11. GENERACIÓN XML DTE
+================================================================================
+
+ESTRUCTURA BÁSICA:
+------------------
+function generarXML(factura) {
+  const xml = `<?xml version="1.0" encoding="ISO-8859-1"?>
+<DTE version="1.0">
+  <Documento>
+    <Encabezado>
+      <IdDoc>
+        <TipoDTE>33</TipoDTE>
+        <Folio>${factura.folio}</Folio>
+        <FchEmis>${factura.fecha}</FchEmis>
+      </IdDoc>
+      <Emisor>
+        <RUTEmisor>${EMISOR_RUT}</RUTEmisor>
+        <RznSoc>${EMISOR_NOMBRE}</RznSoc>
+      </Emisor>
+      <Receptor>
+        <RUTRecep>${factura.cliente.rut}</RUTRecep>
+        <RznSocRecep>${factura.cliente.razonSocial}</RznSocRecep>
+      </Receptor>
+      <Totales>
+        <MntNeto>${factura.neto}</MntNeto>
+        <IVA>${factura.iva}</IVA>
+        <MntTotal>${factura.total}</MntTotal>
+      </Totales>
+    </Encabezado>
+    <Detalle>
+      ${factura.items.map((item, idx) => `
+      <DetalleDTE>
+        <NroLinDet>${idx + 1}</NroLinDet>
+        <NmbItem>${item.nombre}</NmbItem>
+        <QtyItem>${item.cantidad}</QtyItem>
+        <PrcItem>${item.precio}</PrcItem>
+        <MontoItem>${item.subtotal}</MontoItem>
+      </DetalleDTE>
+      `).join('')}
+    </Detalle>
+  </Documento>
+</DTE>`;
+
+  // Guardar
+  const xmlPath = path.join(userDataPath, `DTE-${factura.folio}.xml`);
+  fs.writeFileSync(xmlPath, xml, 'utf8');
+
+  return xmlPath;
+}
+
+NOTA: Consultar documentación oficial SII para estructura completa y firmas.
+
+================================================================================
+12. INTEGRACIÓN CHILEAPI
+================================================================================
+
+ENDPOINT: https://api.chileapi.dev
+DOCUMENTACIÓN: Consultar ChileAPI docs
+
+ENVIAR DTE:
+-----------
+async function enviarSII(factura) {
+  const xmlContent = fs.readFileSync(factura.xml_path, 'utf8');
+
+  const response = await fetch('https://api.chileapi.dev/v1/dte/enviar', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${CHILEAPI_KEY}`
+    },
+    body: JSON.stringify({
+      rut_emisor: EMISOR_RUT,
+      xml: xmlContent,
+      idempotency_key: factura.idempotency_key
+    })
+  });
+
+  const result = await response.json();
+
+  if (result.success) {
+    return {
+      folio: result.folio,
+      trackId: result.track_id,
+      pdfUrl: result.pdf_url
+    };
+  } else {
+    throw new Error(result.error);
+  }
+}
+
+================================================================================
+13. SISTEMA DE LICENCIAS
+================================================================================
+
+FLUJO:
+1. Usuario instala app
+2. App verifica licencia local
+3. Si no existe, muestra ventana activación
+4. Usuario ingresa license key
+5. App valida con servidor
+6. Servidor registra machine ID
+7. App guarda license key local si válida
+
+GENERAR LICENSE KEY (servidor):
+--------------------------------
+import { v4 as uuidv4 } from 'uuid';
+
+function generarLicencia(clienteNombre) {
+  const licenseKey = uuidv4();
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 365); // 1 año
+
+  // Guardar en PostgreSQL
+  await pool.query(
+    'INSERT INTO licenses (license_key, client_name, expires_at) VALUES ($1, $2, $3)',
+    [licenseKey, clienteNombre, expiresAt]
+  );
+
+  return licenseKey;
+}
+
+VALIDAR LICENCIA (cliente):
+----------------------------
+async function validarLicencia(licenseKey) {
+  const machineId = getMachineId(); // os.hostname() + os.platform()
+
+  const response = await fetch('https://tu-servidor.railway.app/api/licenses/validate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ license_key: licenseKey, machine_id: machineId })
+  });
+
+  const result = await response.json();
+
+  if (result.valid) {
+    // Guardar local
+    localStorage.setItem('license_key', licenseKey);
+    return true;
+  }
+
+  return false;
+}
+
+================================================================================
+14. DEPLOY SERVIDOR (RAILWAY)
+================================================================================
+
+PASOS:
+1. Crear cuenta en Railway.app
+2. Conectar repo GitHub
+3. Crear nuevo proyecto
+4. Agregar PostgreSQL addon
+5. Configurar variables de entorno (.env)
+6. Deploy automático en cada push
+
+VARIABLES DE ENTORNO EN RAILWAY:
+---------------------------------
+DATABASE_URL=<auto-generada por Railway>
+CHILEAPI_KEY=<tu-api-key>
+JWT_SECRET=<generar random>
+NODE_ENV=production
+PORT=3000
+
+CONECTAR A DB:
+--------------
+railway run psql
+# O desde local:
+psql <DATABASE_URL from Railway>
+
+================================================================================
+15. CONVENCIONES DE CÓDIGO
+================================================================================
+
+NOMBRES DE ARCHIVOS:
+- Componentes React: PascalCase (Clientes.jsx, ClienteForm.jsx)
+- Utilidades: camelCase (validators.js, formatters.js)
+- Constantes: UPPER_CASE (CONSTANTS.js)
+
+COMMITS:
+- feat: Nueva funcionalidad
+- fix: Bug fix
+- refactor: Refactorización
+- docs: Documentación
+- style: Formato/estilo
+
+Ejemplo: "feat: Implementar CRUD clientes completo"
+
+COMENTARIOS:
+- Usar TODO: para tareas pendientes
+- Explicar el "por qué", no el "qué"
+
+ERROR HANDLING:
+- Siempre usar try/catch en async
+- Mostrar errores al usuario con mensajes claros
+- Log completo en consola para debugging
+
+================================================================================
+16. CHECKLIST ANTES DE CADA COMMIT
+================================================================================
+
+[ ] El código funciona (probado manualmente)
+[ ] No hay console.log() innecesarios
+[ ] No hay código comentado sin usar
+[ ] Variables de entorno no hardcodeadas
+[ ] Mensajes de error claros al usuario
+[ ] Sin warnings en consola
+[ ] DB queries usan prepared statements (?)
+[ ] Commit message descriptivo
+
+================================================================================
+17. ROADMAP SEMANAS 1-4
+================================================================================
+
+SEMANA 1:
+- Setup completo proyecto ✅
+- CRUD Clientes funcionando
+- CRUD Productos funcionando
+- Importación Excel básica
+
+SEMANA 2:
+- Formulario crear factura
+- Generación folios
+- Cálculo IVA automático
+- Generación PDF facturas
+
+SEMANA 3:
+- Generación XML DTE
+- Dashboard básico
+- Ventas a crédito
+- Reportes simples
+
+SEMANA 4:
+- Setup servidor Railway
+- Sistema licencias
+- Integración ChileAPI
+- Build instalador
+- Testing con usuario beta
+
+================================================================================
+18. RECURSOS EXTERNOS
+================================================================================
+
+DOCUMENTACIÓN:
+- Electron: https://www.electronjs.org/docs
+- React: https://react.dev
+- better-sqlite3: https://github.com/WiseLibs/better-sqlite3
+- jsPDF: https://github.com/parallax/jsPDF
+- Vite: https://vitejs.dev
+
+HERRAMIENTAS:
+- DB Browser for SQLite: https://sqlitebrowser.org
+- Postman: Para testear API servidor
+- VS Code: Editor recomendado
+
+CHILEAPI:
+- Documentación: Consultar sitio oficial
+- Sandbox: Para testing antes de producción
+
+SII:
+- Formato DTE: Consultar documentación oficial SII
+- Certificados: Necesarios para ambiente producción
+
+================================================================================
+19. PREGUNTAS FRECUENTES
+================================================================================
+
+P: ¿Cómo abro la app en desarrollo?
+R: cd electron-app && npm run dev
+
+P: ¿Dónde está la base de datos?
+R: ~/AppData/Roaming/sistema-facturacion/facturacion.db
+
+P: ¿Cómo veo los logs del main process?
+R: En la terminal donde corriste npm run dev
+
+P: ¿Cómo veo los logs del renderer?
+R: F12 (DevTools) > Console
+
+P: ¿Cómo reseteo la DB?
+R: Borrar ~/AppData/Roaming/sistema-facturacion/ y reiniciar app
+
+P: ¿Cómo agrego una nueva página?
+R: 1. Crear componente en pages/
+   2. Importar en App.jsx
+   3. Agregar ruta/navegación
+
+P: ¿Cómo genero el instalador?
+R: cd electron-app && npm run build
+
+P: ¿El servidor es obligatorio desde el principio?
+R: No, puedes trabajar solo con el cliente y SQLite local primero
+
+P: ¿Cómo pruebo sin tener CHILEAPI key?
+R: Mock la respuesta o usa datos fake hasta tener la key
+
+================================================================================
+20. SIGUIENTE ACCIÓN RECOMENDADA
+================================================================================
+
+SI ESTÁS COMENZANDO:
+1. Lee documentacion/latex.pdf (especialmente páginas 2-13, 21-36)
+2. Instala dependencias: cd electron-app && npm install
+3. Corre: npm run dev
+4. Verifica que abre ventana Electron
+5. Empieza con: Implementar database/connection.js
+
+SI YA TIENES BASE:
+1. Lee el código existente en src/
+2. Identifica qué falta según roadmap
+3. Implementa siguiente feature del checklist
+4. Testea inmediatamente
+5. Commit frecuente
+
+PRIORIDADES:
+1. CRUD Clientes (base para todo lo demás)
+2. CRUD Productos
+3. Formulario crear factura
+4. Generación PDF
+
+No implementes servidor hasta tener todo el cliente funcionando localmente.
+
+================================================================================
+FIN DE LA GUÍA
+================================================================================
+
+Este archivo debe actualizarse conforme avanza el proyecto.
+Cualquier decisión arquitectónica importante debe documentarse aquí.
+
+Para dudas específicas, consultar:
+- documentacion/latex.pdf (técnico completo)
+- PROXIMOS_PASOS.md (roadmap detallado)
+- README.md (overview del proyecto)
+
+ÉXITO EN EL DESARROLLO! 🚀

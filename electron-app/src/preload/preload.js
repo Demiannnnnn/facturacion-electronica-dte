@@ -1,10 +1,20 @@
 // TODO: Implementar según documentación
 // Ver documentacion/latex.pdf página 28
 
-import { contextBridge, ipcRenderer } from 'electron';
+const { contextBridge, ipcRenderer } = require('electron');
 
 // Exponer API segura al renderer
 contextBridge.exposeInMainWorld('api', {
+  // Auth
+  auth: {
+    checkFirstRun: () => ipcRenderer.invoke('auth:checkFirstRun'),
+    register: (credentials) => ipcRenderer.invoke('auth:register', credentials),
+    login: (credentials) => ipcRenderer.invoke('auth:login', credentials),
+    logout: () => ipcRenderer.invoke('auth:logout'),
+    getCurrentUser: () => ipcRenderer.invoke('auth:getCurrentUser'),
+    changePassword: (data) => ipcRenderer.invoke('auth:changePassword', data)
+  },
+
   // Clientes
   clientes: {
     create: (cliente) => ipcRenderer.invoke('clientes:create', cliente),

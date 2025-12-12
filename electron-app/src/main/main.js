@@ -3,6 +3,13 @@
 
 import { app, BrowserWindow } from 'electron';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import { initDatabase } from './database/connection.js';
+import { registerAuthHandlers } from './ipc/auth.js';
+import { createMenu } from './menu.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 let mainWindow;
 
@@ -18,11 +25,17 @@ function createWindow() {
   });
 
   // Desarrollo: Vite dev server
-  if (process.env.NODE_ENV === 'development') {
+  const isDevelopment = process.env.NODE_ENV === 'development' || !app.isPackaged;
+  console.log('NODE_ENV:', process.env.NODE_ENV);
+  console.log('isDevelopment:', isDevelopment);
+
+  if (isDevelopment) {
+    console.log('Loading development server: http://localhost:5173');
     mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools();
   } else {
     // Producción: archivos compilados
+    console.log('Loading production build');
     mainWindow.loadFile(
       path.join(__dirname, '../../dist-renderer/index.html')
     );
@@ -30,6 +43,16 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // Inicializar base de datos
+  initDatabase();
+
+  // Registrar handlers IPC
+  registerAuthHandlers();
+
+  // Crear menú en español
+  createMenu();
+
+  // Crear ventana
   createWindow();
 });
 
