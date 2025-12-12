@@ -1,0 +1,39 @@
+appId: cl.facturacion.app
+productName: Sistema Facturacion
+copyright: Copyright 2025
+
+directories:
+  output: dist
+  buildResources: assets
+
+files:
+  - dist-renderer/**/*
+  - src/main/**/*
+  - src/preload/**/*
+  - package.json
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: assets/icons/icon.ico
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Sistema Facturacion
+
+mac:
+  target:
+    - dmg
+  icon: assets/icons/icon.icns
+  category: public.app-category.business
+
+linux:
+  target:
+    - AppImage
+  icon: assets/icons/icon.png
+  category: Office

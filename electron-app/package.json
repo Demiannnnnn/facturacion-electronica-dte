@@ -1,0 +1,57 @@
+{
+  "name": "sistema-facturacion",
+  "version": "1.0.0",
+  "description": "Sistema de facturación electrónica B2B",
+  "main": "src/main/main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build:renderer": "vite build",
+    "build": "npm run build:renderer && electron-builder",
+    "start": "electron ."
+  },
+  "keywords": [
+    "facturacion",
+    "electron",
+    "chile",
+    "sii"
+  ],
+  "author": "Demian Maturana",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "better-sqlite3": "^9.2.2",
+    "jspdf": "^2.5.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "uuid": "^9.0.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "electron": "^28.1.0",
+    "electron-builder": "^24.9.1",
+    "vite": "^5.0.8"
+  },
+  "build": {
+    "appId": "cl.facturacion.app",
+    "productName": "Sistema Facturacion",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "dist-renderer/**/*",
+      "src/main/**/*",
+      "src/preload/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icons/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    }
+  }
+}

@@ -1,0 +1,2144 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\usepackage{tikz}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage[T1]{fontenc}
+\usepackage{textcomp}
+
+\geometry{margin=2cm}
+\usetikzlibrary{shapes.geometric, arrows, positioning}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+\lstset{style=mystyle}
+
+\tikzstyle{component} = [rectangle, rounded corners, minimum width=2.5cm, minimum height=0.8cm, text centered, draw=black, fill=blue!20]
+\tikzstyle{database} = [cylinder, shape border rotate=90, aspect=0.25, minimum height=0.8cm, minimum width=1.5cm, draw=black, fill=green!20]
+\tikzstyle{arrow} = [thick, -stealth]
+\tikzstyle{doublearrow} = [thick, stealth-stealth]
+
+\title{\textbf{Sistema Facturación Electrónica B2B}\\Documentación Técnica Completa}
+\author{Demian Maturana}
+\date{Diciembre 2025}
+
+\begin{document}
+
+\maketitle
+\newpage
+
+\section{Arquitectura del Sistema}
+
+\subsection{Componentes}
+
+\begin{itemize}
+    \item \textbf{Electron App (Cliente):} Aplicación desktop
+    \item \textbf{SQLite (Local):} Base de datos local
+    \item \textbf{Node.js Server:} Backend en Railway
+    \item \textbf{PostgreSQL:} Base de datos servidor
+    \item \textbf{ChileAPI:} Intermediario SII
+    \item \textbf{SII:} Servicio de Impuestos Internos
+\end{itemize}
+
+\subsection{Flujo de datos}
+
+App Cliente $\rightarrow$ SQLite (guardar local)
+
+App Cliente $\leftrightarrow$ Servidor (HTTPS)
+
+Servidor $\rightarrow$ PostgreSQL
+
+Servidor $\leftrightarrow$ ChileAPI (API)
+
+ChileAPI $\leftrightarrow$ SII
+
+\subsection{Stack Tecnológico Detallado}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{|l|l|p{5cm}|}
+\hline
+\textbf{Componente} & \textbf{Tecnología} & \textbf{Versión/Detalles} \\ \hline
+Runtime & Node.js & v20.x LTS \\
+Desktop Framework & Electron & v28.x \\
+UI Library & React & v18.x \\
+Build Tool & Vite & v5.x \\
+State Management & React Hooks & useState, useContext \\
+DB Local & SQLite3 & v5.x \\
+DB Servidor & PostgreSQL & v15.x \\
+ORM/Query & better-sqlite3 & Síncrono, más rápido \\
+HTTP Client & fetch API & Nativo \\
+PDF Generation & jsPDF & v2.x \\
+Excel Import & xlsx & SheetJS \\
+UUID & uuid & v9.x \\
+Packaging & electron-builder & v24.x \\
+Backend Framework & Express & v4.x \\
+Process Manager & PM2 & Solo en producción \\
+Task Scheduler & node-cron & v3.x \\
+Environment & dotenv & v16.x \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Plan de Implementación Detallado}
+
+\subsection{Descripción General}
+
+Durante las próximas 6 semanas, implementarás un sistema de facturación electrónica desktop completo. El desarrollo seguirá una metodología incremental, construyendo funcionalidad básica primero y agregando complejidad progresivamente.
+
+\textbf{Filosofía de desarrollo:}
+\begin{itemize}
+    \item \textbf{Hacer funcionar primero, optimizar después}
+    \item \textbf{Testing manual continuo} (cada feature que implementes, probala inmediatamente)
+    \item \textbf{Commits frecuentes} (mínimo 2-3 por día)
+    \item \textbf{Si algo no funciona después de 2 horas, pregunta/investiga}
+\end{itemize}
+
+\subsection{Semana 1-2: Fundación}
+
+\subsubsection{Objetivo}
+Establecer la base del sistema: estructura del proyecto, base de datos funcionando, y CRUD completo de clientes y productos con interfaz básica.
+
+\subsubsection{Día 1-2: Setup Proyecto}
+
+\textbf{Qué harás:}
+\begin{enumerate}
+    \item Crear estructura de carpetas del proyecto
+    \item Inicializar npm en \texttt{electron-app/}
+    \item Instalar dependencias base (Electron, React, Vite)
+    \item Configurar \texttt{package.json} con scripts
+    \item Crear \texttt{vite.config.js}
+    \item Crear archivo \texttt{main.js} básico que abra ventana
+    \item Probar que Electron abre ventana vacía
+\end{enumerate}
+
+\textbf{Resultado esperado:} Ventana Electron que abre y muestra "Hello World"
+
+\textbf{Código a implementar:}
+\begin{lstlisting}[language=JavaScript]
+// src/main/main.js (versión inicial)
+import { app, BrowserWindow } from 'electron';
+
+let mainWindow;
+
+function createWindow() {
+  mainWindow = new BrowserWindow({
+    width: 1200,
+    height: 800
+  });
+  
+  mainWindow.loadURL('http://localhost:5173'); // Vite dev server
+}
+
+app.whenReady().then(() => {
+  createWindow();
+});
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});
+\end{lstlisting}
+
+\subsubsection{Día 3-4: Base de Datos SQLite}
+
+\textbf{Qué harás:}
+\begin{enumerate}
+    \item Instalar \texttt{better-sqlite3}
+    \item Crear \texttt{database/connection.js}
+    \item Implementar función \texttt{initDatabase()} que crea tablas
+    \item Crear tabla \texttt{clientes} con campos básicos
+    \item Probar que DB se crea correctamente
+    \item Implementar función \texttt{getDatabase()} para acceder a DB
+\end{enumerate}
+
+\textbf{Resultado esperado:} Archivo \texttt{facturacion.db} creado en \texttt{AppData} con tabla clientes
+
+\textbf{Validación:} Abrir DB con DB Browser for SQLite y ver que tabla existe
+
+\subsubsection{Día 5-7: CRUD Clientes}
+
+\textbf{Qué harás:}
+\begin{enumerate}
+    \item Crear \texttt{ipc/clientes.js} con handlers:
+    \begin{itemize}
+        \item \texttt{clientes:create}
+        \item \texttt{clientes:getAll}
+        \item \texttt{clientes:update}
+        \item \texttt{clientes:delete}
+        \item \texttt{clientes:search}
+    \end{itemize}
+    \item Configurar \texttt{preload.js} para exponer API
+    \item Crear página React \texttt{Clientes.jsx} con:
+    \begin{itemize}
+        \item Formulario crear cliente (RUT, razón social, email, teléfono)
+        \item Tabla lista clientes
+        \item Botones editar/eliminar
+        \item Barra búsqueda
+    \end{itemize}
+    \item Crear hook \texttt{useClientes.js}
+    \item Probar flujo completo: crear, listar, buscar, editar, eliminar
+\end{enumerate}
+
+\textbf{Resultado esperado:} Poder gestionar clientes completamente desde la UI
+
+\textbf{Testing manual:}
+\begin{itemize}
+    \item Crear 5 clientes de prueba
+    \item Buscar por nombre
+    \item Editar uno
+    \item Eliminar uno
+    \item Verificar cambios en DB con DB Browser
+\end{itemize}
+
+\subsubsection{Día 8-10: CRUD Productos}
+
+\textbf{Qué harás:}
+\begin{enumerate}
+    \item Crear tabla \texttt{productos} en DB
+    \item Implementar handlers IPC (similar a clientes)
+    \item Crear página React \texttt{Productos.jsx}
+    \item Agregar campos: código, nombre, precio, stock
+    \item Implementar validaciones (precio > 0, stock >= 0)
+    \item Agregar filtro por categoría
+\end{enumerate}
+
+\textbf{Resultado esperado:} CRUD productos funcionando igual que clientes
+
+\subsubsection{Día 11-14: Importación Excel}
+
+\textbf{Qué harás:}
+\begin{enumerate}
+    \item Instalar librería \texttt{xlsx}
+    \item Crear botón "Importar desde Excel" en Clientes y Productos
+    \item Implementar lógica:
+    \begin{itemize}
+        \item Usuario selecciona archivo .xlsx
+        \item Sistema lee filas
+        \item Valida datos (RUT válido, precios positivos, etc.)
+        \item Inserta en DB con \texttt{INSERT OR IGNORE}
+        \item Muestra resumen: X importados, Y duplicados
+    \end{itemize}
+    \item Crear Excel de prueba con 20 clientes
+    \item Probar importación
+\end{enumerate}
+
+\textbf{Resultado esperado:} Poder importar masivamente clientes/productos desde Excel
+
+\textbf{Formato Excel esperado:}
+\begin{verbatim}
+Clientes.xlsx:
+RUT         | Razón Social      | Email           | Teléfono
+12345678-9  | Ferretería López  | lopez@email.com | 912345678
+23456789-0  | Distribuidora XYZ | xyz@email.com   | 987654321
+\end{verbatim}
+
+\newpage
+
+\subsection{Semana 3-4: Facturación Core}
+
+\subsubsection{Objetivo}
+Implementar la funcionalidad central: crear facturas, generar XML/PDF, y preparar para envío al SII.
+
+\subsubsection{Día 15-17: Formulario Crear Factura}
+
+\textbf{Qué harás:}
+\begin{enumerate}
+    \item Crear tabla \texttt{facturas} y \texttt{factura\_items} en DB
+    \item Crear página \texttt{CrearFactura.jsx} con:
+    \begin{itemize}
+        \item Selector cliente (autocomplete con búsqueda)
+        \item Tabla productos (agregar múltiples items)
+        \item Input cantidad por producto
+        \item Cálculo automático subtotales
+        \item Cálculo automático IVA (19\%)
+        \item Total general
+        \item Botón "Guardar Factura"
+    \end{itemize}
+    \item Implementar lógica descuento stock automático
+    \item Validar stock suficiente antes de crear factura
+\end{enumerate}
+
+\textbf{Resultado esperado:} Formulario que permite crear factura seleccionando cliente y agregando productos
+
+\textbf{Testing:}
+\begin{itemize}
+    \item Crear factura con 3 productos
+    \item Verificar cálculo IVA correcto
+    \item Verificar stock descontado en tabla productos
+    \item Verificar datos guardados en tabla facturas
+\end{itemize}
+
+\subsubsection{Día 18-20: Generación Folio y Sistema Idempotencia}
+
+\textbf{Qué harás:}
+\begin{enumerate}
+    \item Implementar generador de folios (auto-increment desde 1)
+    \item Guardar último folio usado en tabla \texttt{config}
+    \item Implementar generación \texttt{idempotency\_key} (UUID v4)
+    \item Agregar validación: no permitir duplicar idempotency key
+    \item Crear función \texttt{getNextFolio()}
+    \item Al crear factura:
+    \begin{itemize}
+        \item Generar folio
+        \item Generar idempotency key
+        \item Guardar con estado \texttt{'PENDIENTE'}
+    \end{itemize}
+\end{enumerate}
+
+\textbf{Resultado esperado:} Cada factura tiene folio único correlativo
+
+\textbf{Testing:}
+\begin{itemize}
+    \item Crear 5 facturas seguidas
+    \item Verificar folios: 1, 2, 3, 4, 5
+    \item Reiniciar app, crear otra factura
+    \item Verificar folio continúa en 6
+\end{itemize}
+
+\subsubsection{Día 21-24: Generación XML DTE}
+
+\textbf{Qué harás:}
+\begin{enumerate}
+    \item Estudiar formato XML DTE del SII (documentación ChileAPI)
+    \item Crear función \texttt{generarXML(factura)}
+    \item Implementar template XML con:
+    \begin{itemize}
+        \item Datos emisor (tu RUT, razón social)
+        \item Datos receptor (cliente)
+        \item Items con cantidad, precio, subtotal
+        \item Totales (neto, IVA, total)
+        \item Fecha emisión
+        \item Folio
+    \end{itemize}
+    \item Guardar XML en carpeta \texttt{userData/facturas/}
+    \item Guardar path en columna \texttt{xml\_path}
+\end{enumerate}
+
+\textbf{Resultado esperado:} Por cada factura creada, se genera archivo XML válido
+
+\textbf{Testing:}
+\begin{itemize}
+    \item Crear factura
+    \item Abrir XML generado en editor texto
+    \item Verificar todos los datos correctos
+    \item (Opcional) Validar XML con herramienta online
+\end{itemize}
+
+\subsubsection{Día 25-28: Generación PDF}
+
+\textbf{Qué harás:}
+\begin{enumerate}
+    \item Instalar \texttt{jspdf}
+    \item Crear función \texttt{generarPDF(factura)}
+    \item Diseñar layout PDF:
+    \begin{itemize}
+        \item Header: Logo, datos emisor, folio
+        \item Datos cliente
+        \item Tabla items (código, descripción, cantidad, precio, total)
+        \item Totales (neto, IVA, total)
+        \item Footer: fecha, condiciones pago
+    \end{itemize}
+    \item Guardar PDF en \texttt{userData/facturas/}
+    \item Botón "Ver PDF" que abre PDF con visor sistema
+\end{enumerate}
+
+\textbf{Resultado esperado:} PDF profesional que cliente puede imprimir
+
+\textbf{Testing:}
+\begin{itemize}
+    \item Generar PDF de factura de prueba
+    \item Abrir PDF, verificar se ve bien
+    \item Imprimir en impresora/guardar como PDF
+\end{itemize}
+
+\newpage
+
+\subsection{Semana 5: Features Complementarias}
+
+\subsubsection{Objetivo}
+Agregar funcionalidades que complementan facturación: guías de despacho, ventas a crédito, y reportes básicos.
+
+\subsubsection{Día 29-31: Guías de Despacho}
+
+\textbf{Qué harás:}
+\begin{enumerate}
+    \item Crear tabla \texttt{guias\_despacho}
+    \item Crear formulario similar a factura pero sin precios
+    \item Generar PDF guía (sin montos, solo cantidades)
+    \item Sistema folio independiente para guías
+    \item Opción: vincular guía a factura existente
+\end{enumerate}
+
+\textbf{Resultado esperado:} Poder generar guías de despacho independientes o vinculadas
+
+\subsubsection{Día 32-34: Ventas a Crédito}
+
+\textbf{Qué harás:}
+\begin{enumerate}
+    \item Agregar campo \texttt{tipo\_pago} a facturas (EFECTIVO/CREDITO)
+    \item Si crédito: agregar campo \texttt{fecha\_vencimiento}
+    \item Crear tabla \texttt{pagos\_credito}
+    \item Página "Cuentas por Cobrar":
+    \begin{itemize}
+        \item Lista facturas crédito pendientes
+        \item Ordenadas por fecha vencimiento
+        \item Marcar vencidas en rojo
+        \item Botón "Registrar Pago" (parcial o total)
+    \end{itemize}
+    \item Al pagar: actualizar \texttt{estado\_pago}
+\end{enumerate}
+
+\textbf{Resultado esperado:} Dashboard que muestra deudas pendientes y permite registrar pagos
+
+\textbf{Testing:}
+\begin{itemize}
+    \item Crear 3 facturas a crédito (vencimientos diferentes)
+    \item Una con vencimiento pasado (aparece roja)
+    \item Registrar pago parcial de una
+    \item Verificar saldo restante correcto
+\end{itemize}
+
+\subsubsection{Día 35-38: Dashboard y Reportes}
+
+\textbf{Qué harás:}
+\begin{enumerate}
+    \item Página Dashboard con:
+    \begin{itemize}
+        \item Total vendido hoy
+        \item Total vendido mes actual
+        \item Facturas pendientes envío SII (count)
+        \item Créditos por vencer esta semana
+        \item Productos bajo stock mínimo
+    \end{itemize}
+    \item Reporte ventas diarias (tabla por día)
+    \item Reporte ventas mensuales (gráfico simple)
+    \item Reporte productos más vendidos
+\end{enumerate}
+
+\textbf{Resultado esperado:} Dashboard informativo al abrir app
+
+\newpage
+
+\subsection{Semana 6: Servidor, Licencias y Deploy}
+
+\subsubsection{Objetivo}
+Implementar servidor backend para validación licencias y envío batch al SII. Generar instalador y hacer beta test real.
+
+\subsubsection{Día 39-41: Servidor Backend}
+
+\textbf{Qué harás:}
+\begin{enumerate}
+    \item Crear proyecto \texttt{server/}
+    \item Inicializar Express
+    \item Crear schema PostgreSQL (licenses, processed\_invoices)
+    \item Implementar endpoints:
+    \begin{itemize}
+        \item POST /licenses/validate (valida license key + machine ID)
+        \item POST /invoices/batch (recibe facturas pendientes)
+    \end{itemize}
+    \item Deploy a Railway:
+    \begin{itemize}
+        \item Crear cuenta Railway
+        \item Conectar repo GitHub
+        \item Configurar PostgreSQL addon
+        \item Deploy automático
+    \end{itemize}
+\end{enumerate}
+
+\textbf{Resultado esperado:} Servidor corriendo en Railway con DB PostgreSQL
+
+\textbf{Testing:}
+\begin{itemize}
+    \item Llamar endpoint /health desde Postman
+    \item Insertar licencia de prueba en DB
+    \item Validar desde Postman
+\end{itemize}
+
+\subsubsection{Día 42-43: Sistema Licencias}
+
+\textbf{Qué harás:}
+\begin{enumerate}
+    \item En app Electron:
+    \begin{itemize}
+        \item Al abrir, chequear licencia local
+        \item Si no existe, mostrar ventana activación
+        \item Usuario ingresa license key
+        \item App llama servidor para validar
+        \item Servidor registra machine ID
+        \item Guarda license key local si válida
+    \end{itemize}
+    \item Generar script para crear licencias:
+    \begin{itemize}
+        \item \texttt{node generate-license.js "Cliente XYZ"}
+        \item Genera UUID como license key
+        \item Inserta en DB con expires 30 días
+    \end{itemize}
+\end{enumerate}
+
+\textbf{Resultado esperado:} App solo funciona con licencia válida
+
+\subsubsection{Día 44-45: Cron Job Envío SII}
+
+\textbf{Qué harás:}
+\begin{enumerate}
+    \item Instalar \texttt{node-cron}
+    \item Crear job que corre cada hora:
+    \begin{itemize}
+        \item Query facturas estado PENDING
+        \item Por cada una: llamar ChileAPI
+        \item Si éxito: actualizar estado SENT
+        \item Si error: actualizar estado ERROR + mensaje
+    \end{itemize}
+    \item En app cliente:
+    \begin{itemize}
+        \item Botón "Sincronizar estados SII"
+        \item Llama servidor para obtener estados actualizados
+        \item Actualiza DB local
+    \end{itemize}
+\end{enumerate}
+
+\textbf{Resultado esperado:} Facturas se envían automáticamente al SII cada hora
+
+\subsubsection{Día 46-47: Electron Builder}
+
+\textbf{Qué harás:}
+\begin{enumerate}
+    \item Configurar \texttt{electron-builder.yml}
+    \item Agregar icono aplicación
+    \item Generar instalador Windows:
+    \begin{itemize}
+        \item \texttt{npm run build}
+        \item Genera Setup.exe en carpeta dist/
+    \end{itemize}
+    \item Probar instalación en PC limpia (VM o PC familiar)
+    \item Verificar que crea accesos directos
+    \item Verificar que DB se crea correctamente
+\end{enumerate}
+
+\textbf{Resultado esperado:} Instalador profesional funcionando
+
+\subsubsection{Día 48-50: Beta Test Real}
+
+\textbf{Qué harás:}
+\begin{enumerate}
+    \item Instalar en PC de tu tío
+    \item Capacitación 1-2 horas:
+    \begin{itemize}
+        \item Importar sus clientes existentes
+        \item Importar sus productos
+        \item Crear 5 facturas de prueba
+        \item Mostrar cómo ver PDF
+        \item Explicar créditos
+    \end{itemize}
+    \item Dejarlo usar 1 semana completa
+    \item Pedirle feedback detallado:
+    \begin{itemize}
+        \item ¿Qué es confuso?
+        \item ¿Qué falta?
+        \item ¿Qué es lento?
+        \item ¿Bugs encontrados?
+    \end{itemize}
+    \item Iterar basado en feedback
+\end{enumerate}
+
+\textbf{Resultado esperado:} 
+\begin{itemize}
+    \item Tío usa sistema real en negocio
+    \item Lista de bugs/mejoras documentada
+    \item Fixes aplicados
+    \item Cliente beta satisfecho = listo para vender a otros
+\end{itemize}
+
+\newpage
+
+\section{Estructura Detallada del Proyecto}
+
+\subsection{Estructura Completa de Carpetas}
+
+\begin{lstlisting}[language=bash]
+facturacion-app/
+│
+├── electron-app/                    # Aplicación cliente (Electron)
+│   ├── src/
+│   │   ├── main/                   # Proceso principal Electron
+│   │   │   ├── main.js            # Entry point
+│   │   │   ├── database/
+│   │   │   │   ├── connection.js  # Setup SQLite
+│   │   │   │   ├── migrations.js  # Schema inicial
+│   │   │   │   └── queries.js     # Queries reutilizables
+│   │   │   ├── ipc/
+│   │   │   │   ├── clientes.js    # Handlers clientes
+│   │   │   │   ├── productos.js   # Handlers productos
+│   │   │   │   ├── facturas.js    # Handlers facturas
+│   │   │   │   └── licencias.js   # Handlers licencias
+│   │   │   ├── services/
+│   │   │   │   ├── pdf-generator.js
+│   │   │   │   ├── xml-generator.js
+│   │   │   │   └── excel-importer.js
+│   │   │   └── utils/
+│   │   │       ├── validators.js
+│   │   │       └── formatters.js
+│   │   │
+│   │   ├── renderer/              # UI React
+│   │   │   ├── src/
+│   │   │   │   ├── App.jsx
+│   │   │   │   ├── main.jsx       # Entry point React
+│   │   │   │   ├── pages/
+│   │   │   │   │   ├── Dashboard.jsx
+│   │   │   │   │   ├── Clientes/
+│   │   │   │   │   │   ├── index.jsx
+│   │   │   │   │   │   ├── ClienteForm.jsx
+│   │   │   │   │   │   ├── ClienteList.jsx
+│   │   │   │   │   │   └── ClienteImport.jsx
+│   │   │   │   │   ├── Productos/
+│   │   │   │   │   │   ├── index.jsx
+│   │   │   │   │   │   ├── ProductoForm.jsx
+│   │   │   │   │   │   ├── ProductoList.jsx
+│   │   │   │   │   │   └── ProductoImport.jsx
+│   │   │   │   │   ├── Facturas/
+│   │   │   │   │   │   ├── index.jsx
+│   │   │   │   │   │   ├── FacturaForm.jsx
+│   │   │   │   │   │   ├── FacturaList.jsx
+│   │   │   │   │   │   └── FacturaDetalle.jsx
+│   │   │   │   │   ├── Creditos/
+│   │   │   │   │   │   ├── index.jsx
+│   │   │   │   │   │   ├── CreditosDashboard.jsx
+│   │   │   │   │   │   └── PagoCredito.jsx
+│   │   │   │   │   ├── Reportes/
+│   │   │   │   │   │   ├── index.jsx
+│   │   │   │   │   │   ├── VentasDiarias.jsx
+│   │   │   │   │   │   └── VentasMensuales.jsx
+│   │   │   │   │   └── Configuracion/
+│   │   │   │   │       ├── index.jsx
+│   │   │   │   │       └── Licencia.jsx
+│   │   │   │   ├── components/
+│   │   │   │   │   ├── common/
+│   │   │   │   │   │   ├── Button.jsx
+│   │   │   │   │   │   ├── Input.jsx
+│   │   │   │   │   │   ├── Select.jsx
+│   │   │   │   │   │   ├── Table.jsx
+│   │   │   │   │   │   ├── Modal.jsx
+│   │   │   │   │   │   └── Loading.jsx
+│   │   │   │   │   ├── layout/
+│   │   │   │   │   │   ├── Navbar.jsx
+│   │   │   │   │   │   ├── Sidebar.jsx
+│   │   │   │   │   │   └── Layout.jsx
+│   │   │   │   │   └── forms/
+│   │   │   │   │       ├── ClienteSelector.jsx
+│   │   │   │   │       ├── ProductoSelector.jsx
+│   │   │   │   │       └── RutInput.jsx
+│   │   │   │   ├── hooks/
+│   │   │   │   │   ├── useClientes.js
+│   │   │   │   │   ├── useProductos.js
+│   │   │   │   │   ├── useFacturas.js
+│   │   │   │   │   └── useLicencia.js
+│   │   │   │   ├── context/
+│   │   │   │   │   └── AppContext.jsx
+│   │   │   │   ├── utils/
+│   │   │   │   │   ├── formatters.js
+│   │   │   │   │   ├── validators.js
+│   │   │   │   │   └── constants.js
+│   │   │   │   └── styles/
+│   │   │   │       ├── index.css
+│   │   │   │       └── tailwind.css
+│   │   │   ├── index.html
+│   │   │   ├── vite.config.js
+│   │   │   └── package.json
+│   │   │
+│   │   └── preload/
+│   │       └── preload.js            # Bridge seguro main <-> renderer
+│   │
+│   ├── assets/
+│   │   ├── icons/
+│   │   │   ├── icon.ico             # Windows
+│   │   │   ├── icon.icns            # Mac
+│   │   │   └── icon.png             # Linux
+│   │   └── images/
+│   │
+│   ├── public/                      # Assets estáticos
+│   │
+│   ├── package.json
+│   ├── electron-builder.yml         # Config packaging
+│   └── README.md
+│
+├── server/                          # Backend Node.js
+│   ├── src/
+│   │   ├── index.js                # Entry point
+│   │   ├── config/
+│   │   │   ├── database.js         # PostgreSQL connection
+│   │   │   └── env.js              # Environment vars
+│   │   ├── routes/
+│   │   │   ├── index.js            # Router principal
+│   │   │   ├── licenses.js         # GET/POST /licenses
+│   │   │   ├── invoices.js         # POST /invoices
+│   │   │   └── telemetry.js        # POST /telemetry
+│   │   ├── controllers/
+│   │   │   ├── licenseController.js
+│   │   │   ├── invoiceController.js
+│   │   │   └── telemetryController.js
+│   │   ├── services/
+│   │   │   ├── chileapi.js         # Wrapper ChileAPI
+│   │   │   ├── email.js            # Envío emails
+│   │   │   └── machineId.js        # Validación fingerprinting
+│   │   ├── db/
+│   │   │   ├── schema.sql          # Schema PostgreSQL
+│   │   │   ├── migrations/         # Migraciones futuras
+│   │   │   └── queries.js          # Queries reutilizables
+│   │   ├── middleware/
+│   │   │   ├── auth.js             # Validación license key
+│   │   │   ├── errorHandler.js
+│   │   │   └── logger.js
+│   │   ├── cron/
+│   │   │   ├── sendInvoices.js     # Batch envío SII (cada hora)
+│   │   │   └── cleanupLogs.js      # Limpieza logs viejos
+│   │   └── utils/
+│   │       ├── validators.js
+│   │       └── helpers.js
+│   │
+│   ├── tests/                       # Tests unitarios (opcional MVP)
+│   │   ├── unit/
+│   │   └── integration/
+│   │
+│   ├── logs/                        # Logs (git ignored)
+│   │
+│   ├── package.json
+│   ├── .env.example
+│   ├── .gitignore
+│   └── README.md
+│
+├── docs/
+│   ├── ARCHITECTURE.pdf             # Este documento
+│   ├── API.md                       # Documentación API servidor
+│   ├── DATABASE.md                  # Schema detallado
+│   └── DEPLOYMENT.md                # Guía deploy
+│
+├── scripts/                         # Scripts útiles
+│   ├── db-setup.sql                # Setup DB desarrollo
+│   └── generate-license.js         # Generar license keys
+│
+├── .gitignore
+└── README.md
+\end{lstlisting}
+
+\newpage
+
+\section{Configuración Inicial Paso a Paso}
+
+\subsection{Electron App}
+
+\textbf{1. Inicializar proyecto:}
+
+\begin{lstlisting}[language=bash]
+mkdir electron-app
+cd electron-app
+npm init -y
+\end{lstlisting}
+
+\textbf{2. Instalar dependencias principales:}
+
+\begin{lstlisting}[language=bash]
+# Core
+npm install electron
+
+# UI
+npm install react react-dom
+npm install -D vite @vitejs/plugin-react
+
+# Database
+npm install better-sqlite3
+
+# Utilities
+npm install uuid
+npm install jspdf
+npm install xlsx
+
+# Build
+npm install -D electron-builder
+\end{lstlisting}
+
+\textbf{3. package.json completo:}
+
+\begin{lstlisting}[language=JSON]
+{
+  "name": "sistema-facturacion",
+  "version": "1.0.0",
+  "description": "Sistema de facturacion electronica",
+  "main": "src/main/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build:renderer": "vite build",
+    "build": "npm run build:renderer && electron-builder",
+    "start": "electron ."
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.2.2",
+    "jspdf": "^2.5.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "uuid": "^9.0.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "electron": "^28.1.0",
+    "electron-builder": "^24.9.1",
+    "vite": "^5.0.8"
+  }
+}
+\end{lstlisting}
+
+\textbf{4. vite.config.js:}
+
+\begin{lstlisting}[language=JavaScript]
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
+
+export default defineConfig({
+  plugins: [react()],
+  base: './',
+  build: {
+    outDir: 'dist-renderer',
+    emptyOutDir: true
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src/renderer/src')
+    }
+  }
+});
+\end{lstlisting}
+
+\textbf{5. electron-builder.yml:}
+
+\begin{lstlisting}[language=YAML]
+appId: cl.facturacion.app
+productName: Sistema Facturacion
+copyright: Copyright © 2025
+
+directories:
+  output: dist
+  buildResources: assets
+
+files:
+  - dist-renderer/**/*
+  - src/main/**/*
+  - src/preload/**/*
+  - package.json
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: assets/icons/icon.ico
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Sistema Facturacion
+
+mac:
+  target:
+    - dmg
+  icon: assets/icons/icon.icns
+  category: public.app-category.business
+
+linux:
+  target:
+    - AppImage
+  icon: assets/icons/icon.png
+  category: Office
+\end{lstlisting}
+
+\newpage
+
+\subsection{Servidor Node.js}
+
+\textbf{1. Inicializar proyecto:}
+
+\begin{lstlisting}[language=bash]
+mkdir server
+cd server
+npm init -y
+\end{lstlisting}
+
+\textbf{2. Instalar dependencias:}
+
+\begin{lstlisting}[language=bash]
+# Core
+npm install express
+npm install pg
+npm install dotenv
+
+# Utilities
+npm install node-cron
+npm install cors
+npm install helmet
+
+# Development
+npm install -D nodemon
+\end{lstlisting}
+
+\textbf{3. package.json servidor:}
+
+\begin{lstlisting}[language=JSON]
+{
+  "name": "facturacion-server",
+  "version": "1.0.0",
+  "description": "Backend para sistema facturacion",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "helmet": "^7.1.0",
+    "node-cron": "^3.0.3",
+    "pg": "^8.11.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
+\end{lstlisting}
+
+\textbf{4. .env.example:}
+
+\begin{lstlisting}[language=bash]
+# Server
+PORT=3000
+NODE_ENV=development
+
+# Database
+DATABASE_URL=postgresql://user:password@localhost:5432/facturacion
+
+# ChileAPI
+CHILEAPI_URL=https://api.chileapi.dev
+CHILEAPI_KEY=your_api_key_here
+
+# Security
+JWT_SECRET=your_secret_here
+ADMIN_API_KEY=your_admin_key_here
+
+# Email (opcional)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your_email@gmail.com
+SMTP_PASS=your_password
+
+# Cron
+INVOICE_BATCH_CRON=0 * * * *  # Cada hora
+\end{lstlisting}
+
+\newpage
+
+\section{Código Base Crítico}
+
+\subsection{Main Process (Electron)}
+
+\textbf{src/main/main.js:}
+
+\begin{lstlisting}[language=JavaScript]
+import { app, BrowserWindow, ipcMain } from 'electron';
+import path from 'path';
+import { initDatabase } from './database/connection.js';
+import { registerClientesHandlers } from './ipc/clientes.js';
+import { registerProductosHandlers } from './ipc/productos.js';
+import { registerFacturasHandlers } from './ipc/facturas.js';
+import { registerLicenciasHandlers } from './ipc/licencias.js';
+
+let mainWindow;
+
+async function createWindow() {
+  mainWindow = new BrowserWindow({
+    width: 1200,
+    height: 800,
+    webPreferences: {
+      preload: path.join(__dirname, '../preload/preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true
+    }
+  });
+
+  // Desarrollo: Vite dev server
+  if (process.env.NODE_ENV === 'development') {
+    mainWindow.loadURL('http://localhost:5173');
+    mainWindow.webContents.openDevTools();
+  } else {
+    // Produccion: archivos compilados
+    mainWindow.loadFile(
+      path.join(__dirname, '../../dist-renderer/index.html')
+    );
+  }
+}
+
+app.whenReady().then(async () => {
+  // Inicializar DB
+  await initDatabase();
+  
+  // Registrar IPC handlers
+  registerClientesHandlers();
+  registerProductosHandlers();
+  registerFacturasHandlers();
+  registerLicenciasHandlers();
+  
+  // Validar licencia antes de abrir
+  const isValid = await validateLicense();
+  
+  if (isValid) {
+    createWindow();
+  } else {
+    createActivationWindow();
+  }
+});
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});
+
+async function validateLicense() {
+  // TODO: Implementar validacion
+  return true; // Por ahora siempre true
+}
+
+function createActivationWindow() {
+  // TODO: Ventana para activar licencia
+}
+\end{lstlisting}
+
+\newpage
+
+\subsection{Database Connection (SQLite)}
+
+\textbf{src/main/database/connection.js:}
+
+\begin{lstlisting}[language=JavaScript]
+import Database from 'better-sqlite3';
+import path from 'path';
+import { app } from 'electron';
+
+let db;
+
+export function initDatabase() {
+  const userDataPath = app.getPath('userData');
+  const dbPath = path.join(userDataPath, 'facturacion.db');
+  
+  db = new Database(dbPath);
+  
+  // Configuracion
+  db.pragma('journal_mode = WAL');
+  db.pragma('foreign_keys = ON');
+  
+  // Crear tablas si no existen
+  createTables();
+  
+  console.log('Database initialized:', dbPath);
+  
+  return db;
+}
+
+export function getDatabase() {
+  if (!db) {
+    throw new Error('Database not initialized');
+  }
+  return db;
+}
+
+function createTables() {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS clientes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      rut TEXT UNIQUE NOT NULL,
+      razon_social TEXT NOT NULL,
+      giro TEXT,
+      direccion TEXT,
+      comuna TEXT,
+      email TEXT,
+      telefono TEXT,
+      credito_maximo INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS productos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      codigo TEXT UNIQUE NOT NULL,
+      nombre TEXT NOT NULL,
+      descripcion TEXT,
+      precio INTEGER NOT NULL,
+      stock INTEGER DEFAULT 0,
+      stock_minimo INTEGER DEFAULT 0,
+      categoria TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS facturas (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      folio INTEGER UNIQUE NOT NULL,
+      idempotency_key TEXT UNIQUE NOT NULL,
+      cliente_id INTEGER NOT NULL,
+      fecha DATE NOT NULL,
+      subtotal INTEGER NOT NULL,
+      iva INTEGER NOT NULL,
+      total INTEGER NOT NULL,
+      tipo_pago TEXT CHECK(tipo_pago IN ('EFECTIVO', 'TARJETA', 'CREDITO')),
+      fecha_vencimiento DATE,
+      estado_pago TEXT DEFAULT 'PENDIENTE',
+      estado_sii TEXT DEFAULT 'PENDIENTE',
+      fecha_envio_sii DATETIME,
+      track_id TEXT,
+      error_sii TEXT,
+      xml_path TEXT,
+      pdf_path TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (cliente_id) REFERENCES clientes(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS factura_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      factura_id INTEGER NOT NULL,
+      producto_id INTEGER NOT NULL,
+      cantidad INTEGER NOT NULL,
+      precio_unitario INTEGER NOT NULL,
+      subtotal INTEGER NOT NULL,
+      FOREIGN KEY (factura_id) REFERENCES facturas(id) ON DELETE CASCADE,
+      FOREIGN KEY (producto_id) REFERENCES productos(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS guias_despacho (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      folio INTEGER UNIQUE NOT NULL,
+      factura_id INTEGER,
+      cliente_id INTEGER NOT NULL,
+      fecha DATE NOT NULL,
+      direccion_despacho TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (factura_id) REFERENCES facturas(id),
+      FOREIGN KEY (cliente_id) REFERENCES clientes(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS pagos_credito (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      factura_id INTEGER NOT NULL,
+      monto INTEGER NOT NULL,
+      fecha_pago DATE NOT NULL,
+      metodo_pago TEXT,
+      notas TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (factura_id) REFERENCES facturas(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS config (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
+
+    -- Indices para performance
+    CREATE INDEX IF NOT EXISTS idx_clientes_rut ON clientes(rut);
+    CREATE INDEX IF NOT EXISTS idx_productos_codigo ON productos(codigo);
+    CREATE INDEX IF NOT EXISTS idx_facturas_folio ON facturas(folio);
+    CREATE INDEX IF NOT EXISTS idx_facturas_estado_sii ON facturas(estado_sii);
+    CREATE INDEX IF NOT EXISTS idx_facturas_cliente ON facturas(cliente_id);
+  `);
+}
+\end{lstlisting}
+
+\newpage
+
+\subsection{IPC Handlers - Clientes}
+
+\textbf{src/main/ipc/clientes.js:}
+
+\begin{lstlisting}[language=JavaScript]
+import { ipcMain } from 'electron';
+import { getDatabase } from '../database/connection.js';
+
+export function registerClientesHandlers() {
+  
+  // Crear cliente
+  ipcMain.handle('clientes:create', async (event, cliente) => {
+    const db = getDatabase();
+    
+    try {
+      const stmt = db.prepare(`
+        INSERT INTO clientes (
+          rut, razon_social, giro, direccion, comuna, 
+          email, telefono, credito_maximo
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      
+      const result = stmt.run(
+        cliente.rut,
+        cliente.razonSocial,
+        cliente.giro || null,
+        cliente.direccion || null,
+        cliente.comuna || null,
+        cliente.email || null,
+        cliente.telefono || null,
+        cliente.creditoMaximo || 0
+      );
+      
+      return { success: true, id: result.lastInsertRowid };
+    } catch (error) {
+      if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+        throw new Error('RUT ya existe');
+      }
+      throw error;
+    }
+  });
+  
+  // Obtener todos los clientes
+  ipcMain.handle('clientes:getAll', async () => {
+    const db = getDatabase();
+    const stmt = db.prepare('SELECT * FROM clientes ORDER BY razon_social');
+    return stmt.all();
+  });
+  
+  // Obtener cliente por ID
+  ipcMain.handle('clientes:getById', async (event, id) => {
+    const db = getDatabase();
+    const stmt = db.prepare('SELECT * FROM clientes WHERE id = ?');
+    return stmt.get(id);
+  });
+  
+  // Buscar clientes
+  ipcMain.handle('clientes:search', async (event, term) => {
+    const db = getDatabase();
+    const stmt = db.prepare(`
+      SELECT * FROM clientes 
+      WHERE razon_social LIKE ? OR rut LIKE ?
+      ORDER BY razon_social
+      LIMIT 20
+    `);
+    const searchTerm = `%${term}%`;
+    return stmt.all(searchTerm, searchTerm);
+  });
+  
+  // Actualizar cliente
+  ipcMain.handle('clientes:update', async (event, id, cliente) => {
+    const db = getDatabase();
+    const stmt = db.prepare(`
+      UPDATE clientes SET
+        razon_social = ?,
+        giro = ?,
+        direccion = ?,
+        comuna = ?,
+        email = ?,
+        telefono = ?,
+        credito_maximo = ?
+      WHERE id = ?
+    `);
+    
+    stmt.run(
+      cliente.razonSocial,
+      cliente.giro,
+      cliente.direccion,
+      cliente.comuna,
+      cliente.email,
+      cliente.telefono,
+      cliente.creditoMaximo,
+      id
+    );
+    
+    return { success: true };
+  });
+  
+  // Eliminar cliente
+  ipcMain.handle('clientes:delete', async (event, id) => {
+    const db = getDatabase();
+    
+    // Verificar si tiene facturas
+    const checkStmt = db.prepare(
+      'SELECT COUNT(*) as count FROM facturas WHERE cliente_id = ?'
+    );
+    const { count } = checkStmt.get(id);
+    
+    if (count > 0) {
+      throw new Error('No se puede eliminar cliente con facturas asociadas');
+    }
+    
+    const stmt = db.prepare('DELETE FROM clientes WHERE id = ?');
+    stmt.run(id);
+    
+    return { success: true };
+  });
+  
+  // Importar desde Excel
+  ipcMain.handle('clientes:importExcel', async (event, clientes) => {
+    const db = getDatabase();
+    const insertStmt = db.prepare(`
+      INSERT OR IGNORE INTO clientes (
+        rut, razon_social, giro, direccion, email, telefono
+      ) VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    
+    const transaction = db.transaction((clientesList) => {
+      for (const cliente of clientesList) {
+        insertStmt.run(
+          cliente.rut,
+          cliente.razonSocial,
+          cliente.giro || null,
+          cliente.direccion || null,
+          cliente.email || null,
+          cliente.telefono || null
+        );
+      }
+    });
+    
+    try {
+      transaction(clientes);
+      return { success: true, imported: clientes.length };
+    } catch (error) {
+      throw error;
+    }
+  });
+}
+\end{lstlisting}
+
+\newpage
+
+\subsection{Preload Script}
+
+\textbf{src/preload/preload.js:}
+
+\begin{lstlisting}[language=JavaScript]
+import { contextBridge, ipcRenderer } from 'electron';
+
+// Exponer API segura al renderer
+contextBridge.exposeInMainWorld('api', {
+  
+  // Clientes
+  clientes: {
+    create: (cliente) => ipcRenderer.invoke('clientes:create', cliente),
+    getAll: () => ipcRenderer.invoke('clientes:getAll'),
+    getById: (id) => ipcRenderer.invoke('clientes:getById', id),
+    search: (term) => ipcRenderer.invoke('clientes:search', term),
+    update: (id, cliente) => ipcRenderer.invoke('clientes:update', id, cliente),
+    delete: (id) => ipcRenderer.invoke('clientes:delete', id),
+    importExcel: (clientes) => ipcRenderer.invoke('clientes:importExcel', clientes)
+  },
+  
+  // Productos
+  productos: {
+    create: (producto) => ipcRenderer.invoke('productos:create', producto),
+    getAll: () => ipcRenderer.invoke('productos:getAll'),
+    getById: (id) => ipcRenderer.invoke('productos:getById', id),
+    search: (term) => ipcRenderer.invoke('productos:search', term),
+    update: (id, producto) => ipcRenderer.invoke('productos:update', id, producto),
+    delete: (id) => ipcRenderer.invoke('productos:delete', id),
+    updateStock: (id, cantidad) => ipcRenderer.invoke('productos:updateStock', id, cantidad),
+    importExcel: (productos) => ipcRenderer.invoke('productos:importExcel', productos)
+  },
+  
+  // Facturas
+  facturas: {
+    create: (factura) => ipcRenderer.invoke('facturas:create', factura),
+    getAll: () => ipcRenderer.invoke('facturas:getAll'),
+    getById: (id) => ipcRenderer.invoke('facturas:getById', id),
+    getPendientes: () => ipcRenderer.invoke('facturas:getPendientes'),
+    generarPDF: (id) => ipcRenderer.invoke('facturas:generarPDF', id),
+    enviarEmail: (id, email) => ipcRenderer.invoke('facturas:enviarEmail', id, email)
+  },
+  
+  // Creditos
+  creditos: {
+    getByCliente: (clienteId) => ipcRenderer.invoke('creditos:getByCliente', clienteId),
+    getVencidas: () => ipcRenderer.invoke('creditos:getVencidas'),
+    registrarPago: (pago) => ipcRenderer.invoke('creditos:registrarPago', pago)
+  },
+  
+  // Licencias
+  licencia: {
+    validate: () => ipcRenderer.invoke('licencia:validate'),
+    activate: (key) => ipcRenderer.invoke('licencia:activate', key),
+    getStatus: () => ipcRenderer.invoke('licencia:getStatus')
+  },
+  
+  // Utils
+  utils: {
+    openPDF: (path) => ipcRenderer.invoke('utils:openPDF', path),
+    selectFile: (options) => ipcRenderer.invoke('utils:selectFile', options)
+  }
+});
+\end{lstlisting}
+
+\newpage
+
+\subsection{React App Entry}
+
+\textbf{src/renderer/src/main.jsx:}
+
+\begin{lstlisting}[language=JavaScript]
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import './styles/index.css';
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+\end{lstlisting}
+
+\textbf{src/renderer/src/App.jsx:}
+
+\begin{lstlisting}[language=JavaScript]
+import React, { useState } from 'react';
+import { AppContext } from './context/AppContext';
+import Layout from './components/layout/Layout';
+import Dashboard from './pages/Dashboard';
+import Clientes from './pages/Clientes';
+import Productos from './pages/Productos';
+import Facturas from './pages/Facturas';
+import Creditos from './pages/Creditos';
+import Reportes from './pages/Reportes';
+import Configuracion from './pages/Configuracion';
+
+function App() {
+  const [currentPage, setCurrentPage] = useState('dashboard');
+  const [user, setUser] = useState(null);
+  
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'dashboard':
+        return <Dashboard />;
+      case 'clientes':
+        return <Clientes />;
+      case 'productos':
+        return <Productos />;
+      case 'facturas':
+        return <Facturas />;
+      case 'creditos':
+        return <Creditos />;
+      case 'reportes':
+        return <Reportes />;
+      case 'configuracion':
+        return <Configuracion />;
+      default:
+        return <Dashboard />;
+    }
+  };
+  
+  return (
+    <AppContext.Provider value={{ currentPage, setCurrentPage, user, setUser }}>
+      <Layout>
+        {renderPage()}
+      </Layout>
+    </AppContext.Provider>
+  );
+}
+
+export default App;
+\end{lstlisting}
+
+\newpage
+
+\subsection{Custom Hook - useClientes}
+
+\textbf{src/renderer/src/hooks/useClientes.js:}
+
+\begin{lstlisting}[language=JavaScript]
+import { useState, useEffect, useCallback } from 'react';
+
+export function useClientes() {
+  const [clientes, setClientes] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  
+  const loadClientes = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const data = await window.api.clientes.getAll();
+      setClientes(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+  
+  useEffect(() => {
+    loadClientes();
+  }, [loadClientes]);
+  
+  const createCliente = async (cliente) => {
+    try {
+      await window.api.clientes.create(cliente);
+      await loadClientes();
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+  
+  const updateCliente = async (id, cliente) => {
+    try {
+      await window.api.clientes.update(id, cliente);
+      await loadClientes();
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+  
+  const deleteCliente = async (id) => {
+    try {
+      await window.api.clientes.delete(id);
+      await loadClientes();
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+  
+  const searchClientes = async (term) => {
+    setLoading(true);
+    try {
+      const data = await window.api.clientes.search(term);
+      setClientes(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  return {
+    clientes,
+    loading,
+    error,
+    createCliente,
+    updateCliente,
+    deleteCliente,
+    searchClientes,
+    refreshClientes: loadClientes
+  };
+}
+\end{lstlisting}
+
+\newpage
+
+\section{Servidor Backend}
+
+\subsection{Entry Point}
+
+\textbf{server/src/index.js:}
+
+\begin{lstlisting}[language=JavaScript]
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import dotenv from 'dotenv';
+import cron from 'node-cron';
+
+import { initDatabase } from './config/database.js';
+import routes from './routes/index.js';
+import { errorHandler } from './middleware/errorHandler.js';
+import { startInvoiceBatchJob } from './cron/sendInvoices.js';
+
+dotenv.config();
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(helmet());
+app.use(cors({
+  origin: process.env.ALLOWED_ORIGINS?.split(',') || '*'
+}));
+app.use(express.json());
+
+// Routes
+app.use('/api', routes);
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// Error handling
+app.use(errorHandler);
+
+// Iniciar servidor
+async function start() {
+  try {
+    // Conectar DB
+    await initDatabase();
+    console.log('✓ Database connected');
+    
+    // Iniciar cron jobs
+    startInvoiceBatchJob();
+    console.log('✓ Cron jobs started');
+    
+    // Listen
+    app.listen(PORT, () => {
+      console.log(`✓ Server running on port ${PORT}`);
+      console.log(`  Environment: ${process.env.NODE_ENV}`);
+    });
+  } catch (error) {
+    console.error('✗ Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+start();
+\end{lstlisting}
+
+\newpage
+
+\subsection{Database Config}
+
+\textbf{server/src/config/database.js:}
+
+\begin{lstlisting}[language=JavaScript]
+import pg from 'pg';
+import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config();
+
+const { Pool } = pg;
+
+let pool;
+
+export async function initDatabase() {
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.NODE_ENV === 'production' ? {
+      rejectUnauthorized: false
+    } : false
+  });
+  
+  // Test connection
+  try {
+    await pool.query('SELECT NOW()');
+    
+    // Run schema if tables don't exist
+    await createTablesIfNotExist();
+    
+    return pool;
+  } catch (error) {
+    console.error('Database connection failed:', error);
+    throw error;
+  }
+}
+
+export function getPool() {
+  if (!pool) {
+    throw new Error('Database not initialized');
+  }
+  return pool;
+}
+
+async function createTablesIfNotExist() {
+  const schemaPath = path.join(__dirname, '../db/schema.sql');
+  const schema = fs.readFileSync(schemaPath, 'utf8');
+  
+  try {
+    await pool.query(schema);
+    console.log('✓ Database schema created/verified');
+  } catch (error) {
+    console.error('Schema creation failed:', error);
+    throw error;
+  }
+}
+\end{lstlisting}
+
+\textbf{server/src/db/schema.sql:}
+
+\begin{lstlisting}[language=SQL]
+-- Licencias
+CREATE TABLE IF NOT EXISTS licenses (
+  id SERIAL PRIMARY KEY,
+  license_key TEXT UNIQUE NOT NULL,
+  client_name TEXT NOT NULL,
+  client_rut TEXT NOT NULL,
+  client_email TEXT,
+  machine_id TEXT,
+  hostname TEXT,
+  active BOOLEAN DEFAULT true,
+  expires_at TIMESTAMP NOT NULL,
+  activated_at TIMESTAMP,
+  last_seen TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Facturas procesadas
+CREATE TABLE IF NOT EXISTS processed_invoices (
+  id SERIAL PRIMARY KEY,
+  idempotency_key TEXT UNIQUE NOT NULL,
+  license_key TEXT NOT NULL,
+  folio INTEGER NOT NULL,
+  status TEXT NOT NULL CHECK(status IN ('PENDING', 'SENT', 'ERROR')),
+  chile_api_track_id TEXT,
+  chile_api_folio TEXT,
+  pdf_url TEXT,
+  xml_url TEXT,
+  error_message TEXT,
+  retry_count INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT NOW(),
+  sent_at TIMESTAMP,
+  FOREIGN KEY (license_key) REFERENCES licenses(license_key) ON DELETE CASCADE
+);
+
+-- Telemetria
+CREATE TABLE IF NOT EXISTS telemetry (
+  id SERIAL PRIMARY KEY,
+  license_key TEXT NOT NULL,
+  machine_id TEXT NOT NULL,
+  action TEXT NOT NULL,
+  app_version TEXT,
+  metadata JSONB,
+  timestamp TIMESTAMP DEFAULT NOW(),
+  FOREIGN KEY (license_key) REFERENCES licenses(license_key) ON DELETE CASCADE
+);
+
+-- Alertas
+CREATE TABLE IF NOT EXISTS alerts (
+  id SERIAL PRIMARY KEY,
+  type TEXT NOT NULL,
+  license_key TEXT NOT NULL,
+  severity TEXT CHECK(severity IN ('INFO', 'WARNING', 'ERROR')),
+  details JSONB,
+  resolved BOOLEAN DEFAULT false,
+  resolved_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW(),
+  FOREIGN KEY (license_key) REFERENCES licenses(license_key) ON DELETE CASCADE
+);
+
+-- Indices
+CREATE INDEX IF NOT EXISTS idx_licenses_key ON licenses(license_key);
+CREATE INDEX IF NOT EXISTS idx_licenses_machine ON licenses(machine_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_idempotency ON processed_invoices(idempotency_key);
+CREATE INDEX IF NOT EXISTS idx_invoices_status ON processed_invoices(status);
+CREATE INDEX IF NOT EXISTS idx_invoices_license ON processed_invoices(license_key);
+CREATE INDEX IF NOT EXISTS idx_telemetry_license ON telemetry(license_key);
+CREATE INDEX IF NOT EXISTS idx_telemetry_timestamp ON telemetry(timestamp);
+CREATE INDEX IF NOT EXISTS idx_alerts_license ON alerts(license_key);
+CREATE INDEX IF NOT EXISTS idx_alerts_resolved ON alerts(resolved);
+\end{lstlisting}
+
+\newpage
+
+\subsection{Cron Job - Envío Batch SII}
+
+\textbf{server/src/cron/sendInvoices.js:}
+
+\begin{lstlisting}[language=JavaScript]
+import cron from 'node-cron';
+import { getPool } from '../config/database.js';
+import { sendToChileAPI } from '../services/chileapi.js';
+
+export function startInvoiceBatchJob() {
+  // Cada hora
+  const cronExpression = process.env.INVOICE_BATCH_CRON || '0 * * * *';
+  
+  cron.schedule(cronExpression, async () => {
+    console.log(`[CRON] Starting invoice batch job at ${new Date().toISOString()}`);
+    
+    try {
+      await processInvoices();
+    } catch (error) {
+      console.error('[CRON] Batch job failed:', error);
+    }
+  });
+  
+  console.log(`✓ Invoice batch job scheduled: ${cronExpression}`);
+}
+
+async function processInvoices() {
+  const pool = getPool();
+  
+  // Obtener facturas pendientes
+  // Mas de 5 min de antigüedad para evitar race conditions
+  const result = await pool.query(`
+    SELECT * FROM processed_invoices
+    WHERE status = 'PENDING'
+      AND created_at < NOW() - INTERVAL '5 minutes'
+      AND retry_count < 5
+    ORDER BY created_at ASC
+    LIMIT 100
+  `);
+  
+  const pendientes = result.rows;
+  console.log(`[CRON] Found ${pendientes.length} pending invoices`);
+  
+  let sent = 0;
+  let errors = 0;
+  
+  for (const invoice of pendientes) {
+    try {
+      // Llamar ChileAPI
+      const apiResult = await sendToChileAPI(invoice);
+      
+      // Actualizar como enviada
+      await pool.query(`
+        UPDATE processed_invoices
+        SET status = 'SENT',
+            chile_api_folio = $1,
+            chile_api_track_id = $2,
+            pdf_url = $3,
+            xml_url = $4,
+            sent_at = NOW()
+        WHERE id = $5
+      `, [
+        apiResult.folio,
+        apiResult.trackId,
+        apiResult.pdfUrl,
+        apiResult.xmlUrl,
+        invoice.id
+      ]);
+      
+      sent++;
+      console.log(`  ✓ Invoice ${invoice.folio} sent`);
+      
+      // Pequeña pausa entre envíos
+      await sleep(500);
+      
+    } catch (error) {
+      errors++;
+      console.error(`  ✗ Invoice ${invoice.folio} failed:`, error.message);
+      
+      // Actualizar como error
+      await pool.query(`
+        UPDATE processed_invoices
+        SET status = 'ERROR',
+            error_message = $1,
+            retry_count = retry_count + 1
+        WHERE id = $2
+      `, [error.message, invoice.id]);
+      
+      // Crear alerta si muchos reintentos
+      if (invoice.retry_count >= 3) {
+        await pool.query(`
+          INSERT INTO alerts (type, license_key, severity, details)
+          VALUES ('invoice_failed', $1, 'ERROR', $2)
+        `, [
+          invoice.license_key,
+          JSON.stringify({
+            invoiceId: invoice.id,
+            folio: invoice.folio,
+            error: error.message,
+            retries: invoice.retry_count + 1
+          })
+        ]);
+      }
+    }
+  }
+  
+  console.log(`[CRON] Batch completed: ${sent} sent, ${errors} errors`);
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+\end{lstlisting}
+
+\newpage
+
+\section{Checklist Implementación}
+
+\subsection{Semana 1-2: Base}
+
+\begin{itemize}
+    \item[$\square$] Setup proyecto Electron
+    \item[$\square$] Configurar Vite + React
+    \item[$\square$] Implementar database/connection.js
+    \item[$\square$] Crear tablas SQLite
+    \item[$\square$] Implementar preload.js
+    \item[$\square$] Crear componentes UI base (Button, Input, Table, Modal)
+    \item[$\square$] Implementar Layout (Navbar + Sidebar)
+    \item[$\square$] Página Clientes - CRUD completo
+    \item[$\square$] Página Productos - CRUD completo
+    \item[$\square$] Importación Excel (clientes y productos)
+    \item[$\square$] Testing manual funcionalidades
+\end{itemize}
+
+\subsection{Semana 3-4: Facturación}
+
+\begin{itemize}
+    \item[$\square$] Generador XML DTE (según formato SII)
+    \item[$\square$] Generador PDF facturas (jsPDF)
+    \item[$\square$] Formulario crear factura (selector cliente + productos)
+    \item[$\square$] Cálculo automático IVA
+    \item[$\square$] Sistema folios (auto-incremento)
+    \item[$\square$] Sistema idempotency keys
+    \item[$\square$] Guardar facturas con estado PENDIENTE
+    \item[$\square$] Lista facturas (filtros por estado)
+    \item[$\square$] Detalle factura (modal)
+    \item[$\square$] Actualización stock automática
+    \item[$\square$] Testing flujo completo
+\end{itemize}
+
+\subsection{Semana 5: Features Adicionales}
+
+\begin{itemize}
+    \item[$\square$] Guías de despacho (formulario + PDF)
+    \item[$\square$] Ventas a crédito (campo fecha vencimiento)
+    \item[$\square$] Registro pagos crédito
+    \item[$\square$] Dashboard cuentas por cobrar
+    \item[$\square$] Alertas deudas vencidas
+    \item[$\square$] Reportes ventas diarias
+    \item[$\square$] Reportes ventas mensuales
+    \item[$\square$] Testing features
+\end{itemize}
+
+\subsection{Semana 6: Servidor + Deploy}
+
+\begin{itemize}
+    \item[$\square$] Setup servidor Node.js
+    \item[$\square$] Configurar PostgreSQL (Railway)
+    \item[$\square$] Implementar schema.sql
+    \item[$\square$] Endpoints licencias (validar, activar)
+    \item[$\square$] Endpoint enviar factura (POST /invoices)
+    \item[$\square$] Servicio ChileAPI wrapper
+    \item[$\square$] Cron job envío batch SII
+    \item[$\square$] Machine ID fingerprinting
+    \item[$\square$] Deploy servidor a Railway
+    \item[$\square$] Configurar Electron Builder
+    \item[$\square$] Generar instalador Windows
+    \item[$\square$] Testing con tío (beta real)
+    \item[$\square$] Fixes basados en feedback
+    \item[$\square$] Documentación README
+\end{itemize}
+
+\newpage
+
+\section{Comandos Útiles}
+
+\subsection{Desarrollo}
+
+\begin{lstlisting}[language=bash]
+# Electron App
+cd electron-app
+npm run dev              # Vite dev server + Electron
+
+# Servidor
+cd server
+npm run dev              # Nodemon auto-reload
+
+# Ambos simultáneamente (con concurrently)
+npm install -g concurrently
+concurrently "cd electron-app && npm run dev" "cd server && npm run dev"
+\end{lstlisting}
+
+\subsection{Build Producción}
+
+\begin{lstlisting}[language=bash]
+# Build instalador Windows
+cd electron-app
+npm run build:renderer   # Compilar React
+npm run build            # Electron Builder
+
+# Resultado:
+# dist/Sistema-Facturacion-Setup-1.0.0.exe
+\end{lstlisting}
+
+\subsection{Deploy Servidor}
+
+\begin{lstlisting}[language=bash]
+# Railway CLI
+railway login
+railway init
+railway up
+
+# O desde GitHub (auto-deploy)
+# 1. Push a GitHub
+# 2. Conectar repo en Railway dashboard
+# 3. Auto-deploy en cada push
+\end{lstlisting}
+
+\subsection{Database}
+
+\begin{lstlisting}[language=bash]
+# SQLite local (desarrollo)
+sqlite3 ~/AppData/Roaming/sistema-facturacion/facturacion.db
+.tables
+SELECT * FROM clientes LIMIT 5;
+
+# PostgreSQL remoto (Railway)
+railway connect postgres
+\dt
+SELECT * FROM licenses;
+\end{lstlisting}
+
+\newpage
+
+\section{Consideraciones Importantes}
+
+\subsection{Seguridad}
+
+\begin{itemize}
+    \item \textbf{Nunca exponer API keys en código cliente}
+    \begin{itemize}
+        \item ChileAPI key SOLO en servidor
+        \item Variables entorno (.env) para secretos
+        \item .gitignore para .env
+    \end{itemize}
+    
+    \item \textbf{Validar TODAS las entradas}
+    \begin{itemize}
+        \item RUT format
+        \item Email format
+        \item Números positivos
+        \item SQL injection (usar prepared statements)
+    \end{itemize}
+    
+    \item \textbf{Ofuscar código antes de build producción}
+    \begin{itemize}
+        \item javascript-obfuscator
+        \item Aplicar en build script
+    \end{itemize}
+\end{itemize}
+
+\subsection{Performance}
+
+\begin{itemize}
+    \item \textbf{Indices DB}
+    \begin{itemize}
+        \item Todos los campos de búsqueda indexados
+        \item Foreign keys indexadas
+    \end{itemize}
+    
+    \item \textbf{Paginación}
+    \begin{itemize}
+        \item Listas grandes (productos, facturas) con LIMIT
+        \item Scroll infinito o paginación tradicional
+    \end{itemize}
+    
+    \item \textbf{Lazy loading}
+    \begin{itemize}
+        \item Componentes React con React.lazy()
+        \item Imágenes/PDFs carga diferida
+    \end{itemize}
+\end{itemize}
+
+\subsection{Testing}
+
+\begin{itemize}
+    \item \textbf{Manual testing crítico}
+    \begin{itemize}
+        \item Flujo completo crear factura
+        \item Importación Excel (archivos variados)
+        \item Escenarios error (RUT duplicado, stock insuficiente)
+    \end{itemize}
+    
+    \item \textbf{Beta testing}
+    \begin{itemize}
+        \item Tío como primer beta tester
+        \item Mínimo 1 semana uso real
+        \item Recopilar feedback detallado
+    \end{itemize}
+\end{itemize}
+
+\subsection{Documentación}
+
+\begin{itemize}
+    \item \textbf{README.md claro}
+    \begin{itemize}
+        \item Setup desarrollo
+        \item Comandos principales
+        \item Estructura proyecto
+    \end{itemize}
+    
+    \item \textbf{Comentarios código}
+    \begin{itemize}
+        \item Funciones complejas
+        \item Lógica de negocio
+        \item TODOs para futuro
+    \end{itemize}
+    
+    \item \textbf{Manual usuario}
+    \begin{itemize}
+        \item Screenshots flujos principales
+        \item FAQs
+        \item Troubleshooting común
+    \end{itemize}
+\end{itemize}
+
+\section{Próximos Pasos}
+
+\begin{enumerate}
+    \item \textbf{Crear repositorio Git}
+    \begin{lstlisting}[language=bash]
+git init
+git add .
+git commit -m "Initial commit: Project structure"
+git remote add origin <tu-repo>
+git push -u origin main
+    \end{lstlisting}
+    
+    \item \textbf{Setup entorno desarrollo}
+    \begin{itemize}
+        \item Instalar Node.js 20.x LTS
+        \item Instalar VS Code + extensiones
+        \item Clonar estructura carpetas
+    \end{itemize}
+    
+    \item \textbf{Empezar con lo básico}
+    \begin{itemize}
+        \item Implementar database/connection.js
+        \item Crear tabla clientes
+        \item CRUD clientes funcionando
+        \item Después expandir a productos, facturas
+    \end{itemize}
+    
+    \item \textbf{Iterar rápido}
+    \begin{itemize}
+        \item Commits frecuentes
+        \item Testing manual continuo
+        \item Ajustar según lo que funcione
+    \end{itemize}
+\end{enumerate}
+
+\vspace{1cm}
+
+\textbf{Este documento es tu guía completa.}
+
+\textbf{Ahora: Ejecutar.} ��
+
+\end{document}
