@@ -40,27 +40,65 @@ function Facturas() {
   };
 
   const handleFacturaCreada = async (data) => {
-    // Recargar facturas
-    await cargarFacturas();
+    try {
+      // Recargar facturas
+      await cargarFacturas();
 
-    // Obtener la factura completa para generar PDF
-    const result = await window.api.facturas.getById(data.id);
-    if (result.success) {
-      // Generar y abrir PDF
-      const pdf = await generarPDFFactura(result.data, emisor);
-      abrirPDF(pdf);
+      // Obtener la factura completa para generar PDF
+      const result = await window.api.facturas.getById(data.id);
+      if (result.success) {
+        // Generar PDF
+        const pdf = await generarPDFFactura(result.data, emisor);
+
+        // Guardar PDF en disco
+        const { guardarPDFEnDisco } = await import('../../utils/generarPDF');
+        const pdfPath = await guardarPDFEnDisco(pdf, result.data.folio);
+
+        // Actualizar la factura con la ruta del PDF
+        await window.api.facturas.updatePDFPath({
+          id: data.id,
+          pdfPath: pdfPath
+        });
+
+        // Abrir PDF guardado
+        const { abrirPDFGuardado } = await import('../../utils/generarPDF');
+        await abrirPDFGuardado(pdfPath);
+      }
+
+      // Volver a la lista
+      setView('list');
+    } catch (error) {
+      console.error('Error en handleFacturaCreada:', error);
+      alert('Error al procesar la factura. Por favor intente nuevamente.');
     }
-
-    // Volver a la lista
-    setView('list');
   };
 
   const handleVerPDF = async (facturaId) => {
     try {
       const result = await window.api.facturas.getById(facturaId);
       if (result.success) {
-        const pdf = await generarPDFFactura(result.data, emisor);
-        abrirPDF(pdf);
+        const factura = result.data;
+
+        // Si la factura ya tiene PDF guardado, abrirlo
+        if (factura.pdf_path) {
+          const { abrirPDFGuardado } = await import('../../utils/generarPDF');
+          await abrirPDFGuardado(factura.pdf_path);
+        } else {
+          // Si no tiene PDF guardado, generarlo y guardarlo
+          const pdf = await generarPDFFactura(factura, emisor);
+
+          const { guardarPDFEnDisco, abrirPDFGuardado } = await import('../../utils/generarPDF');
+          const pdfPath = await guardarPDFEnDisco(pdf, factura.folio);
+
+          // Actualizar la factura con la ruta del PDF
+          await window.api.facturas.updatePDFPath({
+            id: facturaId,
+            pdfPath: pdfPath
+          });
+
+          // Abrir PDF guardado
+          await abrirPDFGuardado(pdfPath);
+        }
       }
     } catch (error) {
       console.error('Error generando PDF:', error);
@@ -169,21 +207,21 @@ function Facturas() {
                 <div style={styles.statValue}>{totales.todos}</div>
               </div>
             </div>
-            <div style={{...styles.statCard, borderLeft: '4px solid #ffc107'}}>
+            <div style={{ ...styles.statCard, borderLeft: '4px solid #ffc107' }}>
               <div style={styles.statIcon}>⏳</div>
               <div>
                 <div style={styles.statLabel}>Pendientes</div>
                 <div style={styles.statValue}>{totales.pendiente}</div>
               </div>
             </div>
-            <div style={{...styles.statCard, borderLeft: '4px solid #28a745'}}>
+            <div style={{ ...styles.statCard, borderLeft: '4px solid #28a745' }}>
               <div style={styles.statIcon}>✅</div>
               <div>
                 <div style={styles.statLabel}>Pagadas</div>
                 <div style={styles.statValue}>{totales.pagada}</div>
               </div>
             </div>
-            <div style={{...styles.statCard, borderLeft: '4px solid #dc3545'}}>
+            <div style={{ ...styles.statCard, borderLeft: '4px solid #dc3545' }}>
               <div style={styles.statIcon}>⚠️</div>
               <div>
                 <div style={styles.statLabel}>Vencidas</div>

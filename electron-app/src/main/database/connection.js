@@ -189,6 +189,74 @@ function createTables() {
     )
   `);
 
+  // Migración: Eliminar columna subtotal de factura_items si existe (columna antigua)
+  try {
+    // Verificar si la columna existe
+    const tableInfo = db.prepare("PRAGMA table_info(factura_items)").all();
+    const hasSubtotal = tableInfo.some(col => col.name === 'subtotal');
+    
+    if (hasSubtotal) {
+      console.log('Removing old subtotal column from factura_items...');
+      
+      // SQLite no permite DROP COLUMN directamente, hay que recrear la tabla
+      db.exec(`
+        BEGIN TRANSACTION;
+        
+        -- Crear tabla temporal con la estructura correcta
+        CREATE TABLE factura_items_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          factura_id INTEGER NOT NULL,
+          numero_linea INTEGER NOT NULL,
+          producto_id INTEGER,
+          codigo_item TEXT,
+          descripcion TEXT NOT NULL,
+          cantidad REAL NOT NULL,
+          unidad TEXT DEFAULT 'UN',
+          precio_unitario REAL NOT NULL,
+          descuento REAL DEFAULT 0,
+          monto_item REAL NOT NULL,
+          FOREIGN KEY (factura_id) REFERENCES facturas (id) ON DELETE CASCADE,
+          FOREIGN KEY (producto_id) REFERENCES productos (id)
+        );
+        
+        -- Copiar datos (sin la columna subtotal)
+        INSERT INTO factura_items_new 
+          (id, factura_id, numero_linea, producto_id, codigo_item, descripcion, 
+           cantidad, unidad, precio_unitario, descuento, monto_item)
+        SELECT 
+          id, factura_id, 
+          COALESCE(numero_linea, 1) as numero_linea,
+          producto_id, 
+          codigo_item, 
+          descripcion, 
+          cantidad, 
+          COALESCE(unidad, 'UN') as unidad,
+          precio_unitario, 
+          COALESCE(descuento, 0) as descuento,
+          COALESCE(monto_item, cantidad * precio_unitario) as monto_item
+        FROM factura_items;
+        
+        -- Eliminar tabla antigua
+        DROP TABLE factura_items;
+        
+        -- Renombrar tabla nueva
+        ALTER TABLE factura_items_new RENAME TO factura_items;
+        
+        COMMIT;
+      `);
+      
+      console.log('Old subtotal column removed successfully');
+    }
+  } catch (error) {
+    console.error('Error removing subtotal column:', error);
+    // Si hay error, hacer rollback
+    try {
+      db.exec('ROLLBACK');
+    } catch (e) {
+      // Ignorar error de rollback
+    }
+  }
+
   // Migraciones: Agregar columnas nuevas si no existen
   const migrateColumns = [
     // Facturas
@@ -197,6 +265,7 @@ function createTables() {
     { table: 'facturas', column: 'condiciones_pago', definition: 'TEXT' },
     { table: 'facturas', column: 'monto_exento', definition: 'REAL DEFAULT 0' },
     { table: 'facturas', column: 'descuento_global', definition: 'REAL DEFAULT 0' },
+    { table: 'facturas', column: 'pdf_path', definition: 'TEXT' }, // Ruta al PDF guardado
     // Factura Items
     { table: 'factura_items', column: 'numero_linea', definition: 'INTEGER DEFAULT 1' },
     { table: 'factura_items', column: 'codigo_item', definition: 'TEXT' },

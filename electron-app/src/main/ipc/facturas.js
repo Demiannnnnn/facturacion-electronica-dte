@@ -388,5 +388,113 @@ export function registerFacturasHandlers() {
     }
   });
 
+  // Guardar PDF en disco
+  ipcMain.handle('facturas:savePDF', async (event, { fileName, buffer }) => {
+    try {
+      const path = await import('path');
+      const fs = await import('fs/promises');
+      const { app } = await import('electron');
+
+      // Obtener la ruta del proyecto (directorio donde está package.json)
+      const projectRoot = app.getAppPath().includes('app.asar')
+        ? path.join(process.resourcesPath, '..')
+        : path.join(app.getAppPath(), '../..');
+
+      const pdfsDir = path.join(projectRoot, 'PDFs');
+
+      // Crear directorio PDFs si no existe
+      try {
+        await fs.access(pdfsDir);
+      } catch {
+        await fs.mkdir(pdfsDir, { recursive: true });
+      }
+
+      const filePath = path.join(pdfsDir, fileName);
+
+      // Convertir array a Buffer y guardar
+      const bufferData = Buffer.from(buffer);
+      await fs.writeFile(filePath, bufferData);
+
+      console.log('PDF saved to:', filePath);
+
+      return {
+        success: true,
+        path: filePath
+      };
+    } catch (error) {
+      console.error('Error saving PDF:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  });
+
+  // Abrir PDF guardado
+  ipcMain.handle('facturas:openPDF', async (event, pdfPath) => {
+    try {
+      const { shell } = await import('electron');
+      const fs = await import('fs/promises');
+
+      // Verificar que el archivo existe
+      try {
+        await fs.access(pdfPath);
+      } catch {
+        return {
+          success: false,
+          error: 'El archivo PDF no existe'
+        };
+      }
+
+      // Abrir con la aplicación predeterminada del sistema
+      await shell.openPath(pdfPath);
+
+      return {
+        success: true
+      };
+    } catch (error) {
+      console.error('Error opening PDF:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  });
+
+  // Actualizar ruta del PDF en la factura
+  ipcMain.handle('facturas:updatePDFPath', async (event, { id, pdfPath }) => {
+    try {
+      const db = getDatabase();
+      const now = new Date().toISOString();
+
+      const stmt = db.prepare(`
+        UPDATE facturas
+        SET pdf_path = ?, updated_at = ?
+        WHERE id = ?
+      `);
+
+      const result = stmt.run(pdfPath, now, id);
+
+      if (result.changes === 0) {
+        return {
+          success: false,
+          error: 'Factura no encontrada'
+        };
+      }
+
+      console.log('PDF path updated for factura:', id);
+
+      return {
+        success: true
+      };
+    } catch (error) {
+      console.error('Error updating PDF path:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  });
+
   console.log('Facturas IPC handlers registered');
 }

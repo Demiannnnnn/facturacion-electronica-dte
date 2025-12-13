@@ -1,5 +1,4 @@
-import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import jsPDF from 'jspdf';
 import { formatearRut } from './validaciones';
 
 /**
@@ -8,6 +7,9 @@ import { formatearRut } from './validaciones';
  * @param {Object} emisor - Datos del emisor (empresa)
  */
 export async function generarPDFFactura(factura, emisor) {
+  // Importar autoTable dinámicamente
+  const { default: autoTable } = await import('jspdf-autotable');
+
   const doc = new jsPDF();
 
   const pageWidth = doc.internal.pageSize.width;
@@ -127,7 +129,8 @@ export async function generarPDFFactura(factura, emisor) {
     formatearMoneda(item.monto_item)
   ]);
 
-  doc.autoTable({
+  // Usar autoTable como función, no como método
+  autoTable(doc, {
     startY: yPos,
     head: [['#', 'Descripción', 'Cantidad', 'P. Unitario', 'Desc.', 'Total']],
     body: tableData,
@@ -218,7 +221,61 @@ export async function generarPDFFactura(factura, emisor) {
 }
 
 /**
- * Abre el PDF en una nueva ventana
+ * Guarda el PDF en disco y retorna la ruta
+ * @param {jsPDF} doc - Documento PDF
+ * @param {number} folio - Número de folio de la factura
+ * @returns {Promise<string>} Ruta relativa al PDF guardado
+ */
+export async function guardarPDFEnDisco(doc, folio) {
+  try {
+    // Generar nombre de archivo
+    const fileName = `factura-${folio}.pdf`;
+
+    // Obtener el blob del PDF
+    const pdfBlob = doc.output('blob');
+
+    // Convertir blob a array buffer
+    const arrayBuffer = await pdfBlob.arrayBuffer();
+
+    // Convertir ArrayBuffer a Array (sin usar Buffer que no existe en el navegador)
+    const uint8Array = new Uint8Array(arrayBuffer);
+    const byteArray = Array.from(uint8Array);
+
+    // Solicitar al proceso principal que guarde el archivo
+    const result = await window.api.facturas.savePDF({
+      fileName: fileName,
+      buffer: byteArray
+    });
+
+    if (result.success) {
+      return result.path;
+    } else {
+      throw new Error(result.error || 'Error al guardar PDF');
+    }
+  } catch (error) {
+    console.error('Error al guardar PDF en disco:', error);
+    throw error;
+  }
+}
+
+/**
+ * Abre el PDF guardado en disco
+ * @param {string} pdfPath - Ruta al archivo PDF
+ */
+export async function abrirPDFGuardado(pdfPath) {
+  try {
+    const result = await window.api.facturas.openPDF(pdfPath);
+    if (!result.success) {
+      throw new Error(result.error || 'Error al abrir PDF');
+    }
+  } catch (error) {
+    console.error('Error al abrir PDF:', error);
+    alert('Error al abrir el PDF. El archivo puede no existir.');
+  }
+}
+
+/**
+ * Abre el PDF en una nueva ventana (versión anterior - mantener para compatibilidad)
  */
 export function abrirPDF(doc) {
   try {

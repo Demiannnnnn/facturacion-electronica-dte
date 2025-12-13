@@ -43,7 +43,10 @@ contextBridge.exposeInMainWorld('api', {
     getAll: () => ipcRenderer.invoke('facturas:getAll'),
     getById: (id) => ipcRenderer.invoke('facturas:getById', id),
     updateEstado: (data) => ipcRenderer.invoke('facturas:updateEstado', data),
-    search: (filters) => ipcRenderer.invoke('facturas:search', filters)
+    search: (filters) => ipcRenderer.invoke('facturas:search', filters),
+    savePDF: (data) => ipcRenderer.invoke('facturas:savePDF', data),
+    openPDF: (path) => ipcRenderer.invoke('facturas:openPDF', path),
+    updatePDFPath: (data) => ipcRenderer.invoke('facturas:updatePDFPath', data)
   },
 
   // Emisor
