@@ -106,10 +106,15 @@ function createTables() {
     CREATE TABLE IF NOT EXISTS facturas (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       folio INTEGER UNIQUE NOT NULL,
+      tipo_documento INTEGER DEFAULT 33,
       cliente_id INTEGER NOT NULL,
       fecha TEXT NOT NULL,
       fecha_vencimiento TEXT,
+      forma_pago TEXT DEFAULT 'contado',
+      condiciones_pago TEXT,
       subtotal REAL NOT NULL,
+      monto_exento REAL DEFAULT 0,
+      descuento_global REAL DEFAULT 0,
       iva REAL NOT NULL,
       total REAL NOT NULL,
       estado TEXT DEFAULT 'pendiente',
@@ -125,11 +130,15 @@ function createTables() {
     CREATE TABLE IF NOT EXISTS factura_items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       factura_id INTEGER NOT NULL,
+      numero_linea INTEGER NOT NULL,
       producto_id INTEGER,
+      codigo_item TEXT,
       descripcion TEXT NOT NULL,
       cantidad REAL NOT NULL,
+      unidad TEXT DEFAULT 'UN',
       precio_unitario REAL NOT NULL,
-      subtotal REAL NOT NULL,
+      descuento REAL DEFAULT 0,
+      monto_item REAL NOT NULL,
       FOREIGN KEY (factura_id) REFERENCES facturas (id) ON DELETE CASCADE,
       FOREIGN KEY (producto_id) REFERENCES productos (id)
     )
@@ -143,6 +152,87 @@ function createTables() {
       updated_at TEXT NOT NULL
     )
   `);
+
+  // Tabla de emisor (datos de la empresa)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS emisor (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      rut TEXT UNIQUE NOT NULL,
+      razon_social TEXT NOT NULL,
+      nombre_fantasia TEXT,
+      giro TEXT NOT NULL,
+      direccion TEXT NOT NULL,
+      comuna TEXT NOT NULL,
+      ciudad TEXT NOT NULL,
+      region TEXT,
+      telefono TEXT,
+      email TEXT,
+      logo_path TEXT,
+      resolucion_sii TEXT,
+      numero_resolucion TEXT,
+      fecha_resolucion TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+  `);
+
+  // Tabla de folios
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS folios (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      tipo_documento INTEGER NOT NULL,
+      desde INTEGER NOT NULL,
+      hasta INTEGER NOT NULL,
+      actual INTEGER NOT NULL,
+      created_at TEXT NOT NULL,
+      UNIQUE(tipo_documento)
+    )
+  `);
+
+  // Migraciones: Agregar columnas nuevas si no existen
+  const migrateColumns = [
+    // Facturas
+    { table: 'facturas', column: 'tipo_documento', definition: 'INTEGER DEFAULT 33' },
+    { table: 'facturas', column: 'forma_pago', definition: 'TEXT DEFAULT "contado"' },
+    { table: 'facturas', column: 'condiciones_pago', definition: 'TEXT' },
+    { table: 'facturas', column: 'monto_exento', definition: 'REAL DEFAULT 0' },
+    { table: 'facturas', column: 'descuento_global', definition: 'REAL DEFAULT 0' },
+    // Factura Items
+    { table: 'factura_items', column: 'numero_linea', definition: 'INTEGER DEFAULT 1' },
+    { table: 'factura_items', column: 'codigo_item', definition: 'TEXT' },
+    { table: 'factura_items', column: 'unidad', definition: 'TEXT DEFAULT "UN"' },
+    { table: 'factura_items', column: 'descuento', definition: 'REAL DEFAULT 0' },
+    { table: 'factura_items', column: 'monto_item', definition: 'REAL DEFAULT 0' }
+  ];
+
+  migrateColumns.forEach(({ table, column, definition }) => {
+    try {
+      db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+      console.log(`Column ${column} added to ${table} table`);
+    } catch (error) {
+      // La columna ya existe, ignorar el error
+      if (!error.message.includes('duplicate column name')) {
+        console.error(`Error adding column ${column} to ${table}:`, error);
+      }
+    }
+  });
+
+  // Inicializar folio si no existe
+  try {
+    const folioExists = db.prepare('SELECT COUNT(*) as count FROM folios WHERE tipo_documento = 33').get();
+    if (folioExists.count === 0) {
+      db.prepare('INSERT INTO folios (tipo_documento, desde, hasta, actual, created_at) VALUES (?, ?, ?, ?, ?)').run(
+        33, // Factura Electrónica
+        1,
+        10000,
+        1,
+        new Date().toISOString()
+      );
+      console.log('Folio inicial creado para facturas electrónicas');
+    }
+  } catch (error) {
+    console.error('Error initializing folios:', error);
+  }
 
   console.log('Tables created successfully');
 }

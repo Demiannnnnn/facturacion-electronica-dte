@@ -8,6 +8,7 @@ import { initDatabase } from './database/connection.js';
 import { registerAuthHandlers } from './ipc/auth.js';
 import { registerClientesHandlers } from './ipc/clientes.js';
 import { registerProductosHandlers } from './ipc/productos.js';
+import { registerFacturasHandlers } from './ipc/facturas.js';
 import { createMenu } from './menu.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -52,6 +53,7 @@ app.whenReady().then(() => {
   registerAuthHandlers();
   registerClientesHandlers();
   registerProductosHandlers();
+  registerFacturasHandlers();
 
   // Crear menú en español
   createMenu();

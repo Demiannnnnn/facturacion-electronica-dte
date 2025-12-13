@@ -1,36 +1,90 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import FormularioFactura from '../../components/facturas/FormularioFactura';
+import { generarPDFFactura, abrirPDF } from '../../utils/generarPDF';
+import { formatearRut } from '../../utils/validaciones';
 
 function Facturas() {
   const [view, setView] = useState('list');
   const [filterEstado, setFilterEstado] = useState('todos');
+  const [facturas, setFacturas] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [emisor, setEmisor] = useState(null);
 
-  // Mock data
-  const facturas = [
-    {
-      id: 1,
-      folio: 1001,
-      cliente: 'Empresa Ejemplo SpA',
-      fecha: '2025-12-10',
-      total: 250000,
-      estado: 'pagada'
-    },
-    {
-      id: 2,
-      folio: 1002,
-      cliente: 'Comercial ABC Ltda',
-      fecha: '2025-12-11',
-      total: 180000,
-      estado: 'pendiente'
-    },
-    {
-      id: 3,
-      folio: 1003,
-      cliente: 'Distribuidora XYZ',
-      fecha: '2025-12-12',
-      total: 420000,
-      estado: 'vencida'
+  useEffect(() => {
+    cargarFacturas();
+    cargarEmisor();
+  }, []);
+
+  const cargarFacturas = async () => {
+    setIsLoading(true);
+    try {
+      const result = await window.api.facturas.getAll();
+      if (result.success) {
+        setFacturas(result.data);
+      }
+    } catch (error) {
+      console.error('Error cargando facturas:', error);
     }
-  ];
+    setIsLoading(false);
+  };
+
+  const cargarEmisor = async () => {
+    try {
+      const result = await window.api.emisor.get();
+      if (result.success && result.data) {
+        setEmisor(result.data);
+      }
+    } catch (error) {
+      console.error('Error cargando emisor:', error);
+    }
+  };
+
+  const handleFacturaCreada = async (data) => {
+    // Recargar facturas
+    await cargarFacturas();
+
+    // Obtener la factura completa para generar PDF
+    const result = await window.api.facturas.getById(data.id);
+    if (result.success) {
+      // Generar y abrir PDF
+      const pdf = await generarPDFFactura(result.data, emisor);
+      abrirPDF(pdf);
+    }
+
+    // Volver a la lista
+    setView('list');
+  };
+
+  const handleVerPDF = async (facturaId) => {
+    try {
+      const result = await window.api.facturas.getById(facturaId);
+      if (result.success) {
+        const pdf = await generarPDFFactura(result.data, emisor);
+        abrirPDF(pdf);
+      }
+    } catch (error) {
+      console.error('Error generando PDF:', error);
+      alert('Error al generar el PDF');
+    }
+  };
+
+  const handleCambiarEstado = async (facturaId, nuevoEstado) => {
+    try {
+      const result = await window.api.facturas.updateEstado({
+        id: facturaId,
+        estado: nuevoEstado
+      });
+
+      if (result.success) {
+        await cargarFacturas();
+      } else {
+        alert('Error al actualizar el estado');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al actualizar el estado');
+    }
+  };
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('es-CL', {
@@ -69,23 +123,43 @@ function Facturas() {
     monto: facturas.reduce((sum, f) => sum + f.total, 0)
   };
 
+  // Si no hay emisor configurado, mostrar mensaje
+  if (!emisor && view === 'form') {
+    return (
+      <div style={styles.container}>
+        <div style={styles.warningBox}>
+          <h2>⚠️ Configuración Requerida</h2>
+          <p>Antes de crear facturas, debes configurar los datos de tu empresa en la sección de Configuración.</p>
+          <button onClick={() => setView('list')} style={styles.button}>
+            Volver
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={styles.container}>
-      <div style={styles.header}>
-        <div>
-          <h1 style={styles.title}>📄 Gestión de Facturas</h1>
-          <p style={styles.subtitle}>Administra tus documentos tributarios electrónicos</p>
-        </div>
-        <button
-          onClick={() => setView('form')}
-          style={styles.newButton}
-        >
-          + Nueva Factura
-        </button>
-      </div>
-
-      {view === 'list' ? (
+      {view === 'form' ? (
+        <FormularioFactura
+          onCancel={() => setView('list')}
+          onSuccess={handleFacturaCreada}
+        />
+      ) : (
         <>
+          <div style={styles.header}>
+            <div>
+              <h1 style={styles.title}>📄 Gestión de Facturas</h1>
+              <p style={styles.subtitle}>Administra tus documentos tributarios electrónicos</p>
+            </div>
+            <button
+              onClick={() => setView('form')}
+              style={styles.newButton}
+            >
+              + Nueva Factura
+            </button>
+          </div>
+
           {/* Cards de resumen */}
           <div style={styles.statsGrid}>
             <div style={styles.statCard}>
@@ -160,11 +234,11 @@ function Facturas() {
                   filteredFacturas.map((factura) => (
                     <tr key={factura.id} style={styles.tr}>
                       <td style={styles.td}>
-                        <span style={styles.folio}>{factura.folio}</span>
+                        <span style={styles.folio}>#{factura.folio}</span>
                       </td>
-                      <td style={styles.td}>{factura.cliente}</td>
+                      <td style={styles.td}>{factura.cliente_nombre}</td>
                       <td style={styles.td}>
-                        {new Date(factura.fecha).toLocaleDateString('es-CL')}
+                        {new Date(factura.fecha + 'T00:00:00').toLocaleDateString('es-CL')}
                       </td>
                       <td style={styles.td}>
                         <strong>{formatPrice(factura.total)}</strong>
@@ -173,9 +247,24 @@ function Facturas() {
                         {getEstadoBadge(factura.estado)}
                       </td>
                       <td style={styles.td}>
-                        <button style={styles.actionBtn} title="Ver">👁️</button>
-                        <button style={styles.actionBtn} title="Descargar PDF">📥</button>
-                        <button style={styles.actionBtn} title="Enviar Email">📧</button>
+                        <button
+                          style={styles.actionBtn}
+                          title="Ver PDF"
+                          onClick={() => handleVerPDF(factura.id)}
+                        >
+                          📄
+                        </button>
+                        <select
+                          value={factura.estado}
+                          onChange={(e) => handleCambiarEstado(factura.id, e.target.value)}
+                          style={styles.estadoSelect}
+                          title="Cambiar estado"
+                        >
+                          <option value="pendiente">Pendiente</option>
+                          <option value="pagada">Pagada</option>
+                          <option value="vencida">Vencida</option>
+                          <option value="anulada">Anulada</option>
+                        </select>
                       </td>
                     </tr>
                   ))
@@ -185,23 +274,9 @@ function Facturas() {
           </div>
 
           <div style={styles.totalBar}>
-            <strong>Total visualizado: {formatPrice(filteredFacturas.reduce((sum, f) => sum + f.total, 0))}</strong>
+            <strong>Total visualizado: {formatPrice(filteredFacturas.reduce((sum, f) => sum + parseFloat(f.total || 0), 0))}</strong>
           </div>
         </>
-      ) : (
-        <div style={styles.formContainer}>
-          <h2 style={styles.formTitle}>Nueva Factura</h2>
-          <p style={styles.formSubtitle}>
-            El formulario de facturación se implementará con selección de cliente,
-            productos, cálculo automático de IVA y generación de XML DTE.
-          </p>
-          <button
-            onClick={() => setView('list')}
-            style={styles.backButton}
-          >
-            ← Volver al listado
-          </button>
-        </div>
       )}
     </div>
   );
@@ -371,6 +446,35 @@ const styles = {
     border: 'none',
     borderRadius: '4px',
     cursor: 'pointer'
+  },
+  estadoSelect: {
+    padding: '6px 10px',
+    fontSize: '13px',
+    border: '1px solid #dee2e6',
+    borderRadius: '4px',
+    backgroundColor: 'white',
+    cursor: 'pointer',
+    color: '#495057'
+  },
+  warningBox: {
+    maxWidth: '600px',
+    margin: '60px auto',
+    padding: '40px',
+    backgroundColor: '#fff3cd',
+    border: '2px solid #ffc107',
+    borderRadius: '8px',
+    textAlign: 'center'
+  },
+  button: {
+    padding: '10px 24px',
+    fontSize: '14px',
+    fontWeight: '600',
+    backgroundColor: '#007bff',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    marginTop: '20px'
   }
 };
 

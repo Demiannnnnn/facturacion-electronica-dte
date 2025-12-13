@@ -11,6 +11,7 @@ import Facturas from './pages/Facturas';
 import Reportes from './pages/Reportes';
 import Layout from './components/layout/Layout';
 import ChangePassword from './pages/Configuracion/ChangePassword';
+import EmisorConfig from './pages/Configuracion/EmisorConfig';
 
 function App() {
   return (
@@ -81,6 +82,17 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <ChangePassword />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/configuracion/emisor"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <EmisorConfig />
                 </Layout>
               </ProtectedRoute>
             }

@@ -24,7 +24,8 @@ function Layout({ children }) {
     { path: '/clientes', label: 'Clientes', icon: '👥' },
     { path: '/productos', label: 'Productos', icon: '📦' },
     { path: '/facturas', label: 'Facturas', icon: '📄' },
-    { path: '/reportes', label: 'Reportes', icon: '📈' }
+    { path: '/reportes', label: 'Reportes', icon: '📈' },
+    { path: '/configuracion/emisor', label: 'Configuración', icon: '⚙️' }
   ];
 
   const isActive = (path) => {
@@ -184,7 +185,10 @@ const styles = {
     width: '100%',
     padding: '15px 20px',
     backgroundColor: 'transparent',
-    border: 'none',
+    borderTop: 'none',
+    borderRight: 'none',
+    borderBottom: 'none',
+    borderLeft: 'none',
     color: '#ecf0f1',
     fontSize: '16px',
     cursor: 'pointer',

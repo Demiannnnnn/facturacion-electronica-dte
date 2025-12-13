@@ -38,7 +38,17 @@ contextBridge.exposeInMainWorld('api', {
 
   // Facturas
   facturas: {
-    create: (factura) => ipcRenderer.invoke('facturas:create', factura),
-    getAll: () => ipcRenderer.invoke('facturas:getAll')
+    getNextFolio: () => ipcRenderer.invoke('facturas:getNextFolio'),
+    create: (data) => ipcRenderer.invoke('facturas:create', data),
+    getAll: () => ipcRenderer.invoke('facturas:getAll'),
+    getById: (id) => ipcRenderer.invoke('facturas:getById', id),
+    updateEstado: (data) => ipcRenderer.invoke('facturas:updateEstado', data),
+    search: (filters) => ipcRenderer.invoke('facturas:search', filters)
+  },
+
+  // Emisor
+  emisor: {
+    get: () => ipcRenderer.invoke('emisor:get'),
+    save: (data) => ipcRenderer.invoke('emisor:save', data)
   }
 });
