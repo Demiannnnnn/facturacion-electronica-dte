@@ -1,0 +1,14 @@
+# XMLs de Facturas
+
+Esta carpeta almacena los archivos XML DTE generados para cada factura.
+
+## Nomenclatura
+- `factura-{folio}.xml` - XML DTE de la factura
+
+## Uso
+- Los XMLs se generan automáticamente al crear una factura
+- Se guardan localmente para debugging y auditoría
+- Se envían al SII vía ChileAPI (mock o producción)
+
+## Nota
+Esta carpeta es solo para desarrollo/debugging. En producción, los XMLs pueden guardarse en la nube o eliminarse después de enviar al SII.

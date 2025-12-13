@@ -1,0 +1,17 @@
+{
+    "licenses": [
+        {
+            "key": "DEV-LICENSE-2024",
+            "clientName": "Desarrollo Local",
+            "clientEmail": "dev@local.com",
+            "clientRut": "11111111-1",
+            "machineId": "*",
+            "expiresAt": "2099-12-31T23:59:59.000Z",
+            "maxDevices": 999,
+            "isActive": true,
+            "createdAt": "2024-01-01T00:00:00.000Z",
+            "lastValidatedAt": "2024-12-13T00:00:00.000Z"
+        }
+    ],
+    "validations": []
+}

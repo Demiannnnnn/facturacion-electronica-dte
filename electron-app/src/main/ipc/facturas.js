@@ -1,7 +1,11 @@
-import { ipcMain } from 'electron';
-import { getDatabase } from '../database/connection.js';
+const { ipcMain } = require('electron');
+const { getDatabase } = require('../database/connection');
+const dteGenerator = require('../services/dte-generator');
+const { getAPIClient } = require('../services/api-client');
+const fs = require('fs');
+const path = require('path');
 
-export function registerFacturasHandlers() {
+function registerFacturasHandlers() {
   // Obtener siguiente folio disponible
   ipcMain.handle('facturas:getNextFolio', async () => {
     try {
@@ -112,6 +116,83 @@ export function registerFacturasHandlers() {
       db.prepare('COMMIT').run();
 
       console.log('Factura creada:', facturaId, 'Folio:', folio);
+
+      // Generar XML DTE y enviar al SII
+      try {
+        const api = getAPIClient();
+
+        // Obtener datos del emisor
+        const emisor = db.prepare('SELECT * FROM emisor WHERE id = 1').get();
+
+        // Obtener factura completa con items para generar XML
+        const facturaCompleta = db.prepare(`
+          SELECT
+            f.*,
+            c.rut as cliente_rut,
+            c.razon_social as cliente_razon_social,
+            c.giro as cliente_giro,
+            c.direccion as cliente_direccion,
+            c.comuna as cliente_comuna,
+            c.ciudad as cliente_ciudad
+          FROM facturas f
+          JOIN clientes c ON f.cliente_id = c.id
+          WHERE f.id = ?
+        `).get(facturaId);
+
+        const itemsFactura = db.prepare('SELECT * FROM factura_items WHERE factura_id = ? ORDER BY numero_linea').all(facturaId);
+        facturaCompleta.items = itemsFactura;
+
+        // Generar XML DTE
+        const xmlDTE = dteGenerator.generarFacturaElectronica(facturaCompleta, emisor);
+
+        // Validar XML
+        const validacion = dteGenerator.validarXML(xmlDTE);
+        if (!validacion.valid) {
+          console.error('XML inválido:', validacion.error);
+          // No bloqueamos la factura, solo logueamos
+        }
+
+        // Guardar XML localmente (para debugging)
+        const xmlDir = path.join(process.cwd(), 'XMLs');
+        if (!fs.existsSync(xmlDir)) {
+          fs.mkdirSync(xmlDir, { recursive: true });
+        }
+        const xmlPath = path.join(xmlDir, `factura-${folio}.xml`);
+        fs.writeFileSync(xmlPath, xmlDTE, 'utf-8');
+
+        // Enviar al SII (mock o producción según API_MODE)
+        const dteResult = await api.enviarDTE({
+          folio: folio,
+          tipoDocumento: 33,
+          xml: xmlDTE,
+          emisor: {
+            rut: emisor.rut,
+            razonSocial: emisor.razon_social
+          },
+          receptor: {
+            rut: facturaCompleta.cliente_rut,
+            razonSocial: facturaCompleta.cliente_razon_social
+          }
+        });
+
+        // Actualizar factura con resultado del SII
+        if (dteResult.success) {
+          db.prepare(`
+            UPDATE facturas 
+            SET sii_track_id = ?, sii_estado = ?, updated_at = ?
+            WHERE id = ?
+          `).run(dteResult.trackId, dteResult.estado, new Date().toISOString(), facturaId);
+
+          console.log('DTE enviado al SII:', dteResult.trackId);
+        } else {
+          console.error('Error enviando DTE al SII:', dteResult.error);
+          // No bloqueamos la factura, solo logueamos
+        }
+
+      } catch (error) {
+        console.error('Error en proceso SII:', error);
+        // No bloqueamos la creación de la factura si falla el SII
+      }
 
       return {
         success: true,
@@ -498,3 +579,6 @@ export function registerFacturasHandlers() {
 
   console.log('Facturas IPC handlers registered');
 }
+
+module.exports = { registerFacturasHandlers };
+

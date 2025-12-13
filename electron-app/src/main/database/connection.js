@@ -194,10 +194,10 @@ function createTables() {
     // Verificar si la columna existe
     const tableInfo = db.prepare("PRAGMA table_info(factura_items)").all();
     const hasSubtotal = tableInfo.some(col => col.name === 'subtotal');
-    
+
     if (hasSubtotal) {
       console.log('Removing old subtotal column from factura_items...');
-      
+
       // SQLite no permite DROP COLUMN directamente, hay que recrear la tabla
       db.exec(`
         BEGIN TRANSACTION;
@@ -244,7 +244,7 @@ function createTables() {
         
         COMMIT;
       `);
-      
+
       console.log('Old subtotal column removed successfully');
     }
   } catch (error) {
@@ -266,6 +266,8 @@ function createTables() {
     { table: 'facturas', column: 'monto_exento', definition: 'REAL DEFAULT 0' },
     { table: 'facturas', column: 'descuento_global', definition: 'REAL DEFAULT 0' },
     { table: 'facturas', column: 'pdf_path', definition: 'TEXT' }, // Ruta al PDF guardado
+    { table: 'facturas', column: 'sii_track_id', definition: 'TEXT' }, // ID de seguimiento del SII
+    { table: 'facturas', column: 'sii_estado', definition: 'TEXT' }, // Estado en el SII (ACEPTADO, RECHAZADO, etc)
     // Factura Items
     { table: 'factura_items', column: 'numero_linea', definition: 'INTEGER DEFAULT 1' },
     { table: 'factura_items', column: 'codigo_item', definition: 'TEXT' },
