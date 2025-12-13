@@ -66,6 +66,7 @@ function createTables() {
       razon_social TEXT NOT NULL,
       giro TEXT,
       direccion TEXT,
+      region TEXT,
       comuna TEXT,
       ciudad TEXT,
       telefono TEXT,
@@ -74,6 +75,17 @@ function createTables() {
       updated_at TEXT NOT NULL
     )
   `);
+
+  // Migración: Agregar columna region si no existe
+  try {
+    db.exec(`ALTER TABLE clientes ADD COLUMN region TEXT`);
+    console.log('Column region added to clientes table');
+  } catch (error) {
+    // La columna ya existe, ignorar el error
+    if (!error.message.includes('duplicate column name')) {
+      console.error('Error adding region column:', error);
+    }
+  }
 
   // Tabla de productos
   db.exec(`

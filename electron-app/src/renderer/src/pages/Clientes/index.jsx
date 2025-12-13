@@ -1,4 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import Select from 'react-select';
+import {
+  formatearRut,
+  validarFormularioCliente,
+  limpiarRut
+} from '@/utils/validaciones';
+import { regiones, getComunasByRegion } from '@/data/regionesComunas';
 
 function Clientes() {
   const [view, setView] = useState('list'); // 'list' or 'form'
@@ -7,11 +14,14 @@ function Clientes() {
   const [editingCliente, setEditingCliente] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [validationErrors, setValidationErrors] = useState({});
+  const [comunasDisponibles, setComunasDisponibles] = useState([]);
   const [formData, setFormData] = useState({
     rut: '',
     razonSocial: '',
     giro: '',
     direccion: '',
+    region: '',
     comuna: '',
     ciudad: '',
     telefono: '',
@@ -21,6 +31,19 @@ function Clientes() {
   useEffect(() => {
     loadClientes();
   }, []);
+
+  // Fix: Auto-focus en el primer campo cuando se abre el formulario
+  useEffect(() => {
+    if (view === 'form') {
+      const timer = setTimeout(() => {
+        const firstInput = document.querySelector('input[name="rut"]');
+        if (firstInput) {
+          firstInput.focus();
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [view]);
 
   const loadClientes = async () => {
     setIsLoading(true);
@@ -39,28 +62,87 @@ function Clientes() {
   };
 
   const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    let processedValue = value;
+
+    // Formatear RUT automáticamente mientras se escribe
+    if (name === 'rut') {
+      processedValue = formatearRut(value);
+    }
+
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: processedValue
+    });
+
+    // Limpiar error de validación del campo cuando el usuario empieza a escribir
+    if (validationErrors[name]) {
+      setValidationErrors({
+        ...validationErrors,
+        [name]: ''
+      });
+    }
+  };
+
+  // Manejar cambio de región
+  const handleRegionChange = (selectedOption) => {
+    const regionValue = selectedOption ? selectedOption.value : '';
+
+    setFormData({
+      ...formData,
+      region: regionValue,
+      comuna: '' // Limpiar comuna al cambiar región
+    });
+
+    // Actualizar comunas disponibles
+    if (regionValue) {
+      setComunasDisponibles(getComunasByRegion(regionValue));
+    } else {
+      setComunasDisponibles([]);
+    }
+  };
+
+  // Manejar cambio de comuna
+  const handleComunaChange = (selectedOption) => {
+    setFormData({
+      ...formData,
+      comuna: selectedOption ? selectedOption.value : ''
     });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setValidationErrors({});
+
+    // Validar el formulario antes de enviar
+    const { valido, errores } = validarFormularioCliente(formData);
+
+    if (!valido) {
+      setValidationErrors(errores);
+      setError('Por favor, corrige los errores en el formulario');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
+      // Preparar datos para enviar (limpiar RUT de formato)
+      const dataToSend = {
+        ...formData,
+        rut: limpiarRut(formData.rut)
+      };
+
       let result;
       if (editingCliente) {
         // Actualizar
         result = await window.api.clientes.update({
           id: editingCliente.id,
-          cliente: formData
+          cliente: dataToSend
         });
       } else {
         // Crear
-        result = await window.api.clientes.create(formData);
+        result = await window.api.clientes.create(dataToSend);
       }
 
       if (result.success) {
@@ -79,16 +161,24 @@ function Clientes() {
 
   const handleEdit = (cliente) => {
     setEditingCliente(cliente);
+
+    // Si el cliente tiene región, cargar las comunas disponibles
+    if (cliente.region) {
+      setComunasDisponibles(getComunasByRegion(cliente.region));
+    }
+
     setFormData({
-      rut: cliente.rut,
+      rut: formatearRut(cliente.rut),
       razonSocial: cliente.razon_social,
       giro: cliente.giro || '',
       direccion: cliente.direccion || '',
+      region: cliente.region || '',
       comuna: cliente.comuna || '',
       ciudad: cliente.ciudad || '',
       telefono: cliente.telefono || '',
       email: cliente.email || ''
     });
+    setValidationErrors({});
     setView('form');
   };
 
@@ -116,11 +206,14 @@ function Clientes() {
     setView('list');
     setEditingCliente(null);
     setError('');
+    setValidationErrors({});
+    setComunasDisponibles([]);
     setFormData({
       rut: '',
       razonSocial: '',
       giro: '',
       direccion: '',
+      region: '',
       comuna: '',
       ciudad: '',
       telefono: '',
@@ -169,7 +262,8 @@ function Clientes() {
                 <tr>
                   <th style={styles.th}>RUT</th>
                   <th style={styles.th}>Razón Social</th>
-                  <th style={styles.th}>Giro</th>
+                  <th style={styles.th}>Región</th>
+                  <th style={styles.th}>Comuna</th>
                   <th style={styles.th}>Teléfono</th>
                   <th style={styles.th}>Email</th>
                   <th style={styles.th}>Acciones</th>
@@ -178,16 +272,17 @@ function Clientes() {
               <tbody>
                 {filteredClientes.length === 0 ? (
                   <tr>
-                    <td colSpan="6" style={styles.emptyMessage}>
+                    <td colSpan="7" style={styles.emptyMessage}>
                       {isLoading ? 'Cargando...' : 'No hay clientes registrados. Haz clic en "Nuevo Cliente" para comenzar.'}
                     </td>
                   </tr>
                 ) : (
                   filteredClientes.map((cliente) => (
                     <tr key={cliente.id} style={styles.tr}>
-                      <td style={styles.td}>{cliente.rut}</td>
+                      <td style={styles.td}>{formatearRut(cliente.rut)}</td>
                       <td style={styles.td}>{cliente.razon_social}</td>
-                      <td style={styles.td}>{cliente.giro || '-'}</td>
+                      <td style={styles.td}>{cliente.region || '-'}</td>
+                      <td style={styles.td}>{cliente.comuna || '-'}</td>
                       <td style={styles.td}>{cliente.telefono || '-'}</td>
                       <td style={styles.td}>{cliente.email || '-'}</td>
                       <td style={styles.td}>
@@ -230,10 +325,16 @@ function Clientes() {
                   name="rut"
                   value={formData.rut}
                   onChange={handleInputChange}
-                  style={styles.input}
+                  style={{
+                    ...styles.input,
+                    ...(validationErrors.rut ? styles.inputError : {})
+                  }}
                   placeholder="12.345.678-9"
                   required
                 />
+                {validationErrors.rut && (
+                  <span style={styles.errorText}>{validationErrors.rut}</span>
+                )}
               </div>
               <div style={styles.formGroup}>
                 <label style={styles.label}>Razón Social *</label>
@@ -242,10 +343,16 @@ function Clientes() {
                   name="razonSocial"
                   value={formData.razonSocial}
                   onChange={handleInputChange}
-                  style={styles.input}
+                  style={{
+                    ...styles.input,
+                    ...(validationErrors.razonSocial ? styles.inputError : {})
+                  }}
                   placeholder="Nombre de la empresa"
                   required
                 />
+                {validationErrors.razonSocial && (
+                  <span style={styles.errorText}>{validationErrors.razonSocial}</span>
+                )}
               </div>
             </div>
 
@@ -268,9 +375,15 @@ function Clientes() {
                   name="telefono"
                   value={formData.telefono}
                   onChange={handleInputChange}
-                  style={styles.input}
-                  placeholder="+56912345678"
+                  style={{
+                    ...styles.input,
+                    ...(validationErrors.telefono ? styles.inputError : {})
+                  }}
+                  placeholder="+56912345678 o 912345678"
                 />
+                {validationErrors.telefono && (
+                  <span style={styles.errorText}>{validationErrors.telefono}</span>
+                )}
               </div>
             </div>
 
@@ -288,27 +401,44 @@ function Clientes() {
 
             <div style={styles.formRow}>
               <div style={styles.formGroup}>
-                <label style={styles.label}>Comuna</label>
-                <input
-                  type="text"
-                  name="comuna"
-                  value={formData.comuna}
-                  onChange={handleInputChange}
-                  style={styles.input}
-                  placeholder="Comuna"
+                <label style={styles.label}>Región</label>
+                <Select
+                  options={regiones}
+                  value={regiones.find(r => r.value === formData.region) || null}
+                  onChange={handleRegionChange}
+                  placeholder="Selecciona una región..."
+                  isClearable
+                  isSearchable
+                  noOptionsMessage={() => 'No hay regiones disponibles'}
+                  styles={customSelectStyles}
                 />
               </div>
               <div style={styles.formGroup}>
-                <label style={styles.label}>Ciudad</label>
-                <input
-                  type="text"
-                  name="ciudad"
-                  value={formData.ciudad}
-                  onChange={handleInputChange}
-                  style={styles.input}
-                  placeholder="Ciudad"
+                <label style={styles.label}>Comuna</label>
+                <Select
+                  options={comunasDisponibles}
+                  value={comunasDisponibles.find(c => c.value === formData.comuna) || null}
+                  onChange={handleComunaChange}
+                  placeholder={formData.region ? "Selecciona una comuna..." : "Primero selecciona una región"}
+                  isClearable
+                  isSearchable
+                  isDisabled={!formData.region}
+                  noOptionsMessage={() => 'No hay comunas disponibles'}
+                  styles={customSelectStyles}
                 />
               </div>
+            </div>
+
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Ciudad</label>
+              <input
+                type="text"
+                name="ciudad"
+                value={formData.ciudad}
+                onChange={handleInputChange}
+                style={styles.input}
+                placeholder="Ciudad"
+              />
             </div>
 
             <div style={styles.formGroup}>
@@ -318,9 +448,15 @@ function Clientes() {
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                style={styles.input}
+                style={{
+                  ...styles.input,
+                  ...(validationErrors.email ? styles.inputError : {})
+                }}
                 placeholder="contacto@empresa.cl"
               />
+              {validationErrors.email && (
+                <span style={styles.errorText}>{validationErrors.email}</span>
+              )}
             </div>
 
             <div style={styles.formButtons}>
@@ -346,6 +482,44 @@ function Clientes() {
     </div>
   );
 }
+
+// Estilos personalizados para react-select
+const customSelectStyles = {
+  control: (base, state) => ({
+    ...base,
+    padding: '2px',
+    fontSize: '14px',
+    border: state.isFocused ? '1px solid #007bff' : '1px solid #ddd',
+    borderRadius: '4px',
+    boxShadow: 'none',
+    '&:hover': {
+      border: '1px solid #007bff'
+    }
+  }),
+  option: (base, state) => ({
+    ...base,
+    fontSize: '14px',
+    backgroundColor: state.isSelected ? '#007bff' : state.isFocused ? '#f0f0f0' : 'white',
+    color: state.isSelected ? 'white' : '#333',
+    '&:active': {
+      backgroundColor: '#007bff'
+    }
+  }),
+  placeholder: (base) => ({
+    ...base,
+    fontSize: '14px',
+    color: '#999'
+  }),
+  singleValue: (base) => ({
+    ...base,
+    fontSize: '14px',
+    color: '#333'
+  }),
+  menu: (base) => ({
+    ...base,
+    fontSize: '14px'
+  })
+};
 
 const styles = {
   container: {
@@ -468,6 +642,16 @@ const styles = {
     fontSize: '14px',
     border: '1px solid #ddd',
     borderRadius: '4px'
+  },
+  inputError: {
+    border: '1px solid #dc3545',
+    backgroundColor: '#fff5f5'
+  },
+  errorText: {
+    color: '#dc3545',
+    fontSize: '12px',
+    marginTop: '4px',
+    display: 'block'
   },
   formButtons: {
     display: 'flex',

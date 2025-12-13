@@ -10,9 +10,9 @@ export function registerClientesHandlers() {
 
       const stmt = db.prepare(`
         INSERT INTO clientes (
-          rut, razon_social, giro, direccion, comuna, ciudad, telefono, email,
+          rut, razon_social, giro, direccion, region, comuna, ciudad, telefono, email,
           created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
       const result = stmt.run(
@@ -20,6 +20,7 @@ export function registerClientesHandlers() {
         cliente.razonSocial,
         cliente.giro || null,
         cliente.direccion || null,
+        cliente.region || null,
         cliente.comuna || null,
         cliente.ciudad || null,
         cliente.telefono || null,
@@ -128,7 +129,7 @@ export function registerClientesHandlers() {
 
       const stmt = db.prepare(`
         UPDATE clientes
-        SET rut = ?, razon_social = ?, giro = ?, direccion = ?,
+        SET rut = ?, razon_social = ?, giro = ?, direccion = ?, region = ?,
             comuna = ?, ciudad = ?, telefono = ?, email = ?, updated_at = ?
         WHERE id = ?
       `);
@@ -138,6 +139,7 @@ export function registerClientesHandlers() {
         cliente.razonSocial,
         cliente.giro || null,
         cliente.direccion || null,
+        cliente.region || null,
         cliente.comuna || null,
         cliente.ciudad || null,
         cliente.telefono || null,
