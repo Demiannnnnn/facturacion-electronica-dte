@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<DTE version="1.0">
+  <Documento ID="F10T33">
+    <Encabezado>
+      <IdDoc>
+        <TipoDTE>33</TipoDTE>
+        <Folio>10</Folio>
+        <FchEmis>2025-12-14</FchEmis>
+        <FmaPago>1</FmaPago>
+      </IdDoc>
+      <Emisor>
+        <RUTEmisor>213319078</RUTEmisor>
+        <RznSoc>dsadas</RznSoc>
+        <GiroEmis>dasdsa</GiroEmis>
+        <Acteco>0</Acteco>
+        <DirOrigen>sadasd</DirOrigen>
+        <CmnaOrigen>Rengo</CmnaOrigen>
+        <CiudadOrigen>Rengo</CiudadOrigen>
+      </Emisor>
+      <Receptor>
+        <RUTRecep>213319078</RUTRecep>
+        <RznSocRecep>adsas</RznSocRecep>
+        <GiroRecep>dasdas</GiroRecep>
+        <DirRecep>dsada</DirRecep>
+        <CmnaRecep>Rengo</CmnaRecep>
+        <CiudadRecep>Rengo</CiudadRecep>
+      </Receptor>
+      <Totales>
+        <MntNeto>20000</MntNeto>
+        <TasaIVA>19</TasaIVA>
+        <IVA>3800</IVA>
+        <MntTotal>23800</MntTotal>
+      </Totales>
+    </Encabezado>
+    <Detalle>
+      <NroLinDet>1</NroLinDet>
+      <NmbItem>sadas</NmbItem>
+      <QtyItem>1</QtyItem>
+      <UnmdItem>UN</UnmdItem>
+      <PrcItem>20000</PrcItem>
+      <MontoItem>20000</MontoItem>
+    </Detalle>
+  </Documento>
+</DTE>

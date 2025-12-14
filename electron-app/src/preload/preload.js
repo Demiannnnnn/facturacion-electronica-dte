@@ -33,7 +33,8 @@ contextBridge.exposeInMainWorld('api', {
     search: (term) => ipcRenderer.invoke('productos:search', term),
     update: (data) => ipcRenderer.invoke('productos:update', data),
     delete: (id) => ipcRenderer.invoke('productos:delete', id),
-    updateStock: (data) => ipcRenderer.invoke('productos:updateStock', data)
+    updateStock: (data) => ipcRenderer.invoke('productos:updateStock', data),
+    getReporte: () => ipcRenderer.invoke('productos:getReporte')
   },
 
   // Facturas
@@ -46,7 +47,8 @@ contextBridge.exposeInMainWorld('api', {
     search: (filters) => ipcRenderer.invoke('facturas:search', filters),
     savePDF: (data) => ipcRenderer.invoke('facturas:savePDF', data),
     openPDF: (path) => ipcRenderer.invoke('facturas:openPDF', path),
-    updatePDFPath: (data) => ipcRenderer.invoke('facturas:updatePDFPath', data)
+    updatePDFPath: (data) => ipcRenderer.invoke('facturas:updatePDFPath', data),
+    getReporteVentas: (params) => ipcRenderer.invoke('facturas:getReporteVentas', params)
   },
 
   // Emisor

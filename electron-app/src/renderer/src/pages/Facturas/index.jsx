@@ -402,7 +402,7 @@ const styles = {
   filterButtonActive: {
     backgroundColor: '#007bff',
     color: 'white',
-    borderColor: '#007bff'
+    border: '1px solid #007bff'
   },
   tableContainer: {
     overflowX: 'auto',

@@ -577,6 +577,202 @@ export function registerFacturasHandlers() {
     }
   });
 
+  // Obtener reporte de ventas por período
+  ipcMain.handle('facturas:getReporteVentas', async (event, { fecha_desde, fecha_hasta }) => {
+    try {
+      const db = getDatabase();
+
+      // Obtener facturas del período
+      const facturas = db.prepare(`
+        SELECT
+          f.*,
+          c.razon_social as cliente_nombre,
+          c.rut as cliente_rut
+        FROM facturas f
+        JOIN clientes c ON f.cliente_id = c.id
+        WHERE f.fecha >= ? AND f.fecha <= ?
+        ORDER BY f.fecha ASC, f.folio ASC
+      `).all(fecha_desde, fecha_hasta);
+
+      // Calcular totales
+      const totales = {
+        cantidad_facturas: facturas.length,
+        subtotal: 0,
+        monto_exento: 0,
+        descuento_global: 0,
+        iva: 0,
+        total: 0,
+        por_estado: {
+          pendiente: 0,
+          pagada: 0,
+          vencida: 0,
+          anulada: 0
+        },
+        por_forma_pago: {
+          contado: 0,
+          credito: 0
+        }
+      };
+
+      facturas.forEach(factura => {
+        totales.subtotal += factura.subtotal;
+        totales.monto_exento += factura.monto_exento || 0;
+        totales.descuento_global += factura.descuento_global || 0;
+        totales.iva += factura.iva;
+        totales.total += factura.total;
+
+        // Contar por estado
+        if (totales.por_estado[factura.estado] !== undefined) {
+          totales.por_estado[factura.estado]++;
+        }
+
+        // Contar por forma de pago
+        const formaPago = factura.forma_pago || 'contado';
+        if (totales.por_forma_pago[formaPago] !== undefined) {
+          totales.por_forma_pago[formaPago]++;
+        }
+      });
+
+      // Obtener productos más vendidos del período
+      const productosMasVendidos = db.prepare(`
+        SELECT
+          fi.descripcion,
+          fi.producto_id,
+          SUM(fi.cantidad) as cantidad_total,
+          SUM(fi.monto_item) as monto_total,
+          COUNT(DISTINCT fi.factura_id) as veces_vendido
+        FROM factura_items fi
+        JOIN facturas f ON fi.factura_id = f.id
+        WHERE f.fecha >= ? AND f.fecha <= ?
+        GROUP BY COALESCE(fi.producto_id, fi.descripcion)
+        ORDER BY cantidad_total DESC
+        LIMIT 10
+      `).all(fecha_desde, fecha_hasta);
+
+      // Obtener clientes con más compras
+      const topClientes = db.prepare(`
+        SELECT
+          c.id,
+          c.rut,
+          c.razon_social,
+          COUNT(f.id) as cantidad_facturas,
+          SUM(f.total) as total_comprado
+        FROM clientes c
+        JOIN facturas f ON c.id = f.cliente_id
+        WHERE f.fecha >= ? AND f.fecha <= ?
+        GROUP BY c.id
+        ORDER BY total_comprado DESC
+        LIMIT 10
+      `).all(fecha_desde, fecha_hasta);
+
+      return {
+        success: true,
+        data: {
+          fecha_desde,
+          fecha_hasta,
+          facturas,
+          totales,
+          productosMasVendidos,
+          topClientes
+        }
+      };
+    } catch (error) {
+      console.error('Error getting reporte ventas:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  });
+
+  // Obtener reporte de productos
+  ipcMain.handle('productos:getReporte', async () => {
+    try {
+      const db = getDatabase();
+
+      // Obtener todos los productos con información de ventas
+      const productos = db.prepare(`
+        SELECT
+          p.*,
+          COALESCE(SUM(fi.cantidad), 0) as cantidad_vendida,
+          COALESCE(SUM(fi.monto_item), 0) as monto_vendido,
+          COALESCE(COUNT(DISTINCT fi.factura_id), 0) as veces_vendido
+        FROM productos p
+        LEFT JOIN factura_items fi ON p.id = fi.producto_id
+        GROUP BY p.id
+        ORDER BY cantidad_vendida DESC
+      `).all();
+
+      // Calcular totales y estadísticas
+      const totales = {
+        total_productos: productos.length,
+        valor_inventario: 0,
+        productos_bajo_stock: 0,
+        productos_sin_stock: 0,
+        productos_sin_movimiento: 0
+      };
+
+      const STOCK_MINIMO = 10; // Umbral para stock bajo
+
+      productos.forEach(producto => {
+        totales.valor_inventario += (producto.precio * producto.stock);
+
+        if (producto.stock === 0) {
+          totales.productos_sin_stock++;
+        } else if (producto.stock < STOCK_MINIMO) {
+          totales.productos_bajo_stock++;
+        }
+
+        if (producto.cantidad_vendida === 0) {
+          totales.productos_sin_movimiento++;
+        }
+      });
+
+      // Productos con bajo stock
+      const productosBajoStock = productos
+        .filter(p => p.stock > 0 && p.stock < STOCK_MINIMO)
+        .sort((a, b) => a.stock - b.stock);
+
+      // Productos sin stock
+      const productosSinStock = productos
+        .filter(p => p.stock === 0);
+
+      // Productos más vendidos
+      const productosMasVendidos = productos
+        .filter(p => p.cantidad_vendida > 0)
+        .sort((a, b) => b.cantidad_vendida - a.cantidad_vendida)
+        .slice(0, 10);
+
+      // Productos sin movimiento
+      const productosSinMovimiento = productos
+        .filter(p => p.cantidad_vendida === 0);
+
+      // Productos por valor en inventario
+      const productosPorValor = [...productos]
+        .sort((a, b) => (b.precio * b.stock) - (a.precio * a.stock))
+        .slice(0, 10);
+
+      return {
+        success: true,
+        data: {
+          productos,
+          totales,
+          productosBajoStock,
+          productosSinStock,
+          productosMasVendidos,
+          productosSinMovimiento,
+          productosPorValor
+        }
+      };
+    } catch (error) {
+      console.error('Error getting reporte productos:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  });
+
   console.log('Facturas IPC handlers registered');
 }
 
