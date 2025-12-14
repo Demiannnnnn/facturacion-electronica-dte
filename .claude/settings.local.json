@@ -6,7 +6,13 @@
       "Bash(cat:*)",
       "Bash(tree:*)",
       "Bash(npm install:*)",
-      "Bash(npx electron-rebuild:*)"
+      "Bash(npx electron-rebuild:*)",
+      "Bash(npm run dev:*)",
+      "Bash(pkill:*)",
+      "Bash(node --version)",
+      "Bash(npm --version:*)",
+      "Bash(node -e:*)",
+      "Bash(NODE_ENV=development npx electron:*)"
     ]
   }
 }

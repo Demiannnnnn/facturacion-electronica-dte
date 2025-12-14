@@ -1,5 +1,6 @@
 import { ipcMain } from 'electron';
 import { getDatabase } from '../database/connection.js';
+import { safeLog, safeError } from '../utils/logger.js';
 
 export function registerProductosHandlers() {
   // Crear producto
@@ -25,7 +26,7 @@ export function registerProductosHandlers() {
         now
       );
 
-      console.log('Producto creado:', result.lastInsertRowid);
+      safeLog('Producto creado:', result.lastInsertRowid);
 
       return {
         success: true,
@@ -35,7 +36,7 @@ export function registerProductosHandlers() {
         }
       };
     } catch (error) {
-      console.error('Error creating producto:', error);
+      safeError('Error creating producto:', error);
       return {
         success: false,
         error: error.message
@@ -55,7 +56,7 @@ export function registerProductosHandlers() {
         data: productos
       };
     } catch (error) {
-      console.error('Error getting productos:', error);
+      safeError('Error getting productos:', error);
       return {
         success: false,
         error: error.message
@@ -82,7 +83,7 @@ export function registerProductosHandlers() {
         data: producto
       };
     } catch (error) {
-      console.error('Error getting producto:', error);
+      safeError('Error getting producto:', error);
       return {
         success: false,
         error: error.message
@@ -109,7 +110,7 @@ export function registerProductosHandlers() {
         data: productos
       };
     } catch (error) {
-      console.error('Error searching productos:', error);
+      safeError('Error searching productos:', error);
       return {
         success: false,
         error: error.message
@@ -146,14 +147,14 @@ export function registerProductosHandlers() {
         };
       }
 
-      console.log('Producto actualizado:', id);
+      safeLog('Producto actualizado:', id);
 
       return {
         success: true,
         data: { id, ...producto }
       };
     } catch (error) {
-      console.error('Error updating producto:', error);
+      safeError('Error updating producto:', error);
       return {
         success: false,
         error: error.message
@@ -187,13 +188,13 @@ export function registerProductosHandlers() {
         };
       }
 
-      console.log('Producto eliminado:', id);
+      safeLog('Producto eliminado:', id);
 
       return {
         success: true
       };
     } catch (error) {
-      console.error('Error deleting producto:', error);
+      safeError('Error deleting producto:', error);
       return {
         success: false,
         error: error.message
@@ -226,14 +227,14 @@ export function registerProductosHandlers() {
       const getStmt = db.prepare('SELECT stock FROM productos WHERE id = ?');
       const producto = getStmt.get(id);
 
-      console.log('Stock actualizado:', id, 'nuevo stock:', producto.stock);
+      safeLog('Stock actualizado:', id, 'nuevo stock:', producto.stock);
 
       return {
         success: true,
         data: { id, stock: producto.stock }
       };
     } catch (error) {
-      console.error('Error updating stock:', error);
+      safeError('Error updating stock:', error);
       return {
         success: false,
         error: error.message
@@ -241,5 +242,5 @@ export function registerProductosHandlers() {
     }
   });
 
-  console.log('Productos IPC handlers registered');
+  safeLog('Productos IPC handlers registered');
 }

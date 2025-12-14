@@ -1,4 +1,4 @@
-const xml2js = require('xml2js');
+import xml2js from 'xml2js';
 
 /**
  * Generador de XML DTE según formato oficial del SII de Chile
@@ -139,4 +139,6 @@ class DTEGenerator {
     }
 }
 
-module.exports = new DTEGenerator();
+const dteGenerator = new DTEGenerator();
+export default dteGenerator;
+export { DTEGenerator };

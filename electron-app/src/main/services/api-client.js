@@ -1,4 +1,4 @@
-const mockServer = require('../../server/mock/mock-server');
+import mockServer from '../../../../server/mock/mock-server.js';
 
 /**
  * API Client - Abstracción para comunicación con backend
@@ -122,4 +122,4 @@ function getAPIClient() {
     return instance;
 }
 
-module.exports = { getAPIClient };
+export { getAPIClient };

@@ -1,11 +1,11 @@
-const { ipcMain } = require('electron');
-const { getDatabase } = require('../database/connection');
-const dteGenerator = require('../services/dte-generator');
-const { getAPIClient } = require('../services/api-client');
-const fs = require('fs');
-const path = require('path');
+import { ipcMain } from 'electron';
+import { getDatabase } from '../database/connection.js';
+import dteGenerator from '../services/dte-generator.js';
+import { getAPIClient } from '../services/api-client.js';
+import fs from 'fs';
+import path from 'path';
 
-function registerFacturasHandlers() {
+export function registerFacturasHandlers() {
   // Obtener siguiente folio disponible
   ipcMain.handle('facturas:getNextFolio', async () => {
     try {
@@ -579,6 +579,4 @@ function registerFacturasHandlers() {
 
   console.log('Facturas IPC handlers registered');
 }
-
-module.exports = { registerFacturasHandlers };
 
