@@ -773,6 +773,298 @@ export function registerFacturasHandlers() {
     }
   });
 
+  // Obtener reporte de pagos y cobranzas
+  ipcMain.handle('facturas:getReportePagos', async () => {
+    try {
+      const db = getDatabase();
+      const hoy = new Date().toISOString().split('T')[0];
+
+      // Obtener todas las facturas con información de pagos
+      const facturas = db.prepare(`
+        SELECT
+          f.*,
+          c.razon_social as cliente_nombre,
+          c.rut as cliente_rut,
+          c.telefono as cliente_telefono,
+          c.email as cliente_email
+        FROM facturas f
+        JOIN clientes c ON f.cliente_id = c.id
+        ORDER BY f.fecha DESC
+      `).all();
+
+      // Clasificar facturas
+      const facturasPagadas = facturas.filter(f => f.estado === 'pagada');
+      const facturasPendientes = facturas.filter(f => f.estado === 'pendiente');
+      const facturasVencidas = facturas.filter(f => {
+        if (f.estado === 'vencida') return true;
+        if (f.estado === 'pendiente' && f.fecha_vencimiento && f.fecha_vencimiento < hoy) return true;
+        return false;
+      });
+
+      // Calcular totales
+      const totales = {
+        total_cobrado: facturasPagadas.reduce((sum, f) => sum + f.total, 0),
+        total_por_cobrar: facturasPendientes.reduce((sum, f) => sum + f.total, 0),
+        total_vencido: facturasVencidas.reduce((sum, f) => sum + f.total, 0),
+        cantidad_pagadas: facturasPagadas.length,
+        cantidad_pendientes: facturasPendientes.length,
+        cantidad_vencidas: facturasVencidas.length
+      };
+
+      // Facturas por vencer (próximos 30 días)
+      const fecha30Dias = new Date();
+      fecha30Dias.setDate(fecha30Dias.getDate() + 30);
+      const fecha30DiasStr = fecha30Dias.toISOString().split('T')[0];
+
+      const facturasPorVencer = facturas.filter(f =>
+        f.estado === 'pendiente' &&
+        f.fecha_vencimiento &&
+        f.fecha_vencimiento >= hoy &&
+        f.fecha_vencimiento <= fecha30DiasStr
+      );
+
+      // Agrupar por vencimiento
+      const proximos7Dias = facturas.filter(f => {
+        if (f.estado !== 'pendiente' || !f.fecha_vencimiento) return false;
+        const fecha7Dias = new Date();
+        fecha7Dias.setDate(fecha7Dias.getDate() + 7);
+        return f.fecha_vencimiento >= hoy && f.fecha_vencimiento <= fecha7Dias.toISOString().split('T')[0];
+      });
+
+      const proximos15Dias = facturas.filter(f => {
+        if (f.estado !== 'pendiente' || !f.fecha_vencimiento) return false;
+        const fecha15Dias = new Date();
+        fecha15Dias.setDate(fecha15Dias.getDate() + 15);
+        return f.fecha_vencimiento >= hoy && f.fecha_vencimiento <= fecha15Dias.toISOString().split('T')[0];
+      });
+
+      // Top clientes con deuda
+      const deudaPorCliente = {};
+      facturasPendientes.concat(facturasVencidas).forEach(f => {
+        if (!deudaPorCliente[f.cliente_id]) {
+          deudaPorCliente[f.cliente_id] = {
+            cliente_id: f.cliente_id,
+            cliente_nombre: f.cliente_nombre,
+            cliente_rut: f.cliente_rut,
+            cliente_telefono: f.cliente_telefono,
+            cliente_email: f.cliente_email,
+            total_deuda: 0,
+            cantidad_facturas: 0,
+            facturas_vencidas: 0
+          };
+        }
+        deudaPorCliente[f.cliente_id].total_deuda += f.total;
+        deudaPorCliente[f.cliente_id].cantidad_facturas++;
+        if (facturasVencidas.some(fv => fv.id === f.id)) {
+          deudaPorCliente[f.cliente_id].facturas_vencidas++;
+        }
+      });
+
+      const topDeudores = Object.values(deudaPorCliente)
+        .sort((a, b) => b.total_deuda - a.total_deuda)
+        .slice(0, 10);
+
+      // Flujo de caja proyectado (próximos 90 días)
+      const proyeccion = [];
+      for (let i = 0; i < 90; i += 7) {
+        const fechaInicio = new Date();
+        fechaInicio.setDate(fechaInicio.getDate() + i);
+        const fechaFin = new Date();
+        fechaFin.setDate(fechaFin.getDate() + i + 6);
+
+        const facturasEnPeriodo = facturas.filter(f =>
+          f.estado === 'pendiente' &&
+          f.fecha_vencimiento &&
+          f.fecha_vencimiento >= fechaInicio.toISOString().split('T')[0] &&
+          f.fecha_vencimiento <= fechaFin.toISOString().split('T')[0]
+        );
+
+        proyeccion.push({
+          periodo: `${fechaInicio.toLocaleDateString('es-CL')} - ${fechaFin.toLocaleDateString('es-CL')}`,
+          monto_esperado: facturasEnPeriodo.reduce((sum, f) => sum + f.total, 0),
+          cantidad_facturas: facturasEnPeriodo.length
+        });
+      }
+
+      return {
+        success: true,
+        data: {
+          totales,
+          facturasPagadas: facturasPagadas.slice(0, 50), // Últimas 50
+          facturasPendientes,
+          facturasVencidas,
+          facturasPorVencer,
+          proximos7Dias,
+          proximos15Dias,
+          topDeudores,
+          proyeccion
+        }
+      };
+    } catch (error) {
+      console.error('Error getting reporte pagos:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  });
+
+  // Obtener reporte tributario
+  ipcMain.handle('facturas:getReporteTributario', async (event, { mes, anio }) => {
+    try {
+      const db = getDatabase();
+
+      // Si no se especifica mes/año, usar el actual
+      if (!mes || !anio) {
+        const hoy = new Date();
+        mes = hoy.getMonth() + 1;
+        anio = hoy.getFullYear();
+      }
+
+      // Calcular rango de fechas del mes
+      const fechaDesde = `${anio}-${String(mes).padStart(2, '0')}-01`;
+      const ultimoDia = new Date(anio, mes, 0).getDate();
+      const fechaHasta = `${anio}-${String(mes).padStart(2, '0')}-${ultimoDia}`;
+
+      // Obtener facturas del mes
+      const facturas = db.prepare(`
+        SELECT
+          f.*,
+          c.razon_social as cliente_nombre,
+          c.rut as cliente_rut
+        FROM facturas f
+        JOIN clientes c ON f.cliente_id = c.id
+        WHERE f.fecha >= ? AND f.fecha <= ?
+        ORDER BY f.fecha ASC
+      `).all(fechaDesde, fechaHasta);
+
+      // Totales del mes
+      const totales = {
+        cantidad_documentos: facturas.length,
+        ventas_netas: 0,
+        ventas_exentas: 0,
+        total_iva: 0,
+        total_facturado: 0,
+        documentos_anulados: 0,
+        monto_anulado: 0
+      };
+
+      const facturasPorDia = {};
+
+      facturas.forEach(f => {
+        if (f.estado === 'anulada') {
+          totales.documentos_anulados++;
+          totales.monto_anulado += f.total;
+        } else {
+          totales.ventas_netas += f.subtotal;
+          totales.ventas_exentas += f.monto_exento || 0;
+          totales.total_iva += f.iva;
+          totales.total_facturado += f.total;
+        }
+
+        // Agrupar por día
+        const dia = f.fecha;
+        if (!facturasPorDia[dia]) {
+          facturasPorDia[dia] = {
+            fecha: dia,
+            cantidad: 0,
+            neto: 0,
+            iva: 0,
+            total: 0
+          };
+        }
+        if (f.estado !== 'anulada') {
+          facturasPorDia[dia].cantidad++;
+          facturasPorDia[dia].neto += f.subtotal;
+          facturasPorDia[dia].iva += f.iva;
+          facturasPorDia[dia].total += f.total;
+        }
+      });
+
+      // Convertir a array y ordenar
+      const ventasPorDia = Object.values(facturasPorDia).sort((a, b) => a.fecha.localeCompare(b.fecha));
+
+      // Resumen por tipo de documento (para este caso, solo facturas tipo 33)
+      const porTipoDocumento = {
+        33: {
+          nombre: 'Factura Electrónica',
+          cantidad: facturas.filter(f => f.estado !== 'anulada').length,
+          neto: totales.ventas_netas,
+          iva: totales.total_iva,
+          total: totales.total_facturado
+        }
+      };
+
+      // Información para formulario 29 (SII)
+      const formulario29 = {
+        periodo: `${mes}/${anio}`,
+        codigo_100: totales.ventas_netas, // Ventas netas
+        codigo_105: totales.total_iva, // IVA débito fiscal
+        codigo_110: totales.ventas_exentas, // Ventas exentas
+        // Nota: Otros códigos se calcularían con compras y otros datos
+      };
+
+      // Resumen anual hasta el mes actual
+      const resumenAnual = db.prepare(`
+        SELECT
+          strftime('%m', f.fecha) as mes,
+          COUNT(*) as cantidad,
+          SUM(CASE WHEN f.estado != 'anulada' THEN f.subtotal ELSE 0 END) as neto,
+          SUM(CASE WHEN f.estado != 'anulada' THEN f.iva ELSE 0 END) as iva,
+          SUM(CASE WHEN f.estado != 'anulada' THEN f.total ELSE 0 END) as total
+        FROM facturas f
+        WHERE strftime('%Y', f.fecha) = ?
+        GROUP BY strftime('%m', f.fecha)
+        ORDER BY mes
+      `).all(String(anio));
+
+      const mesesNombre = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+      ];
+
+      const ventasPorMes = resumenAnual.map(m => ({
+        mes: mesesNombre[parseInt(m.mes) - 1],
+        mes_num: m.mes,
+        cantidad: m.cantidad,
+        neto: m.neto,
+        iva: m.iva,
+        total: m.total
+      }));
+
+      // Totales anuales
+      const totalesAnuales = {
+        cantidad_documentos: resumenAnual.reduce((sum, m) => sum + m.cantidad, 0),
+        ventas_netas: resumenAnual.reduce((sum, m) => sum + m.neto, 0),
+        total_iva: resumenAnual.reduce((sum, m) => sum + m.iva, 0),
+        total_facturado: resumenAnual.reduce((sum, m) => sum + m.total, 0)
+      };
+
+      return {
+        success: true,
+        data: {
+          mes,
+          anio,
+          fecha_desde: fechaDesde,
+          fecha_hasta: fechaHasta,
+          totales,
+          facturas,
+          ventasPorDia,
+          porTipoDocumento,
+          formulario29,
+          ventasPorMes,
+          totalesAnuales
+        }
+      };
+    } catch (error) {
+      console.error('Error getting reporte tributario:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  });
+
   console.log('Facturas IPC handlers registered');
 }
 

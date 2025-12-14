@@ -22,7 +22,8 @@ contextBridge.exposeInMainWorld('api', {
     getById: (id) => ipcRenderer.invoke('clientes:getById', id),
     search: (term) => ipcRenderer.invoke('clientes:search', term),
     update: (data) => ipcRenderer.invoke('clientes:update', data),
-    delete: (id) => ipcRenderer.invoke('clientes:delete', id)
+    delete: (id) => ipcRenderer.invoke('clientes:delete', id),
+    getReporte: () => ipcRenderer.invoke('clientes:getReporte')
   },
 
   // Productos
@@ -48,7 +49,9 @@ contextBridge.exposeInMainWorld('api', {
     savePDF: (data) => ipcRenderer.invoke('facturas:savePDF', data),
     openPDF: (path) => ipcRenderer.invoke('facturas:openPDF', path),
     updatePDFPath: (data) => ipcRenderer.invoke('facturas:updatePDFPath', data),
-    getReporteVentas: (params) => ipcRenderer.invoke('facturas:getReporteVentas', params)
+    getReporteVentas: (params) => ipcRenderer.invoke('facturas:getReporteVentas', params),
+    getReportePagos: () => ipcRenderer.invoke('facturas:getReportePagos'),
+    getReporteTributario: (params) => ipcRenderer.invoke('facturas:getReporteTributario', params)
   },
 
   // Emisor

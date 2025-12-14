@@ -210,5 +210,88 @@ export function registerClientesHandlers() {
     }
   });
 
+  // Obtener reporte de clientes
+  ipcMain.handle('clientes:getReporte', async () => {
+    try {
+      const db = getDatabase();
+
+      // Obtener todos los clientes con estadísticas de compras
+      const clientes = db.prepare(`
+        SELECT
+          c.*,
+          COUNT(f.id) as total_facturas,
+          COALESCE(SUM(f.total), 0) as total_comprado,
+          COALESCE(SUM(CASE WHEN f.estado = 'pendiente' THEN f.total ELSE 0 END), 0) as total_pendiente,
+          COALESCE(SUM(CASE WHEN f.estado = 'pagada' THEN f.total ELSE 0 END), 0) as total_pagado,
+          MAX(f.fecha) as ultima_compra
+        FROM clientes c
+        LEFT JOIN facturas f ON c.id = f.cliente_id
+        GROUP BY c.id
+        ORDER BY total_comprado DESC
+      `).all();
+
+      // Calcular totales generales
+      const totales = {
+        total_clientes: clientes.length,
+        clientes_activos: clientes.filter(c => c.total_facturas > 0).length,
+        clientes_sin_compras: clientes.filter(c => c.total_facturas === 0).length,
+        total_facturado: clientes.reduce((sum, c) => sum + c.total_comprado, 0),
+        total_pendiente: clientes.reduce((sum, c) => sum + c.total_pendiente, 0),
+        promedio_compra: 0
+      };
+
+      if (totales.clientes_activos > 0) {
+        totales.promedio_compra = totales.total_facturado / totales.clientes_activos;
+      }
+
+      // Top clientes por monto comprado
+      const topClientes = clientes
+        .filter(c => c.total_facturas > 0)
+        .sort((a, b) => b.total_comprado - a.total_comprado)
+        .slice(0, 10);
+
+      // Clientes con facturas pendientes
+      const clientesPendientes = clientes
+        .filter(c => c.total_pendiente > 0)
+        .sort((a, b) => b.total_pendiente - a.total_pendiente);
+
+      // Clientes sin compras
+      const clientesSinCompras = clientes
+        .filter(c => c.total_facturas === 0);
+
+      // Clientes por región (si tienen datos de región)
+      const clientesPorRegion = {};
+      clientes.forEach(cliente => {
+        const region = cliente.region || 'Sin especificar';
+        if (!clientesPorRegion[region]) {
+          clientesPorRegion[region] = {
+            cantidad: 0,
+            total_comprado: 0
+          };
+        }
+        clientesPorRegion[region].cantidad++;
+        clientesPorRegion[region].total_comprado += cliente.total_comprado;
+      });
+
+      return {
+        success: true,
+        data: {
+          clientes,
+          totales,
+          topClientes,
+          clientesPendientes,
+          clientesSinCompras,
+          clientesPorRegion
+        }
+      };
+    } catch (error) {
+      console.error('Error getting reporte clientes:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  });
+
   console.log('Clientes IPC handlers registered');
 }
