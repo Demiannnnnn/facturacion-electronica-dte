@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import { formatearRut } from './validaciones';
+import { numeroAPalabras } from './numeroAPalabras';
 
 /**
  * Genera un PDF de factura electrónica chilena
@@ -110,11 +111,36 @@ export async function generarPDFFactura(factura, emisor) {
   doc.setFont('helvetica', 'normal');
   doc.text(factura.forma_pago === 'contado' ? 'Contado' : 'Crédito', infoX + 25, infoYPos + 5);
 
+  let detailYOffset = 10;
+
+  if (factura.forma_pago_detalle) {
+    const formaPagoDetalle = {
+      'efectivo': 'Efectivo',
+      'transferencia': 'Transferencia',
+      'cheque': 'Cheque',
+      'tarjeta_debito': 'T. Débito',
+      'tarjeta_credito': 'T. Crédito'
+    };
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text(`(${formaPagoDetalle[factura.forma_pago_detalle] || factura.forma_pago_detalle})`, infoX, infoYPos + 9);
+    doc.setFontSize(9);
+    detailYOffset += 5;
+  }
+
   if (factura.forma_pago === 'credito' && factura.fecha_vencimiento) {
     doc.setFont('helvetica', 'bold');
-    doc.text('Vencimiento:', infoX, infoYPos + 10);
+    doc.text('Vencimiento:', infoX, infoYPos + detailYOffset);
     doc.setFont('helvetica', 'normal');
-    doc.text(formatearFecha(factura.fecha_vencimiento), infoX + 25, infoYPos + 10);
+    doc.text(formatearFecha(factura.fecha_vencimiento), infoX + 25, infoYPos + detailYOffset);
+    detailYOffset += 5;
+  }
+
+  if (factura.orden_compra) {
+    doc.setFont('helvetica', 'bold');
+    doc.text('O/C:', infoX, infoYPos + detailYOffset);
+    doc.setFont('helvetica', 'normal');
+    doc.text(factura.orden_compra, infoX + 12, infoYPos + detailYOffset);
   }
 
   yPos += 15;
@@ -204,6 +230,15 @@ export async function generarPDFFactura(factura, emisor) {
   doc.setTextColor(0, 123, 255);
   doc.text('TOTAL:', totalesX, yPos);
   doc.text(formatearMoneda(factura.total), pageWidth - margin, yPos, { align: 'right' });
+
+  // ==================== MONTO EN PALABRAS ====================
+  yPos += 12;
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text('SON: ', margin, yPos);
+  doc.setFont('helvetica', 'normal');
+  doc.text(numeroAPalabras(factura.total), margin + 12, yPos);
 
   // ==================== PIE DE PÁGINA ====================
   yPos = pageHeight - 20;

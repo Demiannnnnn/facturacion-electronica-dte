@@ -57,8 +57,9 @@ export function registerFacturasHandlers() {
           folio, tipo_documento, cliente_id, fecha, fecha_vencimiento,
           forma_pago, condiciones_pago, subtotal, monto_exento,
           descuento_global, iva, total, estado, observaciones,
+          orden_compra, forma_pago_detalle,
           created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
       const resultFactura = stmtFactura.run(
@@ -76,6 +77,8 @@ export function registerFacturasHandlers() {
         factura.total,
         'pendiente',
         factura.observaciones || null,
+        factura.orden_compra || null,
+        factura.forma_pago_detalle || null,
         now,
         now
       );
@@ -87,8 +90,8 @@ export function registerFacturasHandlers() {
         INSERT INTO factura_items (
           factura_id, numero_linea, producto_id, codigo_item,
           descripcion, cantidad, unidad, precio_unitario,
-          descuento, monto_item
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          descuento, descuento_monto, monto_item
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
       items.forEach((item, index) => {
@@ -102,6 +105,7 @@ export function registerFacturasHandlers() {
           item.unidad || 'UN',
           item.precio_unitario,
           item.descuento || 0,
+          item.descuento_monto || 0,
           item.monto_item
         );
 

@@ -79,14 +79,57 @@ export function validarRut(rut) {
   // Validar que el cuerpo sean solo números
   if (!/^\d+$/.test(cuerpo)) return false;
 
-  // Validar que el RUT no sea muy corto ni muy largo
-  if (cuerpo.length < 7 || cuerpo.length > 8) return false;
+  // Validar rango realista de RUTs chilenos
+  // RUTs desde 1.000.000 (antiguo) hasta 999.999.999 (empresas nuevas)
+  // Acepta entre 1 y 9 dígitos
+  if (cuerpo.length < 1 || cuerpo.length > 9) return false;
+
+  // RUTs muy pequeños probablemente son inválidos (excepto RUTs históricos)
+  const numero = parseInt(cuerpo);
+  if (numero < 1000000 && numero > 100) {
+    // Permitir RUTs históricos muy antiguos (< 100) o RUTs normales (> 1.000.000)
+    return false;
+  }
 
   // Calcular el DV esperado
   const dvEsperado = calcularDV(cuerpo);
 
   // Comparar
   return dvIngresado === dvEsperado;
+}
+
+/**
+ * Valida que un RUT sea de tipo específico (empresa, persona, extranjero)
+ * @param {string} rut - RUT completo
+ * @param {string} tipo - 'rut_empresa', 'rut_persona', 'rut_extranjero', 'pasaporte', 'sin_identificacion'
+ * @returns {boolean} true si coincide con el tipo
+ */
+export function validarTipoRut(rut, tipo) {
+  if (tipo === 'sin_identificacion') return true;
+  if (tipo === 'pasaporte') return rut && rut.length > 0; // Cualquier formato para pasaporte
+
+  if (!validarRut(rut)) return false;
+
+  const rutLimpio = limpiarRut(rut);
+  const cuerpo = rutLimpio.slice(0, -1);
+  const numero = parseInt(cuerpo);
+
+  switch (tipo) {
+    case 'rut_empresa':
+      // RUTs de empresa empiezan con 50-99 (millones)
+      return numero >= 50000000 && numero < 100000000;
+
+    case 'rut_persona':
+      // RUTs de persona van desde 1.000.000 hasta 49.999.999
+      return numero >= 1000000 && numero < 50000000;
+
+    case 'rut_extranjero':
+      // RUTs de extranjero empiezan con 55 (serie especial del SII)
+      return numero >= 55000000 && numero < 56000000;
+
+    default:
+      return true;
+  }
 }
 
 /**

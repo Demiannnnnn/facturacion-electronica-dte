@@ -23,6 +23,7 @@ function Layout({ children }) {
     { path: '/', label: 'Dashboard', icon: '📊' },
     { path: '/clientes', label: 'Clientes', icon: '👥' },
     { path: '/productos', label: 'Productos', icon: '📦' },
+    { path: '/vendedores', label: 'Vendedores', icon: '👨‍💼' },
     { path: '/facturas', label: 'Facturas', icon: '📄' },
     { path: '/reportes', label: 'Reportes', icon: '📈' },
     { path: '/configuracion/emisor', label: 'Configuración', icon: '⚙️' }

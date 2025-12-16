@@ -9,6 +9,9 @@ import { registerAuthHandlers } from './ipc/auth.js';
 import { registerClientesHandlers } from './ipc/clientes.js';
 import { registerProductosHandlers } from './ipc/productos.js';
 import { registerFacturasHandlers } from './ipc/facturas.js';
+import { registerVendedoresHandlers } from './ipc/vendedores.js';
+import { registerBackupHandlers, createAutomaticBackup } from './ipc/backup.js';
+import { registerExportHandlers } from './ipc/export.js';
 import { createMenu } from './menu.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -54,6 +57,9 @@ app.whenReady().then(() => {
   registerClientesHandlers();
   registerProductosHandlers();
   registerFacturasHandlers();
+  registerVendedoresHandlers();
+  registerBackupHandlers();
+  registerExportHandlers();
 
   // Crear menú en español
   createMenu();
@@ -63,6 +69,9 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
+  // Crear backup automático antes de cerrar
+  createAutomaticBackup();
+
   if (process.platform !== 'darwin') {
     app.quit();
   }

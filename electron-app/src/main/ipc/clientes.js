@@ -11,8 +11,10 @@ export function registerClientesHandlers() {
       const stmt = db.prepare(`
         INSERT INTO clientes (
           rut, razon_social, giro, direccion, region, comuna, ciudad, telefono, email,
+          tipo_documento, nombre_fantasia, contacto_nombre, contacto_cargo, contacto_email, contacto_telefono,
+          condicion_pago, dias_credito, limite_credito, vendedor_id, zona, descuento_automatico, lista_precios,
           created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
       const result = stmt.run(
@@ -25,6 +27,19 @@ export function registerClientesHandlers() {
         cliente.ciudad || null,
         cliente.telefono || null,
         cliente.email || null,
+        cliente.tipoDocumento || 'rut_empresa',
+        cliente.nombreFantasia || null,
+        cliente.contactoNombre || null,
+        cliente.contactoCargo || null,
+        cliente.contactoEmail || null,
+        cliente.contactoTelefono || null,
+        cliente.condicionPago || 'contado',
+        cliente.diasCredito || 0,
+        cliente.limiteCredito || 0,
+        cliente.vendedorId || null,
+        cliente.zona || null,
+        cliente.descuentoAutomatico || 0,
+        cliente.listaPrecios || 'normal',
         now,
         now
       );
@@ -130,7 +145,11 @@ export function registerClientesHandlers() {
       const stmt = db.prepare(`
         UPDATE clientes
         SET rut = ?, razon_social = ?, giro = ?, direccion = ?, region = ?,
-            comuna = ?, ciudad = ?, telefono = ?, email = ?, updated_at = ?
+            comuna = ?, ciudad = ?, telefono = ?, email = ?,
+            tipo_documento = ?, nombre_fantasia = ?, contacto_nombre = ?, contacto_cargo = ?,
+            contacto_email = ?, contacto_telefono = ?,
+            condicion_pago = ?, dias_credito = ?, limite_credito = ?, vendedor_id = ?,
+            zona = ?, descuento_automatico = ?, lista_precios = ?, updated_at = ?
         WHERE id = ?
       `);
 
@@ -144,6 +163,19 @@ export function registerClientesHandlers() {
         cliente.ciudad || null,
         cliente.telefono || null,
         cliente.email || null,
+        cliente.tipoDocumento || 'rut_empresa',
+        cliente.nombreFantasia || null,
+        cliente.contactoNombre || null,
+        cliente.contactoCargo || null,
+        cliente.contactoEmail || null,
+        cliente.contactoTelefono || null,
+        cliente.condicionPago || 'contado',
+        cliente.diasCredito || 0,
+        cliente.limiteCredito || 0,
+        cliente.vendedorId || null,
+        cliente.zona || null,
+        cliente.descuentoAutomatico || 0,
+        cliente.listaPrecios || 'normal',
         now,
         id
       );

@@ -6,6 +6,39 @@ export function createMenu() {
       label: 'Archivo',
       submenu: [
         {
+          label: 'Exportar',
+          submenu: [
+            {
+              label: 'Exportar Clientes a Excel',
+              accelerator: 'CmdOrCtrl+Shift+C',
+              click: async (menuItem, browserWindow) => {
+                if (browserWindow) {
+                  browserWindow.webContents.send('menu:export-clientes');
+                }
+              }
+            },
+            {
+              label: 'Exportar Productos a Excel',
+              accelerator: 'CmdOrCtrl+Shift+P',
+              click: async (menuItem, browserWindow) => {
+                if (browserWindow) {
+                  browserWindow.webContents.send('menu:export-productos');
+                }
+              }
+            },
+            {
+              label: 'Exportar Facturas a Excel',
+              accelerator: 'CmdOrCtrl+Shift+F',
+              click: async (menuItem, browserWindow) => {
+                if (browserWindow) {
+                  browserWindow.webContents.send('menu:export-facturas');
+                }
+              }
+            }
+          ]
+        },
+        { type: 'separator' },
+        {
           label: 'Salir',
           accelerator: 'Alt+F4',
           click: () => {

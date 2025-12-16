@@ -189,6 +189,89 @@ function createTables() {
     )
   `);
 
+  // Tabla de vendedores
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS vendedores (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nombre TEXT NOT NULL,
+      apellido TEXT NOT NULL,
+      email TEXT,
+      telefono TEXT,
+      comision REAL DEFAULT 0,
+      activo INTEGER DEFAULT 1,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+  `);
+
+  // Tabla de guías de despacho
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS guias_despacho (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      folio INTEGER UNIQUE NOT NULL,
+      factura_id INTEGER,
+      cliente_id INTEGER NOT NULL,
+      fecha TEXT NOT NULL,
+      direccion_despacho TEXT NOT NULL,
+      fecha_despacho TEXT,
+      transportista TEXT,
+      patente TEXT,
+      observaciones TEXT,
+      estado TEXT DEFAULT 'pendiente',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (factura_id) REFERENCES facturas (id),
+      FOREIGN KEY (cliente_id) REFERENCES clientes (id)
+    )
+  `);
+
+  // Tabla de items de guías de despacho
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS guia_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      guia_id INTEGER NOT NULL,
+      numero_linea INTEGER NOT NULL,
+      producto_id INTEGER,
+      descripcion TEXT NOT NULL,
+      cantidad REAL NOT NULL,
+      unidad TEXT DEFAULT 'UN',
+      FOREIGN KEY (guia_id) REFERENCES guias_despacho (id) ON DELETE CASCADE,
+      FOREIGN KEY (producto_id) REFERENCES productos (id)
+    )
+  `);
+
+  // Tabla de referencias de documentos (para notas de crédito/débito)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS referencias_documentos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      documento_id INTEGER NOT NULL,
+      tipo_documento_referencia INTEGER NOT NULL,
+      folio_referencia INTEGER NOT NULL,
+      fecha_referencia TEXT NOT NULL,
+      razon_referencia TEXT NOT NULL,
+      codigo_referencia INTEGER,
+      detalle TEXT,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (documento_id) REFERENCES facturas (id) ON DELETE CASCADE
+    )
+  `);
+
+  // Tabla de pagos (cuentas por cobrar)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS pagos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      factura_id INTEGER NOT NULL,
+      monto REAL NOT NULL,
+      fecha_pago TEXT NOT NULL,
+      forma_pago TEXT NOT NULL,
+      referencia TEXT,
+      observaciones TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (factura_id) REFERENCES facturas (id) ON DELETE CASCADE
+    )
+  `);
+
   // Migración: Eliminar columna subtotal de factura_items si existe (columna antigua)
   try {
     // Verificar si la columna existe
@@ -259,6 +342,21 @@ function createTables() {
 
   // Migraciones: Agregar columnas nuevas si no existen
   const migrateColumns = [
+    // Clientes - PRIORIDAD ALTA
+    { table: 'clientes', column: 'tipo_documento', definition: 'TEXT DEFAULT "rut_empresa"' },
+    { table: 'clientes', column: 'nombre_fantasia', definition: 'TEXT' },
+    { table: 'clientes', column: 'contacto_nombre', definition: 'TEXT' },
+    { table: 'clientes', column: 'contacto_cargo', definition: 'TEXT' },
+    { table: 'clientes', column: 'contacto_email', definition: 'TEXT' },
+    { table: 'clientes', column: 'contacto_telefono', definition: 'TEXT' },
+    // Clientes - PRIORIDAD MEDIA (Condiciones Comerciales)
+    { table: 'clientes', column: 'condicion_pago', definition: 'TEXT DEFAULT "contado"' },
+    { table: 'clientes', column: 'dias_credito', definition: 'INTEGER DEFAULT 0' },
+    { table: 'clientes', column: 'limite_credito', definition: 'REAL DEFAULT 0' },
+    { table: 'clientes', column: 'vendedor_id', definition: 'INTEGER' },
+    { table: 'clientes', column: 'zona', definition: 'TEXT' },
+    { table: 'clientes', column: 'descuento_automatico', definition: 'REAL DEFAULT 0' },
+    { table: 'clientes', column: 'lista_precios', definition: 'TEXT DEFAULT "normal"' },
     // Facturas
     { table: 'facturas', column: 'tipo_documento', definition: 'INTEGER DEFAULT 33' },
     { table: 'facturas', column: 'forma_pago', definition: 'TEXT DEFAULT "contado"' },
@@ -268,12 +366,16 @@ function createTables() {
     { table: 'facturas', column: 'pdf_path', definition: 'TEXT' }, // Ruta al PDF guardado
     { table: 'facturas', column: 'sii_track_id', definition: 'TEXT' }, // ID de seguimiento del SII
     { table: 'facturas', column: 'sii_estado', definition: 'TEXT' }, // Estado en el SII (ACEPTADO, RECHAZADO, etc)
+    { table: 'facturas', column: 'orden_compra', definition: 'TEXT' }, // PRIORIDAD ALTA
+    { table: 'facturas', column: 'forma_pago_detalle', definition: 'TEXT' }, // PRIORIDAD ALTA - efectivo, transferencia, cheque, tarjeta
+    { table: 'facturas', column: 'vendedor_id', definition: 'INTEGER' }, // PRIORIDAD MEDIA - vendedor asignado
     // Factura Items
     { table: 'factura_items', column: 'numero_linea', definition: 'INTEGER DEFAULT 1' },
     { table: 'factura_items', column: 'codigo_item', definition: 'TEXT' },
     { table: 'factura_items', column: 'unidad', definition: 'TEXT DEFAULT "UN"' },
     { table: 'factura_items', column: 'descuento', definition: 'REAL DEFAULT 0' },
-    { table: 'factura_items', column: 'monto_item', definition: 'REAL DEFAULT 0' }
+    { table: 'factura_items', column: 'monto_item', definition: 'REAL DEFAULT 0' },
+    { table: 'factura_items', column: 'descuento_monto', definition: 'REAL DEFAULT 0' } // PRIORIDAD ALTA - descuento en pesos
   ];
 
   migrateColumns.forEach(({ table, column, definition }) => {

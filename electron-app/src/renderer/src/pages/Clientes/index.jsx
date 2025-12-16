@@ -16,21 +16,47 @@ function Clientes() {
   const [error, setError] = useState('');
   const [validationErrors, setValidationErrors] = useState({});
   const [comunasDisponibles, setComunasDisponibles] = useState([]);
+  const [vendedores, setVendedores] = useState([]);
   const [formData, setFormData] = useState({
+    tipoDocumento: 'rut_empresa',
     rut: '',
     razonSocial: '',
+    nombreFantasia: '',
     giro: '',
     direccion: '',
     region: '',
     comuna: '',
     ciudad: '',
     telefono: '',
-    email: ''
+    email: '',
+    contactoNombre: '',
+    contactoCargo: '',
+    contactoEmail: '',
+    contactoTelefono: '',
+    condicionPago: 'contado',
+    diasCredito: 0,
+    limiteCredito: 0,
+    vendedorId: null,
+    zona: '',
+    descuentoAutomatico: 0,
+    listaPrecios: 'normal'
   });
 
   useEffect(() => {
     loadClientes();
+    loadVendedores();
   }, []);
+
+  const loadVendedores = async () => {
+    try {
+      const result = await window.api.vendedores.getActivos();
+      if (result.success) {
+        setVendedores(result.data);
+      }
+    } catch (error) {
+      console.error('Error loading vendedores:', error);
+    }
+  };
 
   // Fix: Auto-focus en el primer campo cuando se abre el formulario
   useEffect(() => {
@@ -168,15 +194,28 @@ function Clientes() {
     }
 
     setFormData({
+      tipoDocumento: cliente.tipo_documento || 'rut_empresa',
       rut: formatearRut(cliente.rut),
       razonSocial: cliente.razon_social,
+      nombreFantasia: cliente.nombre_fantasia || '',
       giro: cliente.giro || '',
       direccion: cliente.direccion || '',
       region: cliente.region || '',
       comuna: cliente.comuna || '',
       ciudad: cliente.ciudad || '',
       telefono: cliente.telefono || '',
-      email: cliente.email || ''
+      email: cliente.email || '',
+      contactoNombre: cliente.contacto_nombre || '',
+      contactoCargo: cliente.contacto_cargo || '',
+      contactoEmail: cliente.contacto_email || '',
+      contactoTelefono: cliente.contacto_telefono || '',
+      condicionPago: cliente.condicion_pago || 'contado',
+      diasCredito: cliente.dias_credito || 0,
+      limiteCredito: cliente.limite_credito || 0,
+      vendedorId: cliente.vendedor_id || null,
+      zona: cliente.zona || '',
+      descuentoAutomatico: cliente.descuento_automatico || 0,
+      listaPrecios: cliente.lista_precios || 'normal'
     });
     setValidationErrors({});
     setView('form');
@@ -209,15 +248,28 @@ function Clientes() {
     setValidationErrors({});
     setComunasDisponibles([]);
     setFormData({
+      tipoDocumento: 'rut_empresa',
       rut: '',
       razonSocial: '',
+      nombreFantasia: '',
       giro: '',
       direccion: '',
       region: '',
       comuna: '',
       ciudad: '',
       telefono: '',
-      email: ''
+      email: '',
+      contactoNombre: '',
+      contactoCargo: '',
+      contactoEmail: '',
+      contactoTelefono: '',
+      condicionPago: 'contado',
+      diasCredito: 0,
+      limiteCredito: 0,
+      vendedorId: null,
+      zona: '',
+      descuentoAutomatico: 0,
+      listaPrecios: 'normal'
     });
   };
 
@@ -319,7 +371,23 @@ function Clientes() {
           <form onSubmit={handleSubmit} style={styles.form}>
             <div style={styles.formRow}>
               <div style={styles.formGroup}>
-                <label style={styles.label}>RUT *</label>
+                <label style={styles.label}>Tipo de Documento *</label>
+                <select
+                  name="tipoDocumento"
+                  value={formData.tipoDocumento}
+                  onChange={handleInputChange}
+                  style={styles.input}
+                  required
+                >
+                  <option value="rut_empresa">RUT Empresa (76.xxx.xxx-x)</option>
+                  <option value="rut_persona">RUT Persona (12.xxx.xxx-x)</option>
+                  <option value="rut_extranjero">RUT Extranjero (55.xxx.xxx-x)</option>
+                  <option value="pasaporte">Pasaporte</option>
+                  <option value="sin_identificacion">Sin Identificación (Boleta genérica)</option>
+                </select>
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>RUT / Identificación *</label>
                 <input
                   type="text"
                   name="rut"
@@ -336,8 +404,11 @@ function Clientes() {
                   <span style={styles.errorText}>{validationErrors.rut}</span>
                 )}
               </div>
+            </div>
+
+            <div style={styles.formRow}>
               <div style={styles.formGroup}>
-                <label style={styles.label}>Razón Social *</label>
+                <label style={styles.label}>Razón Social / Nombre Completo *</label>
                 <input
                   type="text"
                   name="razonSocial"
@@ -347,12 +418,23 @@ function Clientes() {
                     ...styles.input,
                     ...(validationErrors.razonSocial ? styles.inputError : {})
                   }}
-                  placeholder="Nombre de la empresa"
+                  placeholder="Nombre de la empresa o persona"
                   required
                 />
                 {validationErrors.razonSocial && (
                   <span style={styles.errorText}>{validationErrors.razonSocial}</span>
                 )}
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Nombre Fantasía</label>
+                <input
+                  type="text"
+                  name="nombreFantasia"
+                  value={formData.nombreFantasia}
+                  onChange={handleInputChange}
+                  style={styles.input}
+                  placeholder="Cómo le dices al cliente"
+                />
               </div>
             </div>
 
@@ -457,6 +539,169 @@ function Clientes() {
               {validationErrors.email && (
                 <span style={styles.errorText}>{validationErrors.email}</span>
               )}
+            </div>
+
+            <div style={{marginTop: '24px', paddingTop: '24px', borderTop: '2px solid #eee'}}>
+              <h3 style={{marginBottom: '16px', color: '#333', fontSize: '16px'}}>📞 Datos de Contacto (Persona)</h3>
+              <p style={{fontSize: '13px', color: '#666', marginBottom: '16px'}}>Información de la persona de contacto dentro de la empresa</p>
+
+              <div style={styles.formRow}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Nombre del Contacto</label>
+                  <input
+                    type="text"
+                    name="contactoNombre"
+                    value={formData.contactoNombre}
+                    onChange={handleInputChange}
+                    style={styles.input}
+                    placeholder="Nombre completo"
+                  />
+                </div>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Cargo</label>
+                  <input
+                    type="text"
+                    name="contactoCargo"
+                    value={formData.contactoCargo}
+                    onChange={handleInputChange}
+                    style={styles.input}
+                    placeholder="Ej: Gerente, Contador, etc."
+                  />
+                </div>
+              </div>
+
+              <div style={styles.formRow}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Email del Contacto</label>
+                  <input
+                    type="email"
+                    name="contactoEmail"
+                    value={formData.contactoEmail}
+                    onChange={handleInputChange}
+                    style={styles.input}
+                    placeholder="email.contacto@empresa.cl"
+                  />
+                </div>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Teléfono del Contacto</label>
+                  <input
+                    type="tel"
+                    name="contactoTelefono"
+                    value={formData.contactoTelefono}
+                    onChange={handleInputChange}
+                    style={styles.input}
+                    placeholder="+56912345678"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div style={{marginTop: '24px', paddingTop: '24px', borderTop: '2px solid #eee'}}>
+              <h3 style={{marginBottom: '16px', color: '#333', fontSize: '16px'}}>💼 Condiciones Comerciales</h3>
+              <p style={{fontSize: '13px', color: '#666', marginBottom: '16px'}}>Configuración de pagos, crédito y condiciones especiales</p>
+
+              <div style={styles.formRow}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Condición de Pago *</label>
+                  <select
+                    name="condicionPago"
+                    value={formData.condicionPago}
+                    onChange={handleInputChange}
+                    style={styles.input}
+                  >
+                    <option value="contado">Contado</option>
+                    <option value="credito">Crédito</option>
+                  </select>
+                </div>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Días de Crédito</label>
+                  <input
+                    type="number"
+                    name="diasCredito"
+                    value={formData.diasCredito}
+                    onChange={handleInputChange}
+                    style={styles.input}
+                    placeholder="30, 60, 90..."
+                    min="0"
+                    disabled={formData.condicionPago === 'contado'}
+                  />
+                </div>
+              </div>
+
+              <div style={styles.formRow}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Límite de Crédito ($)</label>
+                  <input
+                    type="number"
+                    name="limiteCredito"
+                    value={formData.limiteCredito}
+                    onChange={handleInputChange}
+                    style={styles.input}
+                    placeholder="Monto máximo de deuda"
+                    min="0"
+                    disabled={formData.condicionPago === 'contado'}
+                  />
+                </div>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Vendedor Asignado</label>
+                  <select
+                    name="vendedorId"
+                    value={formData.vendedorId || ''}
+                    onChange={handleInputChange}
+                    style={styles.input}
+                  >
+                    <option value="">Sin vendedor asignado</option>
+                    {vendedores.map(v => (
+                      <option key={v.id} value={v.id}>
+                        {v.nombre} {v.apellido}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div style={styles.formRow}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Zona / Ruta</label>
+                  <input
+                    type="text"
+                    name="zona"
+                    value={formData.zona}
+                    onChange={handleInputChange}
+                    style={styles.input}
+                    placeholder="Ej: Zona Norte, Zona Centro, etc."
+                  />
+                </div>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Descuento Automático (%)</label>
+                  <input
+                    type="number"
+                    name="descuentoAutomatico"
+                    value={formData.descuentoAutomatico}
+                    onChange={handleInputChange}
+                    style={styles.input}
+                    placeholder="0-100"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                  />
+                </div>
+              </div>
+
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Lista de Precios</label>
+                <select
+                  name="listaPrecios"
+                  value={formData.listaPrecios}
+                  onChange={handleInputChange}
+                  style={styles.input}
+                >
+                  <option value="normal">Precio Normal</option>
+                  <option value="mayorista">Mayorista (-10%)</option>
+                  <option value="distribuidor">Distribuidor (-15%)</option>
+                  <option value="especial">Especial (Personalizado)</option>
+                </select>
+              </div>
             </div>
 
             <div style={styles.formButtons}>

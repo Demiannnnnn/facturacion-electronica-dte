@@ -14,7 +14,9 @@ function FormularioFactura({ onCancel, onSuccess }) {
     fecha: new Date().toISOString().split('T')[0],
     fecha_vencimiento: '',
     forma_pago: 'contado',
+    forma_pago_detalle: '',
     condiciones_pago: '',
+    orden_compra: '',
     observaciones: ''
   });
 
@@ -26,6 +28,7 @@ function FormularioFactura({ onCancel, onSuccess }) {
     unidad: 'UN',
     precio_unitario: 0,
     descuento: 0,
+    descuento_monto: 0,
     monto_item: 0
   }]);
 
@@ -333,6 +336,23 @@ function FormularioFactura({ onCancel, onSuccess }) {
             </div>
           </div>
 
+          <div style={styles.formGroup}>
+            <label style={styles.label}>Forma de Pago Detalle</label>
+            <select
+              name="forma_pago_detalle"
+              value={formData.forma_pago_detalle}
+              onChange={handleFormChange}
+              style={styles.input}
+            >
+              <option value="">Seleccionar...</option>
+              <option value="efectivo">Efectivo</option>
+              <option value="transferencia">Transferencia Bancaria</option>
+              <option value="cheque">Cheque</option>
+              <option value="tarjeta_debito">Tarjeta de Débito</option>
+              <option value="tarjeta_credito">Tarjeta de Crédito</option>
+            </select>
+          </div>
+
           {formData.forma_pago === 'credito' && (
             <div style={styles.formRow}>
               <div style={styles.formGroup}>
@@ -360,6 +380,18 @@ function FormularioFactura({ onCancel, onSuccess }) {
               </div>
             </div>
           )}
+
+          <div style={styles.formGroup}>
+            <label style={styles.label}>Orden de Compra (Referencia Cliente)</label>
+            <input
+              type="text"
+              name="orden_compra"
+              value={formData.orden_compra}
+              onChange={handleFormChange}
+              style={styles.input}
+              placeholder="Número o referencia de orden de compra del cliente"
+            />
+          </div>
         </div>
 
         {/* Sección Items */}

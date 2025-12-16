@@ -38,6 +38,16 @@ contextBridge.exposeInMainWorld('api', {
     getReporte: () => ipcRenderer.invoke('productos:getReporte')
   },
 
+  // Vendedores
+  vendedores: {
+    create: (vendedor) => ipcRenderer.invoke('vendedores:create', vendedor),
+    getAll: () => ipcRenderer.invoke('vendedores:getAll'),
+    getActivos: () => ipcRenderer.invoke('vendedores:getActivos'),
+    getById: (id) => ipcRenderer.invoke('vendedores:getById', id),
+    update: (data) => ipcRenderer.invoke('vendedores:update', data),
+    delete: (id) => ipcRenderer.invoke('vendedores:delete', id)
+  },
+
   // Facturas
   facturas: {
     getNextFolio: () => ipcRenderer.invoke('facturas:getNextFolio'),
@@ -58,5 +68,29 @@ contextBridge.exposeInMainWorld('api', {
   emisor: {
     get: () => ipcRenderer.invoke('emisor:get'),
     save: (data) => ipcRenderer.invoke('emisor:save', data)
+  },
+
+  // Backup
+  backup: {
+    create: () => ipcRenderer.invoke('backup:create'),
+    list: () => ipcRenderer.invoke('backup:list'),
+    restore: (backupPath) => ipcRenderer.invoke('backup:restore', backupPath),
+    export: () => ipcRenderer.invoke('backup:export'),
+    import: () => ipcRenderer.invoke('backup:import'),
+    delete: (backupPath) => ipcRenderer.invoke('backup:delete', backupPath)
+  },
+
+  // Export to Excel
+  export: {
+    clientes: () => ipcRenderer.invoke('export:clientes'),
+    productos: () => ipcRenderer.invoke('export:productos'),
+    facturas: () => ipcRenderer.invoke('export:facturas')
+  },
+
+  // Menu events listener
+  onMenuEvent: (callback) => {
+    ipcRenderer.on('menu:export-clientes', () => callback('export-clientes'));
+    ipcRenderer.on('menu:export-productos', () => callback('export-productos'));
+    ipcRenderer.on('menu:export-facturas', () => callback('export-facturas'));
   }
 });
