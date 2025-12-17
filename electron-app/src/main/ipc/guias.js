@@ -232,7 +232,7 @@ export function registerGuiasHandlers() {
         try {
             const result = await dialog.showSaveDialog({
                 title: 'Guardar Guía de Despacho',
-                defaultPath: `Guia_${data.folio}.pdf`,
+                defaultPath: data.fileName || `Guia_${data.folio}.pdf`,
                 filters: [
                     { name: 'PDF', extensions: ['pdf'] }
                 ]
@@ -242,15 +242,18 @@ export function registerGuiasHandlers() {
                 return { success: false, message: 'Guardado cancelado' };
             }
 
-            // Guardar PDF
-            fs.writeFileSync(result.filePath, Buffer.from(data.pdfData));
+            // Guardar PDF desde buffer
+            const buffer = Buffer.from(data.buffer);
+            fs.writeFileSync(result.filePath, buffer);
 
-            // Actualizar ruta en BD
-            const db = getDatabase();
-            db.prepare(`
-        UPDATE guias_despacho SET pdf_path = ?, updated_at = datetime('now')
-        WHERE id = ?
-      `).run(result.filePath, data.guiaId);
+            // Actualizar ruta en BD si se proporciona guiaId
+            if (data.guiaId) {
+                const db = getDatabase();
+                db.prepare(`
+          UPDATE guias_despacho SET pdf_path = ?, updated_at = datetime('now')
+          WHERE id = ?
+        `).run(result.filePath, data.guiaId);
+            }
 
             return {
                 success: true,
