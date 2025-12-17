@@ -13,6 +13,8 @@ import Reportes from './pages/Reportes';
 import Layout from './components/layout/Layout';
 import ChangePassword from './pages/Configuracion/ChangePassword';
 import EmisorConfig from './pages/Configuracion/EmisorConfig';
+import UserManual from './pages/Configuracion/UserManual';
+import CuentasPorCobrar from './pages/Facturacion/CuentasPorCobrar';
 
 function App() {
   // Listener para eventos del menú
@@ -140,6 +142,28 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <EmisorConfig />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/configuracion/manual"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <UserManual />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/cuentas-por-cobrar"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <CuentasPorCobrar />
                 </Layout>
               </ProtectedRoute>
             }

@@ -87,6 +87,14 @@ contextBridge.exposeInMainWorld('api', {
     facturas: () => ipcRenderer.invoke('export:facturas')
   },
 
+  // Pagos
+  pagos: {
+    create: (data) => ipcRenderer.invoke('pagos:create', data),
+    getByFactura: (facturaId) => ipcRenderer.invoke('pagos:getByFactura', facturaId),
+    delete: (id) => ipcRenderer.invoke('pagos:delete', id),
+    getEstadoCuenta: (clienteId) => ipcRenderer.invoke('pagos:getEstadoCuenta', clienteId)
+  },
+
   // Menu events listener
   onMenuEvent: (callback) => {
     ipcRenderer.on('menu:export-clientes', () => callback('export-clientes'));

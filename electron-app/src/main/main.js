@@ -10,6 +10,8 @@ import { registerClientesHandlers } from './ipc/clientes.js';
 import { registerProductosHandlers } from './ipc/productos.js';
 import { registerFacturasHandlers } from './ipc/facturas.js';
 import { registerVendedoresHandlers } from './ipc/vendedores.js';
+import { registerPagosHandlers } from './ipc/pagos.js';
+import { registerGuiasHandlers } from './ipc/guias.js';
 import { registerBackupHandlers, createAutomaticBackup } from './ipc/backup.js';
 import { registerExportHandlers } from './ipc/export.js';
 import { createMenu } from './menu.js';
@@ -58,6 +60,8 @@ app.whenReady().then(() => {
   registerProductosHandlers();
   registerFacturasHandlers();
   registerVendedoresHandlers();
+  registerPagosHandlers();
+  registerGuiasHandlers();
   registerBackupHandlers();
   registerExportHandlers();
 

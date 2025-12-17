@@ -101,32 +101,45 @@ export function registerPagosHandlers() {
     try {
       const db = getDatabase();
 
+      // Obtener datos del cliente
+      const cliente = db.prepare(`
+        SELECT * FROM clientes WHERE id = ?
+      `).get(clienteId);
+
+      if (!cliente) {
+        return {
+          success: false,
+          error: 'Cliente no encontrado'
+        };
+      }
+
       // Obtener facturas del cliente con su saldo
       const facturas = db.prepare(`
         SELECT
           f.*,
-          COALESCE(SUM(p.monto), 0) as total_pagado,
+          COALESCE(SUM(p.monto), 0) as monto_pagado,
           (f.total - COALESCE(SUM(p.monto), 0)) as saldo_pendiente
         FROM facturas f
         LEFT JOIN pagos p ON f.id = p.factura_id
-        WHERE f.cliente_id = ? AND f.forma_pago = 'credito'
+        WHERE f.cliente_id = ?
         GROUP BY f.id
         ORDER BY f.fecha DESC
       `).all(clienteId);
 
-      // Calcular totales
-      const totales = {
+      // Calcular totales (resumen en lugar de totales para coincidir con el frontend)
+      const resumen = {
         total_facturado: facturas.reduce((sum, f) => sum + f.total, 0),
-        total_pagado: facturas.reduce((sum, f) => sum + f.total_pagado, 0),
-        saldo_pendiente: facturas.reduce((sum, f) => sum + f.saldo_pendiente, 0),
-        facturas_pendientes: facturas.filter(f => f.saldo_pendiente > 0).length
+        total_pagado: facturas.reduce((sum, f) => sum + (f.monto_pagado || 0), 0),
+        saldo_pendiente: facturas.reduce((sum, f) => sum + (f.saldo_pendiente || 0), 0),
+        facturas_pendientes: facturas.filter(f => (f.saldo_pendiente || 0) > 0).length
       };
 
       return {
         success: true,
         data: {
+          cliente,
           facturas,
-          totales
+          resumen
         }
       };
     } catch (error) {

@@ -19,12 +19,17 @@ function Layout({ children }) {
     navigate('/configuracion/cambiar-contrasena');
   };
 
+  const handleUserManual = () => {
+    navigate('/configuracion/manual');
+  };
+
   const menuItems = [
     { path: '/', label: 'Dashboard', icon: '📊' },
     { path: '/clientes', label: 'Clientes', icon: '👥' },
     { path: '/productos', label: 'Productos', icon: '📦' },
     { path: '/vendedores', label: 'Vendedores', icon: '👨‍💼' },
     { path: '/facturas', label: 'Facturas', icon: '📄' },
+    { path: '/cuentas-por-cobrar', label: 'Cuentas por Cobrar', icon: '💰' },
     { path: '/reportes', label: 'Reportes', icon: '📈' },
     { path: '/configuracion/emisor', label: 'Configuración', icon: '⚙️' }
   ];
@@ -48,6 +53,9 @@ function Layout({ children }) {
           </div>
           <div style={styles.userSection}>
             <span style={styles.username}>{user?.username}</span>
+            <button onClick={handleUserManual} style={styles.manualBtn}>
+              📚 Manual de Usuario
+            </button>
             <button onClick={handleChangePassword} style={styles.changePasswordBtn}>
               Cambiar Contraseña
             </button>
@@ -142,6 +150,16 @@ const styles = {
   },
   username: {
     fontSize: '14px',
+    fontWeight: '500'
+  },
+  manualBtn: {
+    padding: '8px 16px',
+    fontSize: '14px',
+    backgroundColor: '#28a745',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
     fontWeight: '500'
   },
   changePasswordBtn: {
