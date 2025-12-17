@@ -95,6 +95,13 @@ contextBridge.exposeInMainWorld('api', {
     getEstadoCuenta: (clienteId) => ipcRenderer.invoke('pagos:getEstadoCuenta', clienteId)
   },
 
+  // Folios
+  folios: {
+    getAll: () => ipcRenderer.invoke('folios:getAll'),
+    update: (data) => ipcRenderer.invoke('folios:update', data),
+    getNext: (tipoDocumento) => ipcRenderer.invoke('folios:getNext', tipoDocumento)
+  },
+
   // Menu events listener
   onMenuEvent: (callback) => {
     ipcRenderer.on('menu:export-clientes', () => callback('export-clientes'));

@@ -31,6 +31,7 @@ function Layout({ children }) {
     { path: '/facturas', label: 'Facturas', icon: '📄' },
     { path: '/cuentas-por-cobrar', label: 'Cuentas por Cobrar', icon: '💰' },
     { path: '/reportes', label: 'Reportes', icon: '📈' },
+    { path: '/configuracion/folios', label: 'Folios', icon: '🔢' },
     { path: '/configuracion/emisor', label: 'Configuración', icon: '⚙️' }
   ];
 

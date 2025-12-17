@@ -14,6 +14,7 @@ import Layout from './components/layout/Layout';
 import ChangePassword from './pages/Configuracion/ChangePassword';
 import EmisorConfig from './pages/Configuracion/EmisorConfig';
 import UserManual from './pages/Configuracion/UserManual';
+import Folios from './pages/Configuracion/Folios';
 import CuentasPorCobrar from './pages/Facturacion/CuentasPorCobrar';
 
 function App() {
@@ -153,6 +154,17 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <UserManual />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/configuracion/folios"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Folios />
                 </Layout>
               </ProtectedRoute>
             }
