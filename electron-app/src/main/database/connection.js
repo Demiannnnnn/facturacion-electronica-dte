@@ -357,6 +357,8 @@ function createTables() {
     { table: 'clientes', column: 'zona', definition: 'TEXT' },
     { table: 'clientes', column: 'descuento_automatico', definition: 'REAL DEFAULT 0' },
     { table: 'clientes', column: 'lista_precios', definition: 'TEXT DEFAULT "normal"' },
+    // Productos
+    { table: 'productos', column: 'exento', definition: 'INTEGER DEFAULT 0' }, // 0 = afecto, 1 = exento de IVA
     // Facturas
     { table: 'facturas', column: 'tipo_documento', definition: 'INTEGER DEFAULT 33' },
     { table: 'facturas', column: 'forma_pago', definition: 'TEXT DEFAULT "contado"' },
@@ -375,7 +377,8 @@ function createTables() {
     { table: 'factura_items', column: 'unidad', definition: 'TEXT DEFAULT "UN"' },
     { table: 'factura_items', column: 'descuento', definition: 'REAL DEFAULT 0' },
     { table: 'factura_items', column: 'monto_item', definition: 'REAL DEFAULT 0' },
-    { table: 'factura_items', column: 'descuento_monto', definition: 'REAL DEFAULT 0' } // PRIORIDAD ALTA - descuento en pesos
+    { table: 'factura_items', column: 'descuento_monto', definition: 'REAL DEFAULT 0' }, // PRIORIDAD ALTA - descuento en pesos
+    { table: 'factura_items', column: 'exento', definition: 'INTEGER DEFAULT 0' } // 0 = afecto, 1 = exento de IVA
   ];
 
   migrateColumns.forEach(({ table, column, definition }) => {

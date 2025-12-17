@@ -72,12 +72,23 @@ function FormularioFactura({ onCancel, onSuccess }) {
 
   // Calcular totales de la factura
   const calcularTotales = () => {
-    const subtotal = items.reduce((sum, item) => sum + item.monto_item, 0);
-    const iva = subtotal * 0.19;
-    const total = subtotal + iva;
+    let netoAfecto = 0;
+    let montoExento = 0;
+
+    items.forEach(item => {
+      if (item.exento) {
+        montoExento += item.monto_item;
+      } else {
+        netoAfecto += item.monto_item;
+      }
+    });
+
+    const iva = netoAfecto * 0.19;
+    const total = netoAfecto + montoExento + iva;
 
     return {
-      subtotal: Math.round(subtotal),
+      subtotal: Math.round(netoAfecto),
+      monto_exento: Math.round(montoExento),
       iva: Math.round(iva),
       total: Math.round(total)
     };
@@ -151,8 +162,9 @@ function FormularioFactura({ onCancel, onSuccess }) {
         newItems[index].codigo_item = producto.codigo || '';
         newItems[index].descripcion = producto.nombre;
         newItems[index].precio_unitario = producto.precio;
+        newItems[index].exento = producto.exento === 1; // Copiar estado de exento
         newItems[index].monto_item = calcularMontoItem(
-          parseFloat(newItems[index].cantidad) || 0,
+          parseFloat(newItems[index].cantidad) || 1,
           producto.precio,
           parseFloat(newItems[index].descuento) || 0
         );
@@ -504,6 +516,9 @@ function FormularioFactura({ onCancel, onSuccess }) {
 
                 <div style={styles.itemTotal}>
                   <strong>Subtotal Item:</strong> ${item.monto_item.toLocaleString('es-CL')}
+                  {item.exento && (
+                    <span style={styles.exentoBadge}> ✓ Exento IVA</span>
+                  )}
                 </div>
               </div>
             ))}
@@ -528,9 +543,15 @@ function FormularioFactura({ onCancel, onSuccess }) {
         {/* Totales */}
         <div style={styles.totalesBox}>
           <div style={styles.totalRow}>
-            <span>Subtotal (Neto):</span>
+            <span>Neto Afecto:</span>
             <span style={styles.totalValue}>${totales.subtotal.toLocaleString('es-CL')}</span>
           </div>
+          {totales.monto_exento > 0 && (
+            <div style={styles.totalRow}>
+              <span>Monto Exento:</span>
+              <span style={styles.totalValue}>${totales.monto_exento.toLocaleString('es-CL')}</span>
+            </div>
+          )}
           <div style={styles.totalRow}>
             <span>IVA (19%):</span>
             <span style={styles.totalValue}>${totales.iva.toLocaleString('es-CL')}</span>
@@ -739,6 +760,16 @@ const styles = {
     borderRadius: '4px',
     marginTop: '10px',
     fontSize: '16px'
+  },
+  exentoBadge: {
+    display: 'inline-block',
+    fontSize: '11px',
+    fontWeight: '600',
+    color: '#856404',
+    backgroundColor: '#fff3cd',
+    padding: '3px 8px',
+    borderRadius: '10px',
+    marginLeft: '10px'
   },
   totalesBox: {
     backgroundColor: '#f8f9fa',

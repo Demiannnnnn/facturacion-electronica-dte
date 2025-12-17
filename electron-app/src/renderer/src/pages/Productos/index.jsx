@@ -12,7 +12,8 @@ function Productos() {
     nombre: '',
     descripcion: '',
     precio: '',
-    stock: ''
+    stock: '',
+    exento: false
   });
 
   useEffect(() => {
@@ -36,9 +37,10 @@ function Productos() {
   };
 
   const handleInputChange = (e) => {
+    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: value
     });
   };
 
@@ -56,7 +58,8 @@ function Productos() {
           producto: {
             ...formData,
             precio: parseFloat(formData.precio),
-            stock: parseInt(formData.stock)
+            stock: parseInt(formData.stock),
+            exento: formData.exento ? 1 : 0
           }
         });
       } else {
@@ -64,7 +67,8 @@ function Productos() {
         result = await window.api.productos.create({
           ...formData,
           precio: parseFloat(formData.precio),
-          stock: parseInt(formData.stock)
+          stock: parseInt(formData.stock),
+          exento: formData.exento ? 1 : 0
         });
       }
 
@@ -89,7 +93,8 @@ function Productos() {
       nombre: producto.nombre,
       descripcion: producto.descripcion || '',
       precio: producto.precio.toString(),
-      stock: producto.stock.toString()
+      stock: producto.stock.toString(),
+      exento: producto.exento === 1
     });
     setView('form');
   };
@@ -123,7 +128,8 @@ function Productos() {
       nombre: '',
       descripcion: '',
       precio: '',
-      stock: ''
+      stock: '',
+      exento: false
     });
   };
 
@@ -136,10 +142,10 @@ function Productos() {
 
   const filteredProductos = searchTerm
     ? productos.filter(p =>
-        (p.codigo && p.codigo.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (p.descripcion && p.descripcion.toLowerCase().includes(searchTerm.toLowerCase()))
-      )
+      (p.codigo && p.codigo.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (p.descripcion && p.descripcion.toLowerCase().includes(searchTerm.toLowerCase()))
+    )
     : productos;
 
   return (
@@ -191,7 +197,7 @@ function Productos() {
                       </button>
                       <button
                         onClick={() => handleDelete(producto)}
-                        style={{...styles.cardActionBtn, color: '#dc3545'}}
+                        style={{ ...styles.cardActionBtn, color: '#dc3545' }}
                         title="Eliminar"
                       >
                         🗑️
@@ -199,6 +205,11 @@ function Productos() {
                     </div>
                   </div>
                   <h3 style={styles.cardTitle}>{producto.nombre}</h3>
+                  {producto.exento === 1 && (
+                    <div style={styles.exentoBadge}>
+                      ✓ Exento de IVA
+                    </div>
+                  )}
                   <p style={styles.cardDescription}>{producto.descripcion || 'Sin descripción'}</p>
                   <div style={styles.cardFooter}>
                     <div style={styles.priceContainer}>
@@ -256,7 +267,7 @@ function Productos() {
                 name="descripcion"
                 value={formData.descripcion}
                 onChange={handleInputChange}
-                style={{...styles.input, minHeight: '80px', resize: 'vertical'}}
+                style={{ ...styles.input, minHeight: '80px', resize: 'vertical' }}
                 placeholder="Descripción detallada del producto"
               />
             </div>
@@ -290,6 +301,22 @@ function Productos() {
                   required
                 />
               </div>
+            </div>
+
+            <div style={styles.formGroup}>
+              <label style={styles.checkboxLabel}>
+                <input
+                  type="checkbox"
+                  name="exento"
+                  checked={formData.exento}
+                  onChange={handleInputChange}
+                  style={styles.checkbox}
+                />
+                <span>Producto Exento de IVA</span>
+              </label>
+              <small style={styles.helpText}>
+                Los productos exentos no llevan IVA en las facturas (ej: libros, medicamentos, etc.)
+              </small>
             </div>
 
             <div style={styles.formButtons}>
@@ -401,6 +428,16 @@ const styles = {
     marginBottom: '8px',
     color: '#212529'
   },
+  exentoBadge: {
+    display: 'inline-block',
+    fontSize: '11px',
+    fontWeight: '600',
+    color: '#856404',
+    backgroundColor: '#fff3cd',
+    padding: '4px 10px',
+    borderRadius: '12px',
+    marginBottom: '8px'
+  },
   cardDescription: {
     fontSize: '14px',
     color: '#6c757d',
@@ -509,6 +546,27 @@ const styles = {
     border: 'none',
     borderRadius: '4px',
     cursor: 'pointer'
+  },
+  checkboxLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    fontSize: '14px',
+    fontWeight: '500',
+    color: '#333',
+    cursor: 'pointer'
+  },
+  checkbox: {
+    width: '18px',
+    height: '18px',
+    cursor: 'pointer'
+  },
+  helpText: {
+    fontSize: '12px',
+    color: '#6c757d',
+    fontStyle: 'italic',
+    marginTop: '5px',
+    display: 'block'
   },
   error: {
     padding: '12px',
