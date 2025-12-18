@@ -11,9 +11,9 @@ export function registerProductosHandlers() {
 
       const stmt = db.prepare(`
         INSERT INTO productos (
-          codigo, nombre, descripcion, precio, stock,
+          codigo, nombre, descripcion, precio, stock, exento,
           created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
       const result = stmt.run(
@@ -22,6 +22,7 @@ export function registerProductosHandlers() {
         producto.descripcion || null,
         producto.precio,
         producto.stock || 0,
+        producto.exento || 0,
         now,
         now
       );
@@ -126,7 +127,7 @@ export function registerProductosHandlers() {
 
       const stmt = db.prepare(`
         UPDATE productos
-        SET codigo = ?, nombre = ?, descripcion = ?, precio = ?, stock = ?, updated_at = ?
+        SET codigo = ?, nombre = ?, descripcion = ?, precio = ?, stock = ?, exento = ?, updated_at = ?
         WHERE id = ?
       `);
 
@@ -136,6 +137,7 @@ export function registerProductosHandlers() {
         producto.descripcion || null,
         producto.precio,
         producto.stock || 0,
+        producto.exento || 0,
         now,
         id
       );

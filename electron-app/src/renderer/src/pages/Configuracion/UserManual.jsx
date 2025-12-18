@@ -389,22 +389,53 @@ function UserManual() {
             category: 'Configuración',
             content: (
                 <div>
+                    <h4>¿Qué es un backup?</h4>
+                    <p>Un backup es una <strong>copia de seguridad</strong> de toda tu información (clientes, productos, facturas, etc.). Te permite recuperar tus datos en caso de problemas.</p>
+
                     <h4>Backup automático:</h4>
                     <ul style={styles.stepList}>
-                        <li>El sistema crea backups <strong>automáticamente al cerrar</strong></li>
-                        <li>Se guardan los <strong>últimos 30 backups</strong></li>
-                        <li>Ubicación: Carpeta de usuario del sistema</li>
+                        <li>El sistema crea backups <strong>automáticamente cada vez que cierras la aplicación</strong></li>
+                        <li>Se guardan los <strong>últimos 30 backups</strong> (aproximadamente 1 mes)</li>
+                        <li>No necesitas hacer nada, es completamente automático</li>
+                        <li>Los backups antiguos se eliminan automáticamente para ahorrar espacio</li>
                     </ul>
-                    <h4>Restaurar desde backup:</h4>
-                    <ol style={styles.stepList}>
-                        <li>Cierra la aplicación</li>
-                        <li>Ve a la carpeta de backups</li>
-                        <li>Copia el backup que quieres restaurar</li>
-                        <li>Reemplaza el archivo de base de datos actual</li>
-                        <li>Abre la aplicación</li>
-                    </ol>
+
+                    <h4>Ubicación de los backups:</h4>
+                    <p>Los backups se guardan en una carpeta especial del sistema:</p>
+                    <ul style={styles.stepList}>
+                        <li><strong>Windows:</strong> C:\Users\[tu-usuario]\AppData\Roaming\electron-app\backups\</li>
+                        <li>Cada backup tiene un nombre con fecha y hora (ej: backup_2025-12-18_15-30-00.db)</li>
+                    </ul>
+
                     <div style={styles.tip}>
-                        <strong>⚠️ Importante:</strong> Esto sobrescribirá todos los datos actuales.
+                        <strong>💡 Tip:</strong> Los backups se crean automáticamente. Solo necesitas preocuparte de ellos si algo sale mal y necesitas recuperar información.
+                    </div>
+
+                    <h4>¿Cuándo necesito restaurar un backup?</h4>
+                    <ul style={styles.stepList}>
+                        <li>Si eliminaste información por error</li>
+                        <li>Si la base de datos se corrompió</li>
+                        <li>Si necesitas volver a un estado anterior</li>
+                    </ul>
+
+                    <div style={{ ...styles.tip, backgroundColor: '#fff3cd', borderColor: '#ffc107', color: '#856404' }}>
+                        <strong>⚠️ Importante - Soporte Técnico:</strong><br />
+                        Si necesitas restaurar un backup y no te sientes seguro haciéndolo tú mismo, <strong>contacta al soporte técnico</strong>. Es un proceso delicado que puede sobrescribir toda tu información actual.
+                        <br /><br />
+                        <strong>Contacto de soporte:</strong> [Tu email o teléfono de soporte]
+                    </div>
+
+                    <h4>Exportar backup manualmente (avanzado):</h4>
+                    <p>Si quieres guardar un backup en una ubicación específica (USB, nube, etc.):</p>
+                    <ol style={styles.stepList}>
+                        <li>Ve al menú <strong>"Archivo"</strong></li>
+                        <li>Selecciona <strong>"Exportar Base de Datos"</strong></li>
+                        <li>Elige dónde guardar el archivo</li>
+                        <li>Guarda el archivo en un lugar seguro</li>
+                    </ol>
+
+                    <div style={styles.example}>
+                        <strong>Recomendación:</strong> Exporta un backup manual cada mes a un USB o servicio en la nube (Google Drive, Dropbox) como medida de seguridad adicional.
                     </div>
                 </div>
             )

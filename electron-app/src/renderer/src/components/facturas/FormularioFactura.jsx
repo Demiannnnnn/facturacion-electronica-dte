@@ -229,6 +229,7 @@ function FormularioFactura({ onCancel, onSuccess }) {
         factura: {
           ...formData,
           subtotal: totales.subtotal,
+          monto_exento: totales.monto_exento,
           iva: totales.iva,
           total: totales.total
         },

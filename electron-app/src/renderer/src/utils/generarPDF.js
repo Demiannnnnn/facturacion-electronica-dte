@@ -203,20 +203,30 @@ export async function generarPDFFactura(factura, emisor) {
   const totalesX = pageWidth - margin - 65;
   yPos = Math.max(yPos, pageHeight - 80);
 
-  // Cuadro de totales
+  // Cuadro de totales (ajustar altura si hay monto exento)
+  const hasMontoExento = factura.monto_exento && factura.monto_exento > 0;
+  const boxHeight = hasMontoExento ? 47 : 40;
+
   doc.setDrawColor(200, 200, 200);
   doc.setLineWidth(0.5);
-  doc.rect(totalesX - 5, yPos - 5, 70, 40);
+  doc.rect(totalesX - 5, yPos - 5, 70, boxHeight);
 
-  // Subtotal
+  // Neto Afecto (Subtotal)
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text('Neto:', totalesX, yPos);
+  doc.text('Neto Afecto:', totalesX, yPos);
   doc.text(formatearMoneda(factura.subtotal), pageWidth - margin, yPos, { align: 'right' });
 
   yPos += 7;
 
-  // IVA
+  // Monto Exento (solo si existe)
+  if (hasMontoExento) {
+    doc.text('Monto Exento:', totalesX, yPos);
+    doc.text(formatearMoneda(factura.monto_exento), pageWidth - margin, yPos, { align: 'right' });
+    yPos += 7;
+  }
+
+  // IVA (solo sobre neto afecto)
   doc.text('IVA (19%):', totalesX, yPos);
   doc.text(formatearMoneda(factura.iva), pageWidth - margin, yPos, { align: 'right' });
 

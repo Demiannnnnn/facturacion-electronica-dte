@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 function Reportes() {
   const [periodo, setPeriodo] = useState('mes');
@@ -16,12 +16,53 @@ function Reportes() {
   const [mesTributario, setMesTributario] = useState(new Date().getMonth() + 1);
   const [anioTributario, setAnioTributario] = useState(new Date().getFullYear());
 
-  // Mock data
-  const stats = {
-    ventasMes: 2450000,
-    facturasMes: 18,
-    clientesActivos: 12,
-    productosMasVendidos: 5
+  // Stats reales (cargados desde BD)
+  const [stats, setStats] = useState({
+    ventasMes: 0,
+    facturasMes: 0,
+    clientesActivos: 0,
+    productosMasVendidos: 0
+  });
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  // Cargar estadísticas al montar el componente
+  useEffect(() => {
+    cargarEstadisticas();
+  }, []);
+
+  const cargarEstadisticas = async () => {
+    try {
+      setLoadingStats(true);
+
+      // Obtener ventas del mes actual
+      const hoy = new Date();
+      const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0];
+      const hoyStr = hoy.toISOString().split('T')[0];
+
+      const ventasResult = await window.api.facturas.getReporteVentas({
+        fecha_desde: primerDiaMes,
+        fecha_hasta: hoyStr
+      });
+
+      // Obtener reporte de clientes
+      const clientesResult = await window.api.clientes.getReporte();
+
+      // Obtener reporte de productos
+      const productosResult = await window.api.productos.getReporte();
+
+      if (ventasResult.success && clientesResult.success && productosResult.success) {
+        setStats({
+          ventasMes: ventasResult.data.totales.total || 0,
+          facturasMes: ventasResult.data.totales.cantidad_facturas || 0,
+          clientesActivos: clientesResult.data.totales.total_clientes || 0,
+          productosMasVendidos: productosResult.data.productosMasVendidos?.length || 0
+        });
+      }
+    } catch (error) {
+      console.error('Error cargando estadísticas:', error);
+    } finally {
+      setLoadingStats(false);
+    }
   };
 
   const reportes = [
@@ -300,28 +341,36 @@ function Reportes() {
           <div style={styles.quickStatIcon}>💰</div>
           <div>
             <div style={styles.quickStatLabel}>Ventas del Mes</div>
-            <div style={styles.quickStatValue}>{formatPrice(stats.ventasMes)}</div>
+            <div style={styles.quickStatValue}>
+              {loadingStats ? 'Cargando...' : formatPrice(stats.ventasMes)}
+            </div>
           </div>
         </div>
         <div style={styles.quickStatCard}>
           <div style={styles.quickStatIcon}>📄</div>
           <div>
             <div style={styles.quickStatLabel}>Facturas Emitidas</div>
-            <div style={styles.quickStatValue}>{stats.facturasMes}</div>
+            <div style={styles.quickStatValue}>
+              {loadingStats ? 'Cargando...' : stats.facturasMes}
+            </div>
           </div>
         </div>
         <div style={styles.quickStatCard}>
           <div style={styles.quickStatIcon}>👥</div>
           <div>
             <div style={styles.quickStatLabel}>Clientes Activos</div>
-            <div style={styles.quickStatValue}>{stats.clientesActivos}</div>
+            <div style={styles.quickStatValue}>
+              {loadingStats ? 'Cargando...' : stats.clientesActivos}
+            </div>
           </div>
         </div>
         <div style={styles.quickStatCard}>
           <div style={styles.quickStatIcon}>📦</div>
           <div>
             <div style={styles.quickStatLabel}>Productos Top</div>
-            <div style={styles.quickStatValue}>{stats.productosMasVendidos}</div>
+            <div style={styles.quickStatValue}>
+              {loadingStats ? 'Cargando...' : stats.productosMasVendidos}
+            </div>
           </div>
         </div>
       </div>
@@ -421,9 +470,9 @@ function Reportes() {
               <div style={styles.totalLabel}>IVA (19%)</div>
               <div style={styles.totalValue}>{formatPrice(reporteVentas.totales.iva)}</div>
             </div>
-            <div style={{...styles.totalCard, borderLeft: '4px solid #28a745'}}>
+            <div style={{ ...styles.totalCard, borderLeft: '4px solid #28a745' }}>
               <div style={styles.totalLabel}>Total</div>
-              <div style={{...styles.totalValue, color: '#28a745', fontSize: '28px'}}>
+              <div style={{ ...styles.totalValue, color: '#28a745', fontSize: '28px' }}>
                 {formatPrice(reporteVentas.totales.total)}
               </div>
             </div>
@@ -545,12 +594,12 @@ function Reportes() {
                         ...styles.badge,
                         backgroundColor:
                           factura.estado === 'pagada' ? '#d4edda' :
-                          factura.estado === 'pendiente' ? '#fff3cd' :
-                          factura.estado === 'vencida' ? '#f8d7da' : '#e2e3e5',
+                            factura.estado === 'pendiente' ? '#fff3cd' :
+                              factura.estado === 'vencida' ? '#f8d7da' : '#e2e3e5',
                         color:
                           factura.estado === 'pagada' ? '#28a745' :
-                          factura.estado === 'pendiente' ? '#ffc107' :
-                          factura.estado === 'vencida' ? '#dc3545' : '#6c757d'
+                            factura.estado === 'pendiente' ? '#ffc107' :
+                              factura.estado === 'vencida' ? '#dc3545' : '#6c757d'
                       }}>
                         {factura.estado.charAt(0).toUpperCase() + factura.estado.slice(1)}
                       </span>
@@ -582,21 +631,21 @@ function Reportes() {
               <div style={styles.totalLabel}>Total Productos</div>
               <div style={styles.totalValue}>{reporteProductos.totales.total_productos}</div>
             </div>
-            <div style={{...styles.totalCard, borderLeft: '4px solid #28a745'}}>
+            <div style={{ ...styles.totalCard, borderLeft: '4px solid #28a745' }}>
               <div style={styles.totalLabel}>Valor Inventario</div>
-              <div style={{...styles.totalValue, color: '#28a745'}}>
+              <div style={{ ...styles.totalValue, color: '#28a745' }}>
                 {formatPrice(reporteProductos.totales.valor_inventario)}
               </div>
             </div>
-            <div style={{...styles.totalCard, borderLeft: '4px solid #ffc107'}}>
+            <div style={{ ...styles.totalCard, borderLeft: '4px solid #ffc107' }}>
               <div style={styles.totalLabel}>Productos Bajo Stock</div>
-              <div style={{...styles.totalValue, color: '#ffc107'}}>
+              <div style={{ ...styles.totalValue, color: '#ffc107' }}>
                 {reporteProductos.totales.productos_bajo_stock}
               </div>
             </div>
-            <div style={{...styles.totalCard, borderLeft: '4px solid #dc3545'}}>
+            <div style={{ ...styles.totalCard, borderLeft: '4px solid #dc3545' }}>
               <div style={styles.totalLabel}>Sin Stock</div>
-              <div style={{...styles.totalValue, color: '#dc3545'}}>
+              <div style={{ ...styles.totalValue, color: '#dc3545' }}>
                 {reporteProductos.totales.productos_sin_stock}
               </div>
             </div>
@@ -667,7 +716,7 @@ function Reportes() {
           {/* Productos Bajo Stock - ALERTA */}
           {reporteProductos.productosBajoStock.length > 0 && (
             <div style={styles.section}>
-              <h3 style={{...styles.sectionTitle, color: '#ffc107'}}>
+              <h3 style={{ ...styles.sectionTitle, color: '#ffc107' }}>
                 ⚠️ Productos con Bajo Stock (menos de 10 unidades)
               </h3>
               <table style={styles.table}>
@@ -682,7 +731,7 @@ function Reportes() {
                 </thead>
                 <tbody>
                   {reporteProductos.productosBajoStock.map((producto) => (
-                    <tr key={producto.id} style={{...styles.tr, backgroundColor: '#fff3cd'}}>
+                    <tr key={producto.id} style={{ ...styles.tr, backgroundColor: '#fff3cd' }}>
                       <td style={styles.td}>{producto.codigo || 'N/A'}</td>
                       <td style={styles.td}><strong>{producto.nombre}</strong></td>
                       <td style={styles.td}>
@@ -708,7 +757,7 @@ function Reportes() {
           {/* Productos Sin Stock - CRÍTICO */}
           {reporteProductos.productosSinStock.length > 0 && (
             <div style={styles.section}>
-              <h3 style={{...styles.sectionTitle, color: '#dc3545'}}>
+              <h3 style={{ ...styles.sectionTitle, color: '#dc3545' }}>
                 🚨 Productos Sin Stock
               </h3>
               <table style={styles.table}>
@@ -723,16 +772,16 @@ function Reportes() {
                 </thead>
                 <tbody>
                   {reporteProductos.productosSinStock.map((producto) => (
-                    <tr key={producto.id} style={{...styles.tr, backgroundColor: '#f8d7da'}}>
+                    <tr key={producto.id} style={{ ...styles.tr, backgroundColor: '#f8d7da' }}>
                       <td style={styles.td}>{producto.codigo || 'N/A'}</td>
                       <td style={styles.td}><strong>{producto.nombre}</strong></td>
                       <td style={styles.td}>{formatPrice(producto.precio)}</td>
                       <td style={styles.td}>{producto.cantidad_vendida}</td>
                       <td style={styles.td}>
                         {producto.cantidad_vendida > 0 ? (
-                          <span style={{color: '#dc3545', fontWeight: '600'}}>Alta demanda</span>
+                          <span style={{ color: '#dc3545', fontWeight: '600' }}>Alta demanda</span>
                         ) : (
-                          <span style={{color: '#6c757d'}}>Sin movimiento</span>
+                          <span style={{ color: '#6c757d' }}>Sin movimiento</span>
                         )}
                       </td>
                     </tr>
@@ -746,7 +795,7 @@ function Reportes() {
           {reporteProductos.productosSinMovimiento.length > 0 && (
             <div style={styles.section}>
               <h3 style={styles.sectionTitle}>📦 Productos Sin Movimiento</h3>
-              <p style={{fontSize: '14px', color: '#6c757d', marginBottom: '15px'}}>
+              <p style={{ fontSize: '14px', color: '#6c757d', marginBottom: '15px' }}>
                 Estos productos tienen stock pero nunca se han vendido. Considera promociones o descuentos.
               </p>
               <table style={styles.table}>
@@ -772,7 +821,7 @@ function Reportes() {
                 </tbody>
               </table>
               {reporteProductos.productosSinMovimiento.length > 20 && (
-                <p style={{textAlign: 'center', marginTop: '10px', color: '#6c757d', fontSize: '13px'}}>
+                <p style={{ textAlign: 'center', marginTop: '10px', color: '#6c757d', fontSize: '13px' }}>
                   Mostrando 20 de {reporteProductos.productosSinMovimiento.length} productos sin movimiento
                 </p>
               )}
@@ -804,15 +853,15 @@ function Reportes() {
               <div style={styles.totalLabel}>Total Facturas</div>
               <div style={styles.totalValue}>{reporteFacturas.totales.cantidad_facturas}</div>
             </div>
-            <div style={{...styles.totalCard, borderLeft: '4px solid #28a745'}}>
+            <div style={{ ...styles.totalCard, borderLeft: '4px solid #28a745' }}>
               <div style={styles.totalLabel}>Total Facturado</div>
-              <div style={{...styles.totalValue, color: '#28a745'}}>
+              <div style={{ ...styles.totalValue, color: '#28a745' }}>
                 {formatPrice(reporteFacturas.totales.total)}
               </div>
             </div>
-            <div style={{...styles.totalCard, borderLeft: '4px solid #ffc107'}}>
+            <div style={{ ...styles.totalCard, borderLeft: '4px solid #ffc107' }}>
               <div style={styles.totalLabel}>Pendiente de Pago</div>
-              <div style={{...styles.totalValue, color: '#ffc107'}}>
+              <div style={{ ...styles.totalValue, color: '#ffc107' }}>
                 {formatPrice(reporteFacturas.facturas
                   .filter(f => f.estado === 'pendiente')
                   .reduce((sum, f) => sum + f.total, 0)
@@ -830,25 +879,25 @@ function Reportes() {
             <h3 style={styles.sectionTitle}>Distribución por Estado</h3>
             <div style={styles.estadosGrid}>
               <div style={styles.estadoCard}>
-                <div style={{...styles.estadoBadge, backgroundColor: '#fff3cd', color: '#856404'}}>
+                <div style={{ ...styles.estadoBadge, backgroundColor: '#fff3cd', color: '#856404' }}>
                   Pendientes
                 </div>
                 <div style={styles.estadoValue}>{reporteFacturas.totales.por_estado.pendiente}</div>
               </div>
               <div style={styles.estadoCard}>
-                <div style={{...styles.estadoBadge, backgroundColor: '#d4edda', color: '#155724'}}>
+                <div style={{ ...styles.estadoBadge, backgroundColor: '#d4edda', color: '#155724' }}>
                   Pagadas
                 </div>
                 <div style={styles.estadoValue}>{reporteFacturas.totales.por_estado.pagada}</div>
               </div>
               <div style={styles.estadoCard}>
-                <div style={{...styles.estadoBadge, backgroundColor: '#f8d7da', color: '#721c24'}}>
+                <div style={{ ...styles.estadoBadge, backgroundColor: '#f8d7da', color: '#721c24' }}>
                   Vencidas
                 </div>
                 <div style={styles.estadoValue}>{reporteFacturas.totales.por_estado.vencida}</div>
               </div>
               <div style={styles.estadoCard}>
-                <div style={{...styles.estadoBadge, backgroundColor: '#e2e3e5', color: '#383d41'}}>
+                <div style={{ ...styles.estadoBadge, backgroundColor: '#e2e3e5', color: '#383d41' }}>
                   Anuladas
                 </div>
                 <div style={styles.estadoValue}>{reporteFacturas.totales.por_estado.anulada}</div>
@@ -891,12 +940,12 @@ function Reportes() {
                         ...styles.badge,
                         backgroundColor:
                           factura.estado === 'pagada' ? '#d4edda' :
-                          factura.estado === 'pendiente' ? '#fff3cd' :
-                          factura.estado === 'vencida' ? '#f8d7da' : '#e2e3e5',
+                            factura.estado === 'pendiente' ? '#fff3cd' :
+                              factura.estado === 'vencida' ? '#f8d7da' : '#e2e3e5',
                         color:
                           factura.estado === 'pagada' ? '#28a745' :
-                          factura.estado === 'pendiente' ? '#ffc107' :
-                          factura.estado === 'vencida' ? '#dc3545' : '#6c757d'
+                            factura.estado === 'pendiente' ? '#ffc107' :
+                              factura.estado === 'vencida' ? '#dc3545' : '#6c757d'
                       }}>
                         {factura.estado.charAt(0).toUpperCase() + factura.estado.slice(1)}
                       </span>
@@ -928,21 +977,21 @@ function Reportes() {
               <div style={styles.totalLabel}>Total Clientes</div>
               <div style={styles.totalValue}>{reporteClientes.totales.total_clientes}</div>
             </div>
-            <div style={{...styles.totalCard, borderLeft: '4px solid #28a745'}}>
+            <div style={{ ...styles.totalCard, borderLeft: '4px solid #28a745' }}>
               <div style={styles.totalLabel}>Clientes Activos</div>
-              <div style={{...styles.totalValue, color: '#28a745'}}>
+              <div style={{ ...styles.totalValue, color: '#28a745' }}>
                 {reporteClientes.totales.clientes_activos}
               </div>
             </div>
-            <div style={{...styles.totalCard, borderLeft: '4px solid #007bff'}}>
+            <div style={{ ...styles.totalCard, borderLeft: '4px solid #007bff' }}>
               <div style={styles.totalLabel}>Total Facturado</div>
-              <div style={{...styles.totalValue, color: '#007bff'}}>
+              <div style={{ ...styles.totalValue, color: '#007bff' }}>
                 {formatPrice(reporteClientes.totales.total_facturado)}
               </div>
             </div>
-            <div style={{...styles.totalCard, borderLeft: '4px solid #ffc107'}}>
+            <div style={{ ...styles.totalCard, borderLeft: '4px solid #ffc107' }}>
               <div style={styles.totalLabel}>Promedio por Cliente</div>
-              <div style={{...styles.totalValue, color: '#ffc107'}}>
+              <div style={{ ...styles.totalValue, color: '#ffc107' }}>
                 {formatPrice(reporteClientes.totales.promedio_compra)}
               </div>
             </div>
@@ -977,7 +1026,7 @@ function Reportes() {
                       <td style={styles.td}><strong>{cliente.razon_social}</strong></td>
                       <td style={styles.td}>{cliente.total_facturas}</td>
                       <td style={styles.td}>
-                        <strong style={{color: '#28a745'}}>{formatPrice(cliente.total_comprado)}</strong>
+                        <strong style={{ color: '#28a745' }}>{formatPrice(cliente.total_comprado)}</strong>
                       </td>
                       <td style={styles.td}>
                         {cliente.ultima_compra ? new Date(cliente.ultima_compra).toLocaleDateString('es-CL') : '-'}
@@ -992,7 +1041,7 @@ function Reportes() {
           {/* Clientes con Facturas Pendientes */}
           {reporteClientes.clientesPendientes.length > 0 && (
             <div style={styles.section}>
-              <h3 style={{...styles.sectionTitle, color: '#ffc107'}}>
+              <h3 style={{ ...styles.sectionTitle, color: '#ffc107' }}>
                 ⚠️ Clientes con Pagos Pendientes
               </h3>
               <table style={styles.table}>
@@ -1008,17 +1057,17 @@ function Reportes() {
                 </thead>
                 <tbody>
                   {reporteClientes.clientesPendientes.map((cliente) => (
-                    <tr key={cliente.id} style={{...styles.tr, backgroundColor: '#fff3cd'}}>
+                    <tr key={cliente.id} style={{ ...styles.tr, backgroundColor: '#fff3cd' }}>
                       <td style={styles.td}>{cliente.rut}</td>
                       <td style={styles.td}><strong>{cliente.razon_social}</strong></td>
                       <td style={styles.td}>{cliente.total_facturas}</td>
                       <td style={styles.td}>
-                        <strong style={{color: '#ffc107'}}>{formatPrice(cliente.total_pendiente)}</strong>
+                        <strong style={{ color: '#ffc107' }}>{formatPrice(cliente.total_pendiente)}</strong>
                       </td>
                       <td style={styles.td}>{formatPrice(cliente.total_pagado)}</td>
                       <td style={styles.td}>
                         {cliente.telefono && <div>📞 {cliente.telefono}</div>}
-                        {cliente.email && <div style={{fontSize: '12px', color: '#666'}}>✉️ {cliente.email}</div>}
+                        {cliente.email && <div style={{ fontSize: '12px', color: '#666' }}>✉️ {cliente.email}</div>}
                       </td>
                     </tr>
                   ))}
@@ -1031,7 +1080,7 @@ function Reportes() {
           {reporteClientes.clientesSinCompras.length > 0 && (
             <div style={styles.section}>
               <h3 style={styles.sectionTitle}>📋 Clientes Sin Compras</h3>
-              <p style={{fontSize: '14px', color: '#6c757d', marginBottom: '15px'}}>
+              <p style={{ fontSize: '14px', color: '#6c757d', marginBottom: '15px' }}>
                 Estos clientes están registrados pero nunca han realizado compras. Considera contactarlos.
               </p>
               <table style={styles.table}>
@@ -1052,15 +1101,15 @@ function Reportes() {
                       <td style={styles.td}>{cliente.giro || '-'}</td>
                       <td style={styles.td}>{cliente.comuna || '-'}</td>
                       <td style={styles.td}>
-                        {cliente.telefono && <div style={{fontSize: '12px'}}>📞 {cliente.telefono}</div>}
-                        {cliente.email && <div style={{fontSize: '11px', color: '#666'}}>✉️ {cliente.email}</div>}
+                        {cliente.telefono && <div style={{ fontSize: '12px' }}>📞 {cliente.telefono}</div>}
+                        {cliente.email && <div style={{ fontSize: '11px', color: '#666' }}>✉️ {cliente.email}</div>}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
               {reporteClientes.clientesSinCompras.length > 20 && (
-                <p style={{textAlign: 'center', marginTop: '10px', color: '#6c757d', fontSize: '13px'}}>
+                <p style={{ textAlign: 'center', marginTop: '10px', color: '#6c757d', fontSize: '13px' }}>
                   Mostrando 20 de {reporteClientes.clientesSinCompras.length} clientes sin compras
                 </p>
               )}
@@ -1091,12 +1140,12 @@ function Reportes() {
                       {cliente.total_comprado > 0 ? (
                         <strong>{formatPrice(cliente.total_comprado)}</strong>
                       ) : (
-                        <span style={{color: '#6c757d'}}>Sin compras</span>
+                        <span style={{ color: '#6c757d' }}>Sin compras</span>
                       )}
                     </td>
                     <td style={styles.td}>
                       {cliente.total_pendiente > 0 ? (
-                        <span style={{color: '#ffc107', fontWeight: '600'}}>
+                        <span style={{ color: '#ffc107', fontWeight: '600' }}>
                           {formatPrice(cliente.total_pendiente)}
                         </span>
                       ) : (
@@ -1107,7 +1156,7 @@ function Reportes() {
                       {cliente.ultima_compra ? (
                         new Date(cliente.ultima_compra).toLocaleDateString('es-CL')
                       ) : (
-                        <span style={{color: '#6c757d'}}>-</span>
+                        <span style={{ color: '#6c757d' }}>-</span>
                       )}
                     </td>
                   </tr>
@@ -1133,30 +1182,30 @@ function Reportes() {
 
           {/* Resumen General */}
           <div style={styles.totalesGrid}>
-            <div style={{...styles.totalCard, borderLeft: '4px solid #28a745'}}>
+            <div style={{ ...styles.totalCard, borderLeft: '4px solid #28a745' }}>
               <div style={styles.totalLabel}>Total Cobrado</div>
-              <div style={{...styles.totalValue, color: '#28a745'}}>
+              <div style={{ ...styles.totalValue, color: '#28a745' }}>
                 {formatPrice(reportePagos.totales.total_cobrado)}
               </div>
-              <div style={{fontSize: '12px', color: '#6c757d', marginTop: '5px'}}>
+              <div style={{ fontSize: '12px', color: '#6c757d', marginTop: '5px' }}>
                 {reportePagos.totales.cantidad_pagadas} facturas
               </div>
             </div>
-            <div style={{...styles.totalCard, borderLeft: '4px solid #ffc107'}}>
+            <div style={{ ...styles.totalCard, borderLeft: '4px solid #ffc107' }}>
               <div style={styles.totalLabel}>Por Cobrar</div>
-              <div style={{...styles.totalValue, color: '#ffc107'}}>
+              <div style={{ ...styles.totalValue, color: '#ffc107' }}>
                 {formatPrice(reportePagos.totales.total_por_cobrar)}
               </div>
-              <div style={{fontSize: '12px', color: '#6c757d', marginTop: '5px'}}>
+              <div style={{ fontSize: '12px', color: '#6c757d', marginTop: '5px' }}>
                 {reportePagos.totales.cantidad_pendientes} facturas
               </div>
             </div>
-            <div style={{...styles.totalCard, borderLeft: '4px solid #dc3545'}}>
+            <div style={{ ...styles.totalCard, borderLeft: '4px solid #dc3545' }}>
               <div style={styles.totalLabel}>Facturas Vencidas</div>
-              <div style={{...styles.totalValue, color: '#dc3545'}}>
+              <div style={{ ...styles.totalValue, color: '#dc3545' }}>
                 {formatPrice(reportePagos.totales.total_vencido)}
               </div>
-              <div style={{fontSize: '12px', color: '#6c757d', marginTop: '5px'}}>
+              <div style={{ fontSize: '12px', color: '#6c757d', marginTop: '5px' }}>
                 {reportePagos.totales.cantidad_vencidas} facturas
               </div>
             </div>
@@ -1171,38 +1220,38 @@ function Reportes() {
           {/* Alertas de Vencimiento */}
           {(reportePagos.proximos7Dias.length > 0 || reportePagos.facturasVencidas.length > 0) && (
             <div style={styles.section}>
-              <h3 style={{...styles.sectionTitle, color: '#dc3545'}}>🚨 Alertas de Cobranza</h3>
-              <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '15px', marginBottom: '20px'}}>
-                <div style={{padding: '15px', backgroundColor: '#f8d7da', borderRadius: '8px', border: '1px solid #dc3545'}}>
-                  <div style={{fontSize: '14px', fontWeight: '600', color: '#721c24', marginBottom: '5px'}}>
+              <h3 style={{ ...styles.sectionTitle, color: '#dc3545' }}>🚨 Alertas de Cobranza</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '15px', marginBottom: '20px' }}>
+                <div style={{ padding: '15px', backgroundColor: '#f8d7da', borderRadius: '8px', border: '1px solid #dc3545' }}>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#721c24', marginBottom: '5px' }}>
                     Vencidas
                   </div>
-                  <div style={{fontSize: '24px', fontWeight: '700', color: '#dc3545'}}>
+                  <div style={{ fontSize: '24px', fontWeight: '700', color: '#dc3545' }}>
                     {reportePagos.facturasVencidas.length}
                   </div>
-                  <div style={{fontSize: '12px', color: '#721c24'}}>
+                  <div style={{ fontSize: '12px', color: '#721c24' }}>
                     {formatPrice(reportePagos.facturasVencidas.reduce((sum, f) => sum + f.total, 0))}
                   </div>
                 </div>
-                <div style={{padding: '15px', backgroundColor: '#fff3cd', borderRadius: '8px', border: '1px solid #ffc107'}}>
-                  <div style={{fontSize: '14px', fontWeight: '600', color: '#856404', marginBottom: '5px'}}>
+                <div style={{ padding: '15px', backgroundColor: '#fff3cd', borderRadius: '8px', border: '1px solid #ffc107' }}>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#856404', marginBottom: '5px' }}>
                     Vencen en 7 días
                   </div>
-                  <div style={{fontSize: '24px', fontWeight: '700', color: '#ffc107'}}>
+                  <div style={{ fontSize: '24px', fontWeight: '700', color: '#ffc107' }}>
                     {reportePagos.proximos7Dias.length}
                   </div>
-                  <div style={{fontSize: '12px', color: '#856404'}}>
+                  <div style={{ fontSize: '12px', color: '#856404' }}>
                     {formatPrice(reportePagos.proximos7Dias.reduce((sum, f) => sum + f.total, 0))}
                   </div>
                 </div>
-                <div style={{padding: '15px', backgroundColor: '#d1ecf1', borderRadius: '8px', border: '1px solid #17a2b8'}}>
-                  <div style={{fontSize: '14px', fontWeight: '600', color: '#0c5460', marginBottom: '5px'}}>
+                <div style={{ padding: '15px', backgroundColor: '#d1ecf1', borderRadius: '8px', border: '1px solid #17a2b8' }}>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#0c5460', marginBottom: '5px' }}>
                     Vencen en 15 días
                   </div>
-                  <div style={{fontSize: '24px', fontWeight: '700', color: '#17a2b8'}}>
+                  <div style={{ fontSize: '24px', fontWeight: '700', color: '#17a2b8' }}>
                     {reportePagos.proximos15Dias.length}
                   </div>
-                  <div style={{fontSize: '12px', color: '#0c5460'}}>
+                  <div style={{ fontSize: '12px', color: '#0c5460' }}>
                     {formatPrice(reportePagos.proximos15Dias.reduce((sum, f) => sum + f.total, 0))}
                   </div>
                 </div>
@@ -1233,18 +1282,18 @@ function Reportes() {
                       <td style={styles.td}>{deudor.cantidad_facturas}</td>
                       <td style={styles.td}>
                         {deudor.facturas_vencidas > 0 && (
-                          <span style={{color: '#dc3545', fontWeight: '600'}}>
+                          <span style={{ color: '#dc3545', fontWeight: '600' }}>
                             {deudor.facturas_vencidas}
                           </span>
                         )}
                         {deudor.facturas_vencidas === 0 && '-'}
                       </td>
                       <td style={styles.td}>
-                        <strong style={{color: '#dc3545'}}>{formatPrice(deudor.total_deuda)}</strong>
+                        <strong style={{ color: '#dc3545' }}>{formatPrice(deudor.total_deuda)}</strong>
                       </td>
                       <td style={styles.td}>
-                        {deudor.cliente_telefono && <div style={{fontSize: '12px'}}>📞 {deudor.cliente_telefono}</div>}
-                        {deudor.cliente_email && <div style={{fontSize: '11px', color: '#666'}}>✉️ {deudor.cliente_email}</div>}
+                        {deudor.cliente_telefono && <div style={{ fontSize: '12px' }}>📞 {deudor.cliente_telefono}</div>}
+                        {deudor.cliente_email && <div style={{ fontSize: '11px', color: '#666' }}>✉️ {deudor.cliente_email}</div>}
                       </td>
                     </tr>
                   ))}
@@ -1256,7 +1305,7 @@ function Reportes() {
           {/* Facturas Vencidas */}
           {reportePagos.facturasVencidas.length > 0 && (
             <div style={styles.section}>
-              <h3 style={{...styles.sectionTitle, color: '#dc3545'}}>
+              <h3 style={{ ...styles.sectionTitle, color: '#dc3545' }}>
                 ⏰ Facturas Vencidas ({reportePagos.facturasVencidas.length})
               </h3>
               <table style={styles.table}>
@@ -1274,7 +1323,7 @@ function Reportes() {
                   {reportePagos.facturasVencidas.map((factura) => {
                     const diasVencido = Math.floor((new Date() - new Date(factura.fecha_vencimiento)) / (1000 * 60 * 60 * 24));
                     return (
-                      <tr key={factura.id} style={{...styles.tr, backgroundColor: '#f8d7da'}}>
+                      <tr key={factura.id} style={{ ...styles.tr, backgroundColor: '#f8d7da' }}>
                         <td style={styles.td}><strong>#{factura.folio}</strong></td>
                         <td style={styles.td}>
                           {new Date(factura.fecha + 'T00:00:00').toLocaleDateString('es-CL')}
@@ -1295,7 +1344,7 @@ function Reportes() {
                         </td>
                         <td style={styles.td}>{factura.cliente_nombre}</td>
                         <td style={styles.td}>
-                          <strong style={{color: '#dc3545'}}>{formatPrice(factura.total)}</strong>
+                          <strong style={{ color: '#dc3545' }}>{formatPrice(factura.total)}</strong>
                         </td>
                       </tr>
                     );
@@ -1374,7 +1423,7 @@ function Reportes() {
                         <td style={styles.td}>{periodo.periodo}</td>
                         <td style={styles.td}>{periodo.cantidad_facturas}</td>
                         <td style={styles.td}>
-                          <strong style={{color: '#007bff'}}>{formatPrice(periodo.monto_esperado)}</strong>
+                          <strong style={{ color: '#007bff' }}>{formatPrice(periodo.monto_esperado)}</strong>
                         </td>
                       </tr>
                     ))}
@@ -1400,7 +1449,7 @@ function Reportes() {
 
           <div style={styles.reportePeriodo}>
             <strong>Período:</strong> {reporteTributario.mes}/{reporteTributario.anio}
-            <div style={{marginTop: '10px', display: 'flex', gap: '10px'}}>
+            <div style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
               <select
                 value={mesTributario}
                 onChange={(e) => setMesTributario(parseInt(e.target.value))}
@@ -1423,13 +1472,13 @@ function Reportes() {
                 type="number"
                 value={anioTributario}
                 onChange={(e) => setAnioTributario(parseInt(e.target.value))}
-                style={{...styles.select, width: '100px'}}
+                style={{ ...styles.select, width: '100px' }}
                 min="2020"
                 max="2030"
               />
               <button
                 onClick={generarReporteTributario}
-                style={{...styles.reportButton, padding: '8px 16px'}}
+                style={{ ...styles.reportButton, padding: '8px 16px' }}
               >
                 Actualizar
               </button>
@@ -1442,21 +1491,21 @@ function Reportes() {
               <div style={styles.totalLabel}>Documentos Emitidos</div>
               <div style={styles.totalValue}>{reporteTributario.totales.cantidad_documentos}</div>
             </div>
-            <div style={{...styles.totalCard, borderLeft: '4px solid #007bff'}}>
+            <div style={{ ...styles.totalCard, borderLeft: '4px solid #007bff' }}>
               <div style={styles.totalLabel}>Ventas Netas (Código 100)</div>
-              <div style={{...styles.totalValue, color: '#007bff'}}>
+              <div style={{ ...styles.totalValue, color: '#007bff' }}>
                 {formatPrice(reporteTributario.totales.ventas_netas)}
               </div>
             </div>
-            <div style={{...styles.totalCard, borderLeft: '4px solid #28a745'}}>
+            <div style={{ ...styles.totalCard, borderLeft: '4px solid #28a745' }}>
               <div style={styles.totalLabel}>IVA Débito (Código 105)</div>
-              <div style={{...styles.totalValue, color: '#28a745'}}>
+              <div style={{ ...styles.totalValue, color: '#28a745' }}>
                 {formatPrice(reporteTributario.totales.total_iva)}
               </div>
             </div>
-            <div style={{...styles.totalCard, borderLeft: '4px solid #ffc107'}}>
+            <div style={{ ...styles.totalCard, borderLeft: '4px solid #ffc107' }}>
               <div style={styles.totalLabel}>Total Facturado</div>
-              <div style={{...styles.totalValue, color: '#ffc107'}}>
+              <div style={{ ...styles.totalValue, color: '#ffc107' }}>
                 {formatPrice(reporteTributario.totales.total_facturado)}
               </div>
             </div>
@@ -1465,35 +1514,35 @@ function Reportes() {
           {/* Información para F29 */}
           <div style={styles.section}>
             <h3 style={styles.sectionTitle}>📝 Información para Formulario 29 (SII)</h3>
-            <div style={{backgroundColor: '#f8f9fa', padding: '20px', borderRadius: '8px', border: '1px solid #dee2e6'}}>
-              <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '15px'}}>
+            <div style={{ backgroundColor: '#f8f9fa', padding: '20px', borderRadius: '8px', border: '1px solid #dee2e6' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '15px' }}>
                 <div>
-                  <div style={{fontSize: '13px', color: '#6c757d', marginBottom: '5px'}}>
+                  <div style={{ fontSize: '13px', color: '#6c757d', marginBottom: '5px' }}>
                     Código 100 - Ventas Netas
                   </div>
-                  <div style={{fontSize: '20px', fontWeight: '600'}}>
+                  <div style={{ fontSize: '20px', fontWeight: '600' }}>
                     {formatPrice(reporteTributario.formulario29.codigo_100)}
                   </div>
                 </div>
                 <div>
-                  <div style={{fontSize: '13px', color: '#6c757d', marginBottom: '5px'}}>
+                  <div style={{ fontSize: '13px', color: '#6c757d', marginBottom: '5px' }}>
                     Código 105 - IVA Débito Fiscal
                   </div>
-                  <div style={{fontSize: '20px', fontWeight: '600'}}>
+                  <div style={{ fontSize: '20px', fontWeight: '600' }}>
                     {formatPrice(reporteTributario.formulario29.codigo_105)}
                   </div>
                 </div>
                 <div>
-                  <div style={{fontSize: '13px', color: '#6c757d', marginBottom: '5px'}}>
+                  <div style={{ fontSize: '13px', color: '#6c757d', marginBottom: '5px' }}>
                     Código 110 - Ventas Exentas
                   </div>
-                  <div style={{fontSize: '20px', fontWeight: '600'}}>
+                  <div style={{ fontSize: '20px', fontWeight: '600' }}>
                     {formatPrice(reporteTributario.formulario29.codigo_110)}
                   </div>
                 </div>
               </div>
-              <div style={{marginTop: '15px', padding: '10px', backgroundColor: '#d1ecf1', borderRadius: '6px'}}>
-                <div style={{fontSize: '12px', color: '#0c5460'}}>
+              <div style={{ marginTop: '15px', padding: '10px', backgroundColor: '#d1ecf1', borderRadius: '6px' }}>
+                <div style={{ fontSize: '12px', color: '#0c5460' }}>
                   💡 <strong>Nota:</strong> Estos valores corresponden únicamente a las ventas. Para completar el F29,
                   debes agregar manualmente la información de compras y créditos fiscales.
                 </div>
@@ -1505,23 +1554,23 @@ function Reportes() {
           {reporteTributario.ventasPorMes.length > 0 && (
             <div style={styles.section}>
               <h3 style={styles.sectionTitle}>📊 Resumen Anual {reporteTributario.anio}</h3>
-              <div style={{marginBottom: '15px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px'}}>
-                <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px'}}>
+              <div style={{ marginBottom: '15px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
                   <div>
-                    <div style={{fontSize: '12px', color: '#6c757d'}}>Total Documentos</div>
-                    <div style={{fontSize: '18px', fontWeight: '600'}}>{reporteTributario.totalesAnuales.cantidad_documentos}</div>
+                    <div style={{ fontSize: '12px', color: '#6c757d' }}>Total Documentos</div>
+                    <div style={{ fontSize: '18px', fontWeight: '600' }}>{reporteTributario.totalesAnuales.cantidad_documentos}</div>
                   </div>
                   <div>
-                    <div style={{fontSize: '12px', color: '#6c757d'}}>Ventas Netas</div>
-                    <div style={{fontSize: '18px', fontWeight: '600'}}>{formatPrice(reporteTributario.totalesAnuales.ventas_netas)}</div>
+                    <div style={{ fontSize: '12px', color: '#6c757d' }}>Ventas Netas</div>
+                    <div style={{ fontSize: '18px', fontWeight: '600' }}>{formatPrice(reporteTributario.totalesAnuales.ventas_netas)}</div>
                   </div>
                   <div>
-                    <div style={{fontSize: '12px', color: '#6c757d'}}>IVA Total</div>
-                    <div style={{fontSize: '18px', fontWeight: '600'}}>{formatPrice(reporteTributario.totalesAnuales.total_iva)}</div>
+                    <div style={{ fontSize: '12px', color: '#6c757d' }}>IVA Total</div>
+                    <div style={{ fontSize: '18px', fontWeight: '600' }}>{formatPrice(reporteTributario.totalesAnuales.total_iva)}</div>
                   </div>
                   <div>
-                    <div style={{fontSize: '12px', color: '#6c757d'}}>Total Facturado</div>
-                    <div style={{fontSize: '18px', fontWeight: '600', color: '#28a745'}}>
+                    <div style={{ fontSize: '12px', color: '#6c757d' }}>Total Facturado</div>
+                    <div style={{ fontSize: '18px', fontWeight: '600', color: '#28a745' }}>
                       {formatPrice(reporteTributario.totalesAnuales.total_facturado)}
                     </div>
                   </div>
@@ -1546,7 +1595,7 @@ function Reportes() {
                       <td style={styles.td}>
                         <strong>{mes.mes}</strong>
                         {parseInt(mes.mes_num) === reporteTributario.mes && (
-                          <span style={{marginLeft: '8px', fontSize: '11px', color: '#007bff'}}>← Actual</span>
+                          <span style={{ marginLeft: '8px', fontSize: '11px', color: '#007bff' }}>← Actual</span>
                         )}
                       </td>
                       <td style={styles.td}>{mes.cantidad}</td>
@@ -1602,40 +1651,40 @@ function Reportes() {
         <h2 style={styles.chartTitle}>Ventas por Mes (2025)</h2>
         <div style={styles.chartPlaceholder}>
           <div style={styles.chartBars}>
-            <div style={{...styles.bar, height: '60%'}}>
+            <div style={{ ...styles.bar, height: '60%' }}>
               <span style={styles.barLabel}>Ene</span>
             </div>
-            <div style={{...styles.bar, height: '75%'}}>
+            <div style={{ ...styles.bar, height: '75%' }}>
               <span style={styles.barLabel}>Feb</span>
             </div>
-            <div style={{...styles.bar, height: '85%'}}>
+            <div style={{ ...styles.bar, height: '85%' }}>
               <span style={styles.barLabel}>Mar</span>
             </div>
-            <div style={{...styles.bar, height: '70%'}}>
+            <div style={{ ...styles.bar, height: '70%' }}>
               <span style={styles.barLabel}>Abr</span>
             </div>
-            <div style={{...styles.bar, height: '90%'}}>
+            <div style={{ ...styles.bar, height: '90%' }}>
               <span style={styles.barLabel}>May</span>
             </div>
-            <div style={{...styles.bar, height: '95%'}}>
+            <div style={{ ...styles.bar, height: '95%' }}>
               <span style={styles.barLabel}>Jun</span>
             </div>
-            <div style={{...styles.bar, height: '80%'}}>
+            <div style={{ ...styles.bar, height: '80%' }}>
               <span style={styles.barLabel}>Jul</span>
             </div>
-            <div style={{...styles.bar, height: '88%'}}>
+            <div style={{ ...styles.bar, height: '88%' }}>
               <span style={styles.barLabel}>Ago</span>
             </div>
-            <div style={{...styles.bar, height: '78%'}}>
+            <div style={{ ...styles.bar, height: '78%' }}>
               <span style={styles.barLabel}>Sep</span>
             </div>
-            <div style={{...styles.bar, height: '92%'}}>
+            <div style={{ ...styles.bar, height: '92%' }}>
               <span style={styles.barLabel}>Oct</span>
             </div>
-            <div style={{...styles.bar, height: '87%'}}>
+            <div style={{ ...styles.bar, height: '87%' }}>
               <span style={styles.barLabel}>Nov</span>
             </div>
-            <div style={{...styles.bar, height: '100%', backgroundColor: '#007bff'}}>
+            <div style={{ ...styles.bar, height: '100%', backgroundColor: '#007bff' }}>
               <span style={styles.barLabel}>Dic</span>
             </div>
           </div>
