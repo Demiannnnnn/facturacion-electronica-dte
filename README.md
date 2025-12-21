@@ -2,8 +2,8 @@
 
 Sistema de escritorio multiplataforma para gestión de facturación electrónica, diseñado específicamente para PyMEs chilenas que necesitan emitir documentos tributarios electrónicos (DTE) cumpliendo con las normativas del SII.
 
-**Versión:** 1.0.0
-**Estado:** 75-80% Completado (MVP funcional)
+**Versión:** 1.1.0  
+**Estado:** 80% Completado (MVP funcional + Mejoras visuales)  
 **Licencia:** UNLICENSED - Uso privado
 
 ---
@@ -20,6 +20,20 @@ Sistema de escritorio multiplataforma para gestión de facturación electrónica
 - 💰 **Control de pagos** - Cuentas por cobrar, pagos parciales
 - 📤 **Exportación** - Excel para clientes, productos y facturas
 - 🔄 **Backup automático** - Respaldos automáticos de tu información
+
+---
+
+## 🎉 Novedades v1.1.0 (21 Dic 2025)
+
+### 📊 Cuentas por Cobrar - Completamente Renovado
+
+- **Gráficos Interactivos:** Visualiza tu situación financiera con gráficos de distribución de cobros y proyección de flujo de caja
+- **Alertas de Vencimiento:** 4 categorías de alertas visuales (Vencidas, 7 días, 15 días, Cobrado) con diseño moderno
+- **Proyección de Flujo de Caja:** Planifica tus finanzas con proyecciones de 8 semanas basadas en vencimientos
+- **Exportación Mejorada:** Botones para exportar a Excel y PDF con diseño profesional
+- **Diseño Moderno:** CSS completamente renovado con gradientes, animaciones y diseño responsive
+
+**[Ver Guía Rápida](docs/GUIA_RAPIDA_CUENTAS_COBRAR.md)** | **[Documentación Completa](docs/MEJORAS_CUENTAS_COBRAR.md)**
 
 ---
 

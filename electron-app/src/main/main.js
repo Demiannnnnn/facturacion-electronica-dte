@@ -15,6 +15,7 @@ import { registerGuiasHandlers } from './ipc/guias.js';
 import { registerFoliosHandlers } from './ipc/folios.js';
 import { registerBackupHandlers, createAutomaticBackup } from './ipc/backup.js';
 import { registerExportHandlers } from './ipc/export.js';
+import { registerImportHandlers } from './ipc/import.js';
 import { createMenu } from './menu.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -66,6 +67,7 @@ app.whenReady().then(() => {
   registerFoliosHandlers();
   registerBackupHandlers();
   registerExportHandlers();
+  registerImportHandlers();
 
   // Crear menú en español
   createMenu();

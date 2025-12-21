@@ -87,6 +87,14 @@ contextBridge.exposeInMainWorld('api', {
     facturas: () => ipcRenderer.invoke('export:facturas')
   },
 
+  // Import from Excel
+  import: {
+    clientes: (options) => ipcRenderer.invoke('import:clientes', options),
+    productos: (options) => ipcRenderer.invoke('import:productos', options),
+    templateClientes: () => ipcRenderer.invoke('import:templateClientes'),
+    templateProductos: () => ipcRenderer.invoke('import:templateProductos')
+  },
+
   // Pagos
   pagos: {
     create: (data) => ipcRenderer.invoke('pagos:create', data),
@@ -107,5 +115,9 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.on('menu:export-clientes', () => callback('export-clientes'));
     ipcRenderer.on('menu:export-productos', () => callback('export-productos'));
     ipcRenderer.on('menu:export-facturas', () => callback('export-facturas'));
+    ipcRenderer.on('menu:import-clientes', () => callback('import-clientes'));
+    ipcRenderer.on('menu:import-productos', () => callback('import-productos'));
+    ipcRenderer.on('menu:template-clientes', () => callback('template-clientes'));
+    ipcRenderer.on('menu:template-productos', () => callback('template-productos'));
   }
 });

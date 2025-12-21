@@ -25,27 +25,114 @@ function App() {
         let result;
 
         switch (event) {
+          // EXPORTACIÓN
           case 'export-clientes':
             result = await window.api.export.clientes();
+            if (result.success) {
+              alert(result.message);
+            } else if (result.message !== 'Exportación cancelada') {
+              alert(result.message);
+            }
             break;
+
           case 'export-productos':
             result = await window.api.export.productos();
+            if (result.success) {
+              alert(result.message);
+            } else if (result.message !== 'Exportación cancelada') {
+              alert(result.message);
+            }
             break;
+
           case 'export-facturas':
             result = await window.api.export.facturas();
+            if (result.success) {
+              alert(result.message);
+            } else if (result.message !== 'Exportación cancelada') {
+              alert(result.message);
+            }
             break;
+
+          // IMPORTACIÓN
+          case 'import-clientes':
+            result = await window.api.import.clientes({ updateExisting: true });
+            if (result.success) {
+              let mensaje = `✅ Importación completada\n\n`;
+              mensaje += `📊 Total procesados: ${result.totalProcesados}\n`;
+              mensaje += `✅ Nuevos: ${result.insertados}\n`;
+              mensaje += `🔄 Actualizados: ${result.actualizados}\n`;
+
+              if (result.erroresValidacion && result.erroresValidacion.length > 0) {
+                mensaje += `\n⚠️ Errores de validación: ${result.erroresValidacion.length}\n`;
+                mensaje += `\nPrimeros errores:\n`;
+                result.erroresValidacion.slice(0, 3).forEach(err => {
+                  mensaje += `\nLínea ${err.linea}: ${err.razonSocial || err.rut}\n`;
+                  mensaje += `  - ${err.errores.join(', ')}\n`;
+                });
+              }
+
+              alert(mensaje);
+              // Recargar la página si estamos en clientes
+              if (window.location.pathname === '/clientes') {
+                window.location.reload();
+              }
+            } else if (!result.canceled) {
+              alert(result.message);
+            }
+            break;
+
+          case 'import-productos':
+            result = await window.api.import.productos({ updateExisting: true, checkByName: true });
+            if (result.success) {
+              let mensaje = `✅ Importación completada\n\n`;
+              mensaje += `📊 Total procesados: ${result.totalProcesados}\n`;
+              mensaje += `✅ Nuevos: ${result.insertados}\n`;
+              mensaje += `🔄 Actualizados: ${result.actualizados}\n`;
+
+              if (result.erroresValidacion && result.erroresValidacion.length > 0) {
+                mensaje += `\n⚠️ Errores de validación: ${result.erroresValidacion.length}\n`;
+                mensaje += `\nPrimeros errores:\n`;
+                result.erroresValidacion.slice(0, 3).forEach(err => {
+                  mensaje += `\nLínea ${err.linea}: ${err.nombre || err.codigo}\n`;
+                  mensaje += `  - ${err.errores.join(', ')}\n`;
+                });
+              }
+
+              alert(mensaje);
+              // Recargar la página si estamos en productos
+              if (window.location.pathname === '/productos') {
+                window.location.reload();
+              }
+            } else if (!result.canceled) {
+              alert(result.message);
+            }
+            break;
+
+          // TEMPLATES
+          case 'template-clientes':
+            result = await window.api.import.templateClientes();
+            if (result.success) {
+              alert('✅ Template de clientes generado exitosamente\n\nEl archivo se ha abierto automáticamente.\n\nCompleta los datos de tus clientes y luego usa:\nArchivo → Importar → Importar Clientes desde Excel');
+            } else {
+              alert(result.message);
+            }
+            break;
+
+          case 'template-productos':
+            result = await window.api.import.templateProductos();
+            if (result.success) {
+              alert('✅ Template de productos generado exitosamente\n\nEl archivo se ha abierto automáticamente.\n\nCompleta los datos de tus productos y luego usa:\nArchivo → Importar → Importar Productos desde Excel');
+            } else {
+              alert(result.message);
+            }
+            break;
+
           default:
             return;
         }
-
-        if (result.success) {
-          alert(result.message);
-        } else if (result.message !== 'Exportación cancelada') {
-          alert(result.message);
-        }
       } catch (error) {
-        console.error('Error en exportación:', error);
-        alert('Error al exportar: ' + error.message);
+        console.error('Error en operación:', error);
+        alert('Error: ' + error.message);
       }
     };
 

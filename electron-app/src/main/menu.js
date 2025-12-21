@@ -37,6 +37,46 @@ export function createMenu() {
             }
           ]
         },
+        {
+          label: 'Importar',
+          submenu: [
+            {
+              label: 'Importar Clientes desde Excel',
+              accelerator: 'CmdOrCtrl+Shift+I',
+              click: async (menuItem, browserWindow) => {
+                if (browserWindow) {
+                  browserWindow.webContents.send('menu:import-clientes');
+                }
+              }
+            },
+            {
+              label: 'Importar Productos desde Excel',
+              accelerator: 'CmdOrCtrl+Shift+O',
+              click: async (menuItem, browserWindow) => {
+                if (browserWindow) {
+                  browserWindow.webContents.send('menu:import-productos');
+                }
+              }
+            },
+            { type: 'separator' },
+            {
+              label: 'Descargar Template de Clientes',
+              click: async (menuItem, browserWindow) => {
+                if (browserWindow) {
+                  browserWindow.webContents.send('menu:template-clientes');
+                }
+              }
+            },
+            {
+              label: 'Descargar Template de Productos',
+              click: async (menuItem, browserWindow) => {
+                if (browserWindow) {
+                  browserWindow.webContents.send('menu:template-productos');
+                }
+              }
+            }
+          ]
+        },
         { type: 'separator' },
         {
           label: 'Salir',

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<DTE version="1.0">
+  <Documento ID="F3T33">
+    <Encabezado>
+      <IdDoc>
+        <TipoDTE>33</TipoDTE>
+        <Folio>3</Folio>
+        <FchEmis>2025-12-21</FchEmis>
+        <FmaPago>1</FmaPago>
+      </IdDoc>
+      <Emisor>
+        <RUTEmisor>213319078</RUTEmisor>
+        <RznSoc>dasd</RznSoc>
+        <GiroEmis>asdas</GiroEmis>
+        <Acteco>0</Acteco>
+        <DirOrigen>adsasd</DirOrigen>
+        <CmnaOrigen>Arica</CmnaOrigen>
+        <CiudadOrigen>rengo</CiudadOrigen>
+      </Emisor>
+      <Receptor>
+        <RUTRecep>231321233</RUTRecep>
+        <RznSocRecep>asdad</RznSocRecep>
+        <GiroRecep>dsaasd</GiroRecep>
+        <DirRecep>dadsad</DirRecep>
+        <CmnaRecep>Alto Hospicio</CmnaRecep>
+        <CiudadRecep>rengo</CiudadRecep>
+      </Receptor>
+      <Totales>
+        <MntNeto>15000</MntNeto>
+        <TasaIVA>19</TasaIVA>
+        <IVA>2850</IVA>
+        <MntTotal>17850</MntTotal>
+      </Totales>
+    </Encabezado>
+    <Detalle>
+      <NroLinDet>1</NroLinDet>
+      <NmbItem>Demian</NmbItem>
+      <QtyItem>1</QtyItem>
+      <UnmdItem>UN</UnmdItem>
+      <PrcItem>15000</PrcItem>
+      <MontoItem>15000</MontoItem>
+    </Detalle>
+  </Documento>
+</DTE>
