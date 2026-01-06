@@ -103,11 +103,31 @@ contextBridge.exposeInMainWorld('api', {
     getEstadoCuenta: (clienteId) => ipcRenderer.invoke('pagos:getEstadoCuenta', clienteId)
   },
 
+  // Configuración
+  config: {
+    get: (key) => ipcRenderer.invoke('config:get', key),
+    set: (key, value) => ipcRenderer.invoke('config:set', key, value),
+    getAll: () => ipcRenderer.invoke('config:getAll'),
+    delete: (key) => ipcRenderer.invoke('config:delete', key)
+  },
+
   // Folios
   folios: {
     getAll: () => ipcRenderer.invoke('folios:getAll'),
     update: (data) => ipcRenderer.invoke('folios:update', data),
     getNext: (tipoDocumento) => ipcRenderer.invoke('folios:getNext', tipoDocumento)
+  },
+
+  // Sincronización con servidor (v2.0)
+  sync: {
+    checkConnection: () => ipcRenderer.invoke('sync:checkConnection'),
+    factura: (facturaData) => ipcRenderer.invoke('sync:factura', facturaData),
+    facturaXML: (data) => ipcRenderer.invoke('sync:facturaXML', data),
+    venta: (ventaData) => ipcRenderer.invoke('sync:venta', ventaData),
+    productos: (productos) => ipcRenderer.invoke('sync:productos', productos),
+    clientes: (clientes) => ipcRenderer.invoke('sync:clientes', clientes),
+    getQueueStatus: () => ipcRenderer.invoke('sync:getQueueStatus'),
+    processQueue: () => ipcRenderer.invoke('sync:processQueue')
   },
 
   // Menu events listener

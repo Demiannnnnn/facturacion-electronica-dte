@@ -12,9 +12,21 @@ function LoginPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isFirstRun) {
-      navigate('/register');
-    }
+    const checkRoleAndRedirect = async () => {
+      if (isFirstRun) {
+        // Verificar si ya hay rol seleccionado
+        const roleConfig = await window.api.config.get('user_role');
+        if (!roleConfig.value) {
+          // No hay rol, ir a selección
+          navigate('/role-selection');
+        } else {
+          // Ya hay rol, ir a registro
+          navigate('/register');
+        }
+      }
+    };
+    
+    checkRoleAndRedirect();
   }, [isFirstRun, navigate]);
 
   // Fix: Auto-focus en el campo de usuario al montar el componente

@@ -10,7 +10,8 @@
     "dev:electron": "wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .",
     "build:renderer": "vite build",
     "build": "npm run build:renderer && electron-builder",
-    "start": "electron ."
+    "start": "electron .",
+    "reset": "bash scripts/reset-dev.sh"
   },
   "keywords": [
     "facturacion",
