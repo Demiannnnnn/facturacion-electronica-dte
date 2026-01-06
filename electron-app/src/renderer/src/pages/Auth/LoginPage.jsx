@@ -54,7 +54,23 @@ function LoginPage() {
     const result = await login(username, password);
 
     if (result.success) {
-      navigate('/');
+      // Obtener el rol del usuario para redirigir correctamente
+      try {
+        const roleConfig = await window.api.config.get('user_role');
+        const userRole = roleConfig?.value;
+
+        if (userRole === 'contador') {
+          navigate('/contador');
+        } else if (userRole === 'empresa' || userRole === 'persona_natural') {
+          navigate('/cliente');
+        } else {
+          // Fallback si no hay rol definido
+          navigate('/');
+        }
+      } catch (error) {
+        console.error('Error obteniendo rol:', error);
+        navigate('/');
+      }
     } else {
       setError(result.error || 'Error al iniciar sesión');
     }

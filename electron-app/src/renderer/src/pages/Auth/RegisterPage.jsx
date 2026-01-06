@@ -315,13 +315,29 @@ function RegisterPage() {
                   />
                 </div>
 
-           (userRole === 'empresa' || userRole === 'persona_natural') && (
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Teléfono</label>
+                  <input
+                    type="text"
+                    value={contadorTelefono}
+                    onChange={(e) => setContadorTelefono(e.target.value)}
+                    style={styles.input}
+                    placeholder="+56 9 1234 5678"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {(userRole === 'empresa' || userRole === 'persona_natural') && (
             <div style={styles.section}>
               <h3 style={styles.sectionTitle}>
                 {userRole === 'empresa' ? '🏢 Datos de la Empresa' : '👤 Datos Personales'}
+              </h3>
               
-                    type="text"
-                    value={contadorTelefono}
+              <div style={styles.formRow}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>
                     {userRole === 'empresa' ? 'RUT Empresa *' : 'RUT *'}
                   </label>
                   <input
@@ -359,24 +375,7 @@ function RegisterPage() {
               </div>
 
               <div style={styles.formGroup}>
-                <label style={styles.label}>Nombre Fantasía / Comercialtc."
-                  />
-                </div>
-              </div>
-
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Razón Social *</label>
-                <input
-                  type="text"
-                  value={empresaRazonSocial}
-                  onChange={(e) => setEmpresaRazonSocial(e.target.value)}
-                  style={styles.input}
-                  placeholder="Razón social de la empresa"
-                />
-              </div>
-
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Nombre Fantasía</label>
+                <label style={styles.label}>Nombre Fantasía / Comercial</label>
                 <input
                   type="text"
                   value={empresaNombreFantasia}
@@ -466,7 +465,7 @@ const styles = {
   container: {
     display: 'flex',
     justifyContent: 'center',
-    alignItems: 'cent,
+    alignItems: 'center',
     position: 'relative'
   },
   backButton: {
@@ -555,7 +554,9 @@ const styles = {
     transition: 'border-color 0.2s',
     backgroundColor: 'white',
     width: '100%',
-    boxSizing: 'border-box
+    boxSizing: 'border-box'
+  },
+  label: {
     fontSize: '13px',
     fontWeight: '600',
     color: '#4a5568'

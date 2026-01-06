@@ -5,13 +5,21 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 import RoleSelectionPage from './pages/Auth/RoleSelectionPage';
 import LoginPage from './pages/Auth/LoginPage';
 import RegisterPage from './pages/Auth/RegisterPage';
-import Dashboard from './pages/Dashboard';
+
+// Layouts
+import ContadorLayout from './components/layout/ContadorLayout';
+import ClienteLayout from './components/layout/ClienteLayout';
+
+// Páginas Contador
+import ContadorDashboard from './pages/Contador/ContadorDashboard';
+
+// Páginas Cliente
+import ClienteDashboard from './pages/Cliente/ClienteDashboard';
 import Clientes from './pages/Clientes';
 import Productos from './pages/Productos';
 import Vendedores from './pages/Vendedores';
 import Facturas from './pages/Facturas';
 import Reportes from './pages/Reportes';
-import Layout from './components/layout/Layout';
 import ChangePassword from './pages/Configuracion/ChangePassword';
 import EmisorConfig from './pages/Configuracion/EmisorConfig';
 import UserManual from './pages/Configuracion/UserManual';
@@ -145,132 +153,218 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
+          {/* Rutas públicas */}
           <Route path="/role-selection" element={<RoleSelectionPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
 
+          {/* ==================== RUTAS CONTADOR ==================== */}
           <Route
-            path="/"
+            path="/contador"
             element={
-              <ProtectedRoute>
-                <Layout>
-                  <Dashboard />
-                </Layout>
+              <ProtectedRoute requiredRole="contador">
+                <ContadorLayout>
+                  <ContadorDashboard />
+                </ContadorLayout>
               </ProtectedRoute>
             }
           />
 
           <Route
-            path="/clientes"
+            path="/contador/empresas"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <ProtectedRoute requiredRole="contador">
+                <ContadorLayout>
+                  <div style={{ padding: '20px', textAlign: 'center' }}>
+                    <h2>🏢 Gestión de Empresas</h2>
+                    <p>Módulo en desarrollo para gestionar empresas clientes del contador</p>
+                  </div>
+                </ContadorLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/contador/clientes"
+            element={
+              <ProtectedRoute requiredRole="contador">
+                <ContadorLayout>
+                  <div style={{ padding: '20px', textAlign: 'center' }}>
+                    <h2>👥 Gestión de Clientes</h2>
+                    <p>Módulo en desarrollo - Vista consolidada de clientes de todas las empresas</p>
+                  </div>
+                </ContadorLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/contador/documentos"
+            element={
+              <ProtectedRoute requiredRole="contador">
+                <ContadorLayout>
+                  <div style={{ padding: '20px', textAlign: 'center' }}>
+                    <h2>📄 Documentos Tributarios</h2>
+                    <p>Módulo en desarrollo - Vista consolidada de documentos de todas las empresas</p>
+                  </div>
+                </ContadorLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/contador/reportes"
+            element={
+              <ProtectedRoute requiredRole="contador">
+                <ContadorLayout>
+                  <div style={{ padding: '20px', textAlign: 'center' }}>
+                    <h2>📈 Reportes Consolidados</h2>
+                    <p>Módulo en desarrollo - Reportes para múltiples empresas</p>
+                  </div>
+                </ContadorLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/contador/configuracion"
+            element={
+              <ProtectedRoute requiredRole="contador">
+                <ContadorLayout>
+                  <div style={{ padding: '20px', textAlign: 'center' }}>
+                    <h2>⚙️ Configuración del Contador</h2>
+                    <p>Módulo en desarrollo - Configuración específica del contador</p>
+                  </div>
+                </ContadorLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ==================== RUTAS CLIENTE ==================== */}
+          <Route
+            path="/cliente"
+            element={
+              <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
+                <ClienteLayout>
+                  <ClienteDashboard />
+                </ClienteLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/cliente/clientes"
+            element={
+              <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
+                <ClienteLayout>
                   <Clientes />
-                </Layout>
+                </ClienteLayout>
               </ProtectedRoute>
             }
           />
 
           <Route
-            path="/productos"
+            path="/cliente/productos"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
+                <ClienteLayout>
                   <Productos />
-                </Layout>
+                </ClienteLayout>
               </ProtectedRoute>
             }
           />
 
           <Route
-            path="/vendedores"
+            path="/cliente/vendedores"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
+                <ClienteLayout>
                   <Vendedores />
-                </Layout>
+                </ClienteLayout>
               </ProtectedRoute>
             }
           />
 
           <Route
-            path="/facturas"
+            path="/cliente/facturas"
             element={
-              <ProtectedRoute>
-                <Layout>
+              <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
+                <ClienteLayout>
                   <Facturas />
-                </Layout>
+                </ClienteLayout>
               </ProtectedRoute>
             }
           />
 
           <Route
-            path="/reportes"
+            path="/cliente/cuentas-por-cobrar"
             element={
-              <ProtectedRoute>
-                <Layout>
-                  <Reportes />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/configuracion/cambiar-contrasena"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <ChangePassword />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/configuracion/emisor"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <EmisorConfig />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/configuracion/manual"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <UserManual />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/configuracion/folios"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Folios />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/cuentas-por-cobrar"
-            element={
-              <ProtectedRoute>
-                <Layout>
+              <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
+                <ClienteLayout>
                   <CuentasPorCobrar />
-                </Layout>
+                </ClienteLayout>
               </ProtectedRoute>
             }
           />
 
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route
+            path="/cliente/reportes"
+            element={
+              <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
+                <ClienteLayout>
+                  <Reportes />
+                </ClienteLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/cliente/folios"
+            element={
+              <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
+                <ClienteLayout>
+                  <Folios />
+                </ClienteLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/cliente/configuracion"
+            element={
+              <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
+                <ClienteLayout>
+                  <EmisorConfig />
+                </ClienteLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/cliente/configuracion/cambiar-contrasena"
+            element={
+              <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
+                <ClienteLayout>
+                  <ChangePassword />
+                </ClienteLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/cliente/configuracion/manual"
+            element={
+              <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
+                <ClienteLayout>
+                  <UserManual />
+                </ClienteLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Ruta de redirección por defecto */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
