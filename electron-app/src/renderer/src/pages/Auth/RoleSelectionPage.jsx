@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 function RoleSelectionPage() {
   const [selectedRole, setSelectedRole] = useState(null);
   const [selectedSubtype, setSelectedSubtype] = useState(null);
+  const [seeding, setSeeding] = useState(false);
   const navigate = useNavigate();
 
   const handleRoleSelect = (role) => {
@@ -50,6 +51,28 @@ function RoleSelectionPage() {
     }
   };
 
+  const handleSeedProfiles = async () => {
+    if (!confirm('⚠️ Esto creará/reseteará todos los perfiles de desarrollo.\n\n¿Continuar?')) {
+      return;
+    }
+
+    setSeeding(true);
+    try {
+      const result = await window.api.seed.all();
+      
+      if (result.success) {
+        alert('✅ Todos los perfiles han sido creados exitosamente!\n\nAhora puedes cerrar la app y reiniciar con:\n- npm run dev:contador\n- npm run dev:empresa\n- npm run dev:personaA\n- npm run dev:personaB\n\nVer testing.md para las credenciales.');
+      } else {
+        alert('❌ Error al crear los perfiles:\n\n' + result.results.map(r => `${r.profile}: ${r.error || 'OK'}`).join('\n'));
+      }
+    } catch (error) {
+      console.error('Error seeding profiles:', error);
+      alert('Error: ' + error.message);
+    } finally {
+      setSeeding(false);
+    }
+  };
+
   const getRoleTitle = () => {
     if (selectedRole === 'contador') return 'Cuenta Contador';
     if (selectedRole === 'empresa') return 'Cuenta Empresa';
@@ -60,6 +83,17 @@ function RoleSelectionPage() {
 
   return (
     <div style={styles.container}>
+      {/* Botón de seed en desarrollo */}
+      {process.env.NODE_ENV === 'development' && (
+        <button
+          onClick={handleSeedProfiles}
+          disabled={seeding}
+          style={styles.seedButton}
+        >
+          {seeding ? '⏳ Creando perfiles...' : '🌱 Seed All Profiles (DEV)'}
+        </button>
+      )}
+
       <div style={styles.content}>
         <div style={styles.header}>
           <h1 style={styles.title}>Sistema de Facturación Electrónica</h1>
@@ -400,6 +434,22 @@ const styles = {
     borderRadius: '16px',
     fontSize: '12px',
     fontWeight: '600'
+  },
+  seedButton: {
+    position: 'fixed',
+    top: '20px',
+    right: '20px',
+    padding: '10px 16px',
+    backgroundColor: '#10b981',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '13px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+    zIndex: 1000,
+    transition: 'all 0.2s'
   },
   continueButton: {
     width: '100%',

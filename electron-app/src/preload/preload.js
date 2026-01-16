@@ -130,6 +130,12 @@ contextBridge.exposeInMainWorld('api', {
     processQueue: () => ipcRenderer.invoke('sync:processQueue')
   },
 
+  // Seed para desarrollo
+  seed: {
+    all: () => ipcRenderer.invoke('seed:all'),
+    profile: (profileName) => ipcRenderer.invoke('seed:profile', profileName)
+  },
+
   // Menu events listener
   onMenuEvent: (callback) => {
     ipcRenderer.on('menu:export-clientes', () => callback('export-clientes'));

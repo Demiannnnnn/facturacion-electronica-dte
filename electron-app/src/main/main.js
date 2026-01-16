@@ -18,12 +18,25 @@ import { registerExportHandlers } from './ipc/export.js';
 import { registerImportHandlers } from './ipc/import.js';
 import { registerConfigHandlers } from './ipc/config.js';
 import { registerSyncHandlers } from './ipc/sync.js';
+import { registerSeedHandlers } from './ipc/seed.js';
 import { createMenu } from './menu.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 let mainWindow;
+
+// Configurar perfiles de desarrollo separados
+if (process.env.NODE_ENV === 'development' && process.env.DEV_PROFILE) {
+  const originalUserData = app.getPath('userData');
+  const profilePath = path.join(
+    path.dirname(originalUserData),
+    `${path.basename(originalUserData)}-${process.env.DEV_PROFILE}`
+  );
+  app.setPath('userData', profilePath);
+  console.log(`[DEV_PROFILE] Using profile: ${process.env.DEV_PROFILE}`);
+  console.log(`[DEV_PROFILE] userData path: ${profilePath}`);
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -72,6 +85,7 @@ app.whenReady().then(() => {
   registerImportHandlers();
   registerConfigHandlers();
   registerSyncHandlers();
+  registerSeedHandlers();
 
   // Crear menú en español
   createMenu();

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
@@ -7,6 +7,24 @@ function ClienteLayout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [userRole, setUserRole] = useState(null);
+  const [userSubtype, setUserSubtype] = useState(null);
+
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      try {
+        const roleConfig = await window.api.config.get('user_role');
+        const subtypeConfig = await window.api.config.get('user_subtype');
+        
+        if (roleConfig?.value) setUserRole(roleConfig.value);
+        if (subtypeConfig?.value) setUserSubtype(subtypeConfig.value);
+      } catch (error) {
+        console.error('Error loading user profile:', error);
+      }
+    };
+
+    loadUserProfile();
+  }, []);
 
   const handleLogout = async () => {
     const result = await logout();
@@ -23,17 +41,37 @@ function ClienteLayout({ children }) {
     navigate('/cliente/configuracion/manual');
   };
 
+  // Definir módulos sugeridos según perfil
+  const getSuggestedModules = () => {
+    if (userRole === 'persona_natural' && userSubtype === 'honorarios') {
+      return ['/cliente', '/cliente/clientes', '/cliente/reportes'];
+    }
+    if (userRole === 'persona_natural' && userSubtype === 'comerciante') {
+      return ['/cliente', '/cliente/productos', '/cliente/facturas', '/cliente/clientes'];
+    }
+    if (userRole === 'empresa') {
+      return ['/cliente', '/cliente/facturas', '/cliente/productos', '/cliente/clientes', '/cliente/vendedores'];
+    }
+    // Por defecto, sugerir los básicos
+    return ['/cliente', '/cliente/clientes', '/cliente/facturas'];
+  };
+
+  const suggestedPaths = getSuggestedModules();
+
   const menuItems = [
-    { path: '/cliente', label: 'Dashboard', icon: '📊' },
-    { path: '/cliente/clientes', label: 'Clientes', icon: '👥' },
-    { path: '/cliente/productos', label: 'Productos', icon: '📦' },
-    { path: '/cliente/vendedores', label: 'Vendedores', icon: '👨‍💼' },
-    { path: '/cliente/facturas', label: 'Facturas', icon: '📄' },
-    { path: '/cliente/cuentas-por-cobrar', label: 'Cuentas por Cobrar', icon: '💰' },
-    { path: '/cliente/reportes', label: 'Reportes', icon: '📈' },
-    { path: '/cliente/folios', label: 'Folios', icon: '🔢' },
-    { path: '/cliente/configuracion', label: 'Configuración', icon: '⚙️' }
-  ];
+    { path: '/cliente', label: 'Dashboard', icon: '📊', description: 'Vista general' },
+    { path: '/cliente/clientes', label: 'Clientes', icon: '👥', description: 'Gestión de clientes' },
+    { path: '/cliente/productos', label: 'Productos', icon: '📦', description: 'Catálogo e inventario' },
+    { path: '/cliente/vendedores', label: 'Vendedores', icon: '👨‍💼', description: 'Equipo de ventas' },
+    { path: '/cliente/facturas', label: 'Facturas', icon: '📄', description: 'Documentos tributarios' },
+    { path: '/cliente/cuentas-por-cobrar', label: 'Cuentas por Cobrar', icon: '💰', description: 'Control de pagos' },
+    { path: '/cliente/reportes', label: 'Reportes', icon: '📈', description: 'Análisis y estadísticas' },
+    { path: '/cliente/folios', label: 'Folios', icon: '🔢', description: 'Gestión de folios SII' },
+    { path: '/cliente/configuracion', label: 'Configuración', icon: '⚙️', description: 'Ajustes generales' }
+  ].map(item => ({
+    ...item,
+    suggested: suggestedPaths.includes(item.path)
+  }));
 
   const isActive = (path) => {
     return location.pathname === path;
@@ -74,17 +112,23 @@ function ClienteLayout({ children }) {
           <aside style={styles.sidebar}>
             <nav style={styles.nav}>
               {menuItems.map((item) => (
-                <button
-                  key={item.path}
-                  onClick={() => navigate(item.path)}
-                  style={{
-                    ...styles.navItem,
-                    ...(isActive(item.path) ? styles.navItemActive : {})
-                  }}
-                >
-                  <span style={styles.navIcon}>{item.icon}</span>
-                  <span style={styles.navLabel}>{item.label}</span>
-                </button>
+                <div key={item.path} style={styles.navItemContainer}>
+                  <button
+                    onClick={() => navigate(item.path)}
+                    style={{
+                      ...styles.navItem,
+                      ...(isActive(item.path) ? styles.navItemActive : {}),
+                      ...(item.suggested && !isActive(item.path) ? styles.navItemSuggested : {})
+                    }}
+                    title={item.description}
+                  >
+                    <span style={styles.navIcon}>{item.icon}</span>
+                    <span style={styles.navLabel}>
+                      {item.label}
+                      {item.suggested && <span style={styles.suggestedBadge}>⭐</span>}
+                    </span>
+                  </button>
+                </div>
               ))}
             </nav>
           </aside>
@@ -232,7 +276,22 @@ const styles = {
     minWidth: '24px'
   },
   navLabel: {
-    fontSize: '14px'
+    fontSize: '14px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px'
+  },
+  navItemContainer: {
+    position: 'relative'
+  },
+  navItemSuggested: {
+    backgroundColor: '#f0fdfa',
+    borderLeft: '3px solid #14b8a6'
+  },
+  suggestedBadge: {
+    fontSize: '12px',
+    marginLeft: '4px',
+    filter: 'drop-shadow(0 0 2px rgba(20, 184, 166, 0.3))'
   },
   main: {
     flex: 1,

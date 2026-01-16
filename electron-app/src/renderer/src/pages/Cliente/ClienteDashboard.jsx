@@ -31,6 +31,8 @@ ChartJS.register(
 
 function ClienteDashboard() {
   const { user } = useAuth();
+  const [userRole, setUserRole] = useState(null);
+  const [userSubtype, setUserSubtype] = useState(null);
   const [stats, setStats] = useState({
     totalVentas: 0,
     totalFacturas: 0,
@@ -45,8 +47,16 @@ function ClienteDashboard() {
   const [facturasRecientes, setFacturasRecientes] = useState([]);
 
   useEffect(() => {
+    cargarPerfil();
     cargarDatos();
   }, []);
+
+  const cargarPerfil = async () => {
+    const role = await window.api.config.get('user_role');
+    const subtype = await window.api.config.get('user_subtype');
+    setUserRole(role);
+    setUserSubtype(subtype);
+  };
 
   const cargarDatos = async () => {
     try {
@@ -160,6 +170,73 @@ function ClienteDashboard() {
     }).format(value);
   };
 
+  // Determinar tarjetas sugeridas según perfil
+  const getContextualMessage = () => {
+    if (userRole === 'persona_natural' && userSubtype === 'honorarios') {
+      return {
+        icon: '💼',
+        title: 'Panel Profesional Independiente',
+        message: 'Enfocado en tus servicios profesionales y clientes. Los módulos de productos e inventario están disponibles si también vendes productos físicos.'
+      };
+    }
+    if (userRole === 'persona_natural' && userSubtype === 'comerciante') {
+      return {
+        icon: '🏪',
+        title: 'Panel Comerciante',
+        message: 'Gestiona tu inventario, productos y ventas. Los módulos de vendedores y usuarios están disponibles si tu negocio crece.'
+      };
+    }
+    if (userRole === 'empresa') {
+      return {
+        icon: '🏢',
+        title: 'Panel Empresarial',
+        message: 'Gestión completa con equipo de trabajo. Todos los módulos están activos para tu empresa.'
+      };
+    }
+    return {
+      icon: '📊',
+      title: 'Dashboard',
+      message: 'Gestiona tu negocio de manera eficiente.'
+    };
+  };
+
+  // Determinar orden de tarjetas según perfil
+  const getStatsCardOrder = () => {
+    const allCards = [
+      { key: 'ventas', icon: '💰', label: 'Total Ventas', value: formatCurrency(stats.totalVentas), color: '#0f766e', priority: 1 },
+      { key: 'facturas', icon: '📄', label: 'Total Facturas', value: stats.totalFacturas, color: '#14b8a6', priority: 2 },
+      { key: 'pendientes', icon: '⏳', label: 'Pendientes', value: stats.facturasPendientes, color: '#f59e0b', priority: 3 },
+      { key: 'stock', icon: '📦', label: 'Stock Total', value: stats.productosStock, color: '#8b5cf6', priority: 5 },
+      { key: 'hoy', icon: '📅', label: 'Ventas Hoy', value: formatCurrency(stats.ventasHoy), color: '#10b981', priority: 4 },
+      { key: 'clientes', icon: '👥', label: 'Clientes Activos', value: stats.clientesActivos, color: '#3b82f6', priority: 2 }
+    ];
+
+    // Ajustar prioridades según perfil
+    if (userRole === 'persona_natural' && userSubtype === 'honorarios') {
+      // Honorarios: priorizar clientes y facturas
+      return allCards.map(card => {
+        if (card.key === 'clientes') return { ...card, priority: 1 };
+        if (card.key === 'facturas') return { ...card, priority: 2 };
+        if (card.key === 'ventas') return { ...card, priority: 3 };
+        if (card.key === 'stock') return { ...card, priority: 6, suggested: false };
+        return card;
+      });
+    }
+    
+    if (userRole === 'persona_natural' && userSubtype === 'comerciante') {
+      // Comerciante: priorizar stock y productos
+      return allCards.map(card => {
+        if (card.key === 'stock') return { ...card, priority: 1 };
+        if (card.key === 'ventas') return { ...card, priority: 2 };
+        if (card.key === 'facturas') return { ...card, priority: 3 };
+        return card;
+      });
+    }
+
+    // Empresa o default: orden normal
+    return allCards;
+  };
+
   // Datos para gráfico de ventas semanales
   const ventasSemanalesChart = {
     labels: ventasSemanales.map(v => v.dia),
@@ -198,64 +275,40 @@ function ClienteDashboard() {
     );
   }
 
+  const contextualMessage = getContextualMessage();
+  const statsCards = getStatsCardOrder().sort((a, b) => a.priority - b.priority);
+
   return (
     <div style={styles.container}>
       <div style={styles.header}>
         <div>
-          <h1 style={styles.title}>Dashboard</h1>
+          <h1 style={styles.title}>
+            <span style={{ marginRight: '12px' }}>{contextualMessage.icon}</span>
+            {contextualMessage.title}
+          </h1>
           <p style={styles.subtitle}>Bienvenido, {user?.username}</p>
         </div>
       </div>
 
-      {/* Tarjetas de estadísticas */}
+      {/* Mensaje contextual según perfil */}
+      <div style={styles.contextualBanner}>
+        <div style={styles.bannerIcon}>💡</div>
+        <div style={styles.bannerContent}>
+          <div style={styles.bannerText}>{contextualMessage.message}</div>
+        </div>
+      </div>
+
+      {/* Tarjetas de estadísticas ordenadas por relevancia */}
       <div style={styles.statsGrid}>
-        <div style={{ ...styles.statCard, borderTop: '4px solid #0f766e' }}>
-          <div style={styles.statIcon}>💰</div>
-          <div style={styles.statContent}>
-            <div style={styles.statLabel}>Total Ventas</div>
-            <div style={styles.statValue}>{formatCurrency(stats.totalVentas)}</div>
+        {statsCards.map(card => (
+          <div key={card.key} style={{ ...styles.statCard, borderTop: `4px solid ${card.color}` }}>
+            <div style={styles.statIcon}>{card.icon}</div>
+            <div style={styles.statContent}>
+              <div style={styles.statLabel}>{card.label}</div>
+              <div style={styles.statValue}>{card.value}</div>
+            </div>
           </div>
-        </div>
-
-        <div style={{ ...styles.statCard, borderTop: '4px solid #14b8a6' }}>
-          <div style={styles.statIcon}>📄</div>
-          <div style={styles.statContent}>
-            <div style={styles.statLabel}>Total Facturas</div>
-            <div style={styles.statValue}>{stats.totalFacturas}</div>
-          </div>
-        </div>
-
-        <div style={{ ...styles.statCard, borderTop: '4px solid #f59e0b' }}>
-          <div style={styles.statIcon}>⏳</div>
-          <div style={styles.statContent}>
-            <div style={styles.statLabel}>Pendientes</div>
-            <div style={styles.statValue}>{stats.facturasPendientes}</div>
-          </div>
-        </div>
-
-        <div style={{ ...styles.statCard, borderTop: '4px solid #8b5cf6' }}>
-          <div style={styles.statIcon}>📦</div>
-          <div style={styles.statContent}>
-            <div style={styles.statLabel}>Stock Total</div>
-            <div style={styles.statValue}>{stats.productosStock}</div>
-          </div>
-        </div>
-
-        <div style={{ ...styles.statCard, borderTop: '4px solid #10b981' }}>
-          <div style={styles.statIcon}>📅</div>
-          <div style={styles.statContent}>
-            <div style={styles.statLabel}>Ventas Hoy</div>
-            <div style={styles.statValue}>{formatCurrency(stats.ventasHoy)}</div>
-          </div>
-        </div>
-
-        <div style={{ ...styles.statCard, borderTop: '4px solid #3b82f6' }}>
-          <div style={styles.statIcon}>👥</div>
-          <div style={styles.statContent}>
-            <div style={styles.statLabel}>Clientes Activos</div>
-            <div style={styles.statValue}>{stats.clientesActivos}</div>
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Gráficos */}
@@ -379,12 +432,36 @@ const styles = {
     fontSize: '28px',
     fontWeight: '700',
     color: '#1f2937',
-    margin: '0 0 4px 0'
+    margin: '0 0 4px 0',
+    display: 'flex',
+    alignItems: 'center'
   },
   subtitle: {
     fontSize: '14px',
     color: '#6b7280',
     margin: 0
+  },
+  contextualBanner: {
+    backgroundColor: '#f0fdfa',
+    border: '1px solid #14b8a6',
+    borderRadius: '8px',
+    padding: '16px 20px',
+    marginBottom: '24px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px'
+  },
+  bannerIcon: {
+    fontSize: '24px',
+    flexShrink: 0
+  },
+  bannerContent: {
+    flex: 1
+  },
+  bannerText: {
+    fontSize: '14px',
+    color: '#115e59',
+    lineHeight: '1.5'
   },
   statsGrid: {
     display: 'grid',
