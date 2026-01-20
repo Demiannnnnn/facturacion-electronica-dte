@@ -1,9 +1,10 @@
 // TODO: Implementar según documentación
 // Ver documentacion/latex.pdf página 21-22
 
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { promises as fs } from 'fs';
 import { initDatabase } from './database/connection.js';
 import { registerAuthHandlers } from './ipc/auth.js';
 import { registerClientesHandlers } from './ipc/clientes.js';
@@ -19,6 +20,7 @@ import { registerImportHandlers } from './ipc/import.js';
 import { registerConfigHandlers } from './ipc/config.js';
 import { registerSyncHandlers } from './ipc/sync.js';
 import { registerSeedHandlers } from './ipc/seed.js';
+import { registerEmpresasHandlers } from './ipc/empresas.js';
 import { createMenu } from './menu.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -86,12 +88,53 @@ app.whenReady().then(() => {
   registerConfigHandlers();
   registerSyncHandlers();
   registerSeedHandlers();
+  registerEmpresasHandlers();
 
   // Crear menú en español
   createMenu();
 
   // Crear ventana
   createWindow();
+
+  // Handlers genéricos para PDFs
+  ipcMain.handle('savePDF', async (event, { filename, data }) => {
+    try {
+      // Obtener la ruta del proyecto
+      const projectRoot = app.getAppPath().includes('app.asar')
+        ? path.join(process.resourcesPath, '..')
+        : path.join(app.getAppPath(), '../..');
+
+      const pdfsDir = path.join(projectRoot, 'PDFs');
+
+      // Crear directorio PDFs si no existe
+      try {
+        await fs.access(pdfsDir);
+      } catch {
+        await fs.mkdir(pdfsDir, { recursive: true });
+      }
+
+      const filePath = path.join(pdfsDir, filename);
+
+      // Convertir array a Buffer y guardar
+      const bufferData = Buffer.from(data);
+      await fs.writeFile(filePath, bufferData);
+
+      return { success: true, path: filePath };
+    } catch (error) {
+      console.error('Error saving PDF:', error);
+      return { success: false, message: error.message };
+    }
+  });
+
+  ipcMain.handle('openPDF', async (event, filePath) => {
+    try {
+      await shell.openPath(filePath);
+      return { success: true };
+    } catch (error) {
+      console.error('Error opening PDF:', error);
+      return { success: false, message: error.message };
+    }
+  });
 });
 
 app.on('window-all-closed', () => {

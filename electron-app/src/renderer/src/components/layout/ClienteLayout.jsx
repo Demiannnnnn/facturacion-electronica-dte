@@ -64,6 +64,7 @@ function ClienteLayout({ children }) {
     { path: '/cliente/productos', label: 'Productos', icon: '📦', description: 'Catálogo e inventario' },
     { path: '/cliente/vendedores', label: 'Vendedores', icon: '👨‍💼', description: 'Equipo de ventas' },
     { path: '/cliente/facturas', label: 'Facturas', icon: '📄', description: 'Documentos tributarios' },
+    { path: '/cliente/guias', label: 'Guías de Despacho', icon: '📦', description: 'Guías tipo 52' },
     { path: '/cliente/cuentas-por-cobrar', label: 'Cuentas por Cobrar', icon: '💰', description: 'Control de pagos' },
     { path: '/cliente/reportes', label: 'Reportes', icon: '📈', description: 'Análisis y estadísticas' },
     { path: '/cliente/folios', label: 'Folios', icon: '🔢', description: 'Gestión de folios SII' },

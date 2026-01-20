@@ -167,8 +167,16 @@ function RegisterPage() {
         }
       }
 
-      alert('✅ Cuenta configurada exitosamente. Ahora puedes iniciar sesión.');
-      navigate('/login');
+      // 3. Redirigir según el rol
+      if (userRole === 'contador') {
+        // Contador va directo al login (no necesita selector de módulos)
+        alert('✅ Cuenta de contador configurada exitosamente. Ahora puedes iniciar sesión.');
+        navigate('/login');
+      } else {
+        // Empresa y Persona Natural van al selector de módulos
+        alert('✅ Cuenta creada exitosamente. Ahora personaliza tu espacio de trabajo.');
+        navigate('/module-selector');
+      }
     } catch (error) {
       console.error('Error en registro:', error);
       setError('Error al completar el registro');

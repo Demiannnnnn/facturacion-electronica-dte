@@ -185,7 +185,30 @@ function createTables() {
       hasta INTEGER NOT NULL,
       actual INTEGER NOT NULL,
       created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
       UNIQUE(tipo_documento)
+    )
+  `);
+
+  // Tabla de empresas del contador (multi-tenant)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS empresas_contador (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      contador_id INTEGER NOT NULL,
+      rut TEXT UNIQUE NOT NULL,
+      razon_social TEXT NOT NULL,
+      nombre_fantasia TEXT,
+      giro TEXT,
+      direccion TEXT,
+      comuna TEXT,
+      ciudad TEXT,
+      region TEXT,
+      email TEXT,
+      telefono TEXT,
+      estado TEXT DEFAULT 'activa',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (contador_id) REFERENCES users(id) ON DELETE CASCADE
     )
   `);
 
@@ -359,6 +382,8 @@ function createTables() {
     { table: 'clientes', column: 'lista_precios', definition: 'TEXT DEFAULT "normal"' },
     // Productos
     { table: 'productos', column: 'exento', definition: 'INTEGER DEFAULT 0' }, // 0 = afecto, 1 = exento de IVA
+    // Folios
+    { table: 'folios', column: 'updated_at', definition: 'TEXT' }, // Agregar updated_at para compatibilidad
     // Facturas
     { table: 'facturas', column: 'tipo_documento', definition: 'INTEGER DEFAULT 33' },
     { table: 'facturas', column: 'forma_pago', definition: 'TEXT DEFAULT "contado"' },

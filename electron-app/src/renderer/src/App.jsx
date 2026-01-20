@@ -5,6 +5,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 import RoleSelectionPage from './pages/Auth/RoleSelectionPage';
 import LoginPage from './pages/Auth/LoginPage';
 import RegisterPage from './pages/Auth/RegisterPage';
+import ModuleSelector from './pages/Auth/ModuleSelector';
 
 // Layouts
 import ContadorLayout from './components/layout/ContadorLayout';
@@ -12,6 +13,7 @@ import ClienteLayout from './components/layout/ClienteLayout';
 
 // Páginas Contador
 import ContadorDashboard from './pages/Contador/ContadorDashboard';
+import Empresas from './pages/Contador/Empresas';
 
 // Páginas Cliente
 import ClienteDashboard from './pages/Cliente/ClienteDashboard';
@@ -19,6 +21,7 @@ import Clientes from './pages/Clientes';
 import Productos from './pages/Productos';
 import Vendedores from './pages/Vendedores';
 import Facturas from './pages/Facturas';
+import Guias from './pages/Guias';
 import Reportes from './pages/Reportes';
 import ChangePassword from './pages/Configuracion/ChangePassword';
 import EmisorConfig from './pages/Configuracion/EmisorConfig';
@@ -157,6 +160,7 @@ function App() {
           <Route path="/role-selection" element={<RoleSelectionPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/module-selector" element={<ModuleSelector />} />
 
           {/* ==================== RUTAS CONTADOR ==================== */}
           <Route
@@ -175,10 +179,7 @@ function App() {
             element={
               <ProtectedRoute requiredRole="contador">
                 <ContadorLayout>
-                  <div style={{ padding: '20px', textAlign: 'center' }}>
-                    <h2>🏢 Gestión de Empresas</h2>
-                    <p>Módulo en desarrollo para gestionar empresas clientes del contador</p>
-                  </div>
+                  <Empresas />
                 </ContadorLayout>
               </ProtectedRoute>
             }
@@ -291,6 +292,17 @@ function App() {
               <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
                 <ClienteLayout>
                   <Facturas />
+                </ClienteLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/cliente/guias"
+            element={
+              <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
+                <ClienteLayout>
+                  <Guias />
                 </ClienteLayout>
               </ProtectedRoute>
             }

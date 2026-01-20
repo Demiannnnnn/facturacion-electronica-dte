@@ -240,6 +240,28 @@ function createTablesForSeed(db) {
       updated_at TEXT NOT NULL
     )
   `);
+
+  // Tabla empresas_contador (multi-tenant para contadores)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS empresas_contador (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      contador_id INTEGER NOT NULL,
+      rut TEXT UNIQUE NOT NULL,
+      razon_social TEXT NOT NULL,
+      nombre_fantasia TEXT,
+      giro TEXT,
+      direccion TEXT,
+      comuna TEXT,
+      ciudad TEXT,
+      region TEXT,
+      email TEXT,
+      telefono TEXT,
+      estado TEXT DEFAULT 'activa',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (contador_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
 }
 
 async function seedProfile(profile) {
@@ -268,8 +290,9 @@ async function seedProfile(profile) {
       INSERT INTO users (username, password_hash, created_at, updated_at) 
       VALUES (?, ?, ?, ?)
     `);
-    insertUser.run(profile.user.username, hashedPassword, now, now);
-    console.log(`   ✅ User created: ${profile.user.username}`);
+    const userResult = insertUser.run(profile.user.username, hashedPassword, now, now);
+    const userId = userResult.lastInsertRowid;
+    console.log(`   ✅ User created: ${profile.user.username} (ID: ${userId})`);
     
     // Insertar configuración
     const insertConfig = db.prepare(`
@@ -281,6 +304,80 @@ async function seedProfile(profile) {
       insertConfig.run(key, value);
     });
     console.log(`   ✅ Config saved (role: ${profile.config.user_role})`);
+    
+    // Si es contador, crear empresas de ejemplo
+    if (profile.config.user_role === 'contador') {
+      const insertEmpresa = db.prepare(`
+        INSERT INTO empresas_contador (
+          contador_id, rut, razon_social, nombre_fantasia, giro, 
+          direccion, comuna, ciudad, region, email, telefono, 
+          estado, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+
+      const empresasEjemplo = [
+        {
+          rut: '76.555.666-7',
+          razon_social: 'Comercial ABC S.A.',
+          nombre_fantasia: 'ABC Store',
+          giro: 'Comercio al por menor',
+          direccion: 'Av. Libertador 1234',
+          comuna: 'Santiago',
+          ciudad: 'Santiago',
+          region: 'Región Metropolitana',
+          email: 'info@abcstore.cl',
+          telefono: '+56987654321',
+          estado: 'activa'
+        },
+        {
+          rut: '77.888.999-0',
+          razon_social: 'Servicios XYZ Ltda.',
+          nombre_fantasia: 'XYZ Servicios',
+          giro: 'Servicios de consultoría',
+          direccion: 'Los Alerces 567',
+          comuna: 'Las Condes',
+          ciudad: 'Santiago',
+          region: 'Región Metropolitana',
+          email: 'contacto@xyzservicios.cl',
+          telefono: '+56976543210',
+          estado: 'activa'
+        },
+        {
+          rut: '78.111.222-3',
+          razon_social: 'Distribuidora DEF SpA',
+          nombre_fantasia: 'DEF Distribución',
+          giro: 'Distribución mayorista',
+          direccion: 'Industrial 890',
+          comuna: 'Quilicura',
+          ciudad: 'Santiago',
+          region: 'Región Metropolitana',
+          email: 'ventas@defdist.cl',
+          telefono: '+56965432109',
+          estado: 'inactiva'
+        }
+      ];
+
+      empresasEjemplo.forEach(empresa => {
+        insertEmpresa.run(
+          userId,
+          empresa.rut,
+          empresa.razon_social,
+          empresa.nombre_fantasia,
+          empresa.giro,
+          empresa.direccion,
+          empresa.comuna,
+          empresa.ciudad,
+          empresa.region,
+          empresa.email,
+          empresa.telefono,
+          empresa.estado,
+          now,
+          now
+        );
+      });
+
+      console.log(`   ✅ ${empresasEjemplo.length} empresas de ejemplo creadas`);
+    }
     
     // Insertar emisor si existe
     if (profile.emisor) {

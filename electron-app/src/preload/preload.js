@@ -64,6 +64,17 @@ contextBridge.exposeInMainWorld('api', {
     getReporteTributario: (params) => ipcRenderer.invoke('facturas:getReporteTributario', params)
   },
 
+  // Guías de Despacho
+  guias: {
+    getNextFolio: () => ipcRenderer.invoke('guias:getNextFolio'),
+    create: (data) => ipcRenderer.invoke('guias:create', data),
+    getAll: () => ipcRenderer.invoke('guias:getAll'),
+    getById: (id) => ipcRenderer.invoke('guias:getById', id),
+    updateEstado: (data) => ipcRenderer.invoke('guias:updateEstado', data),
+    updatePDFPath: (data) => ipcRenderer.invoke('guias:updatePDFPath', data),
+    delete: (id) => ipcRenderer.invoke('guias:delete', id)
+  },
+
   // Emisor
   emisor: {
     get: () => ipcRenderer.invoke('emisor:get'),
@@ -135,6 +146,22 @@ contextBridge.exposeInMainWorld('api', {
     all: () => ipcRenderer.invoke('seed:all'),
     profile: (profileName) => ipcRenderer.invoke('seed:profile', profileName)
   },
+
+  // Empresas (para Contador)
+  empresas: {
+    create: (empresa) => ipcRenderer.invoke('empresas:create', empresa),
+    getAll: (contadorId) => ipcRenderer.invoke('empresas:getAll', contadorId),
+    getById: (id) => ipcRenderer.invoke('empresas:getById', id),
+    update: (id, empresa) => ipcRenderer.invoke('empresas:update', id, empresa),
+    delete: (id) => ipcRenderer.invoke('empresas:delete', id),
+    changeStatus: (id, estado) => ipcRenderer.invoke('empresas:changeStatus', id, estado),
+    search: (contadorId, searchTerm) => ipcRenderer.invoke('empresas:search', contadorId, searchTerm),
+    getStats: (contadorId) => ipcRenderer.invoke('empresas:getStats', contadorId)
+  },
+
+  // PDF utilities (generic)
+  savePDF: (data) => ipcRenderer.invoke('savePDF', data),
+  openPDF: (path) => ipcRenderer.invoke('openPDF', path),
 
   // Menu events listener
   onMenuEvent: (callback) => {

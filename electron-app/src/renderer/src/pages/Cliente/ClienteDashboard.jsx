@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -31,8 +32,11 @@ ChartJS.register(
 
 function ClienteDashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [userRole, setUserRole] = useState(null);
   const [userSubtype, setUserSubtype] = useState(null);
+  const [enabledModules, setEnabledModules] = useState([]);
+  const [hoveredModule, setHoveredModule] = useState(null);
   const [stats, setStats] = useState({
     totalVentas: 0,
     totalFacturas: 0,
@@ -54,8 +58,23 @@ function ClienteDashboard() {
   const cargarPerfil = async () => {
     const role = await window.api.config.get('user_role');
     const subtype = await window.api.config.get('user_subtype');
+    const modulesConfig = await window.api.config.get('enabled_modules');
+    
     setUserRole(role);
     setUserSubtype(subtype);
+    
+    // Cargar módulos habilitados
+    if (modulesConfig?.value) {
+      try {
+        const modules = JSON.parse(modulesConfig.value);
+        setEnabledModules(modules);
+      } catch (e) {
+        console.error('Error parsing enabled_modules:', e);
+        setEnabledModules(['dashboard', 'clientes', 'productos', 'vendedores', 'facturas', 'guias', 'cuentas-por-cobrar', 'reportes', 'folios', 'configuracion']);
+      }
+    } else {
+      setEnabledModules(['dashboard', 'clientes', 'productos', 'vendedores', 'facturas', 'guias', 'cuentas-por-cobrar', 'reportes', 'folios', 'configuracion']);
+    }
   };
 
   const cargarDatos = async () => {
@@ -170,6 +189,33 @@ function ClienteDashboard() {
     }).format(value);
   };
 
+  // Obtener información de todos los módulos disponibles
+  const getAllModules = () => {
+    return [
+      { id: 'dashboard', label: 'Dashboard', icon: '📊', path: '/cliente', description: 'Vista general' },
+      { id: 'clientes', label: 'Clientes', icon: '👥', path: '/cliente/clientes', description: 'Gestión de clientes' },
+      { id: 'productos', label: 'Productos', icon: '📦', path: '/cliente/productos', description: 'Catálogo e inventario' },
+      { id: 'vendedores', label: 'Vendedores', icon: '👨‍💼', path: '/cliente/vendedores', description: 'Equipo de ventas' },
+      { id: 'facturas', label: 'Facturas', icon: '📄', path: '/cliente/facturas', description: 'Documentos tributarios' },
+      { id: 'guias', label: 'Guías de Despacho', icon: '📦', path: '/cliente/guias', description: 'Guías tipo 52' },
+      { id: 'cuentas-por-cobrar', label: 'Cuentas por Cobrar', icon: '💰', path: '/cliente/cuentas-por-cobrar', description: 'Control de pagos' },
+      { id: 'reportes', label: 'Reportes', icon: '📈', path: '/cliente/reportes', description: 'Análisis y estadísticas' },
+      { id: 'folios', label: 'Folios', icon: '🔢', path: '/cliente/folios', description: 'Gestión de folios SII' },
+      { id: 'configuracion', label: 'Configuración', icon: '⚙️', path: '/cliente/configuracion', description: 'Ajustes generales' }
+    ];
+  };
+
+  // Obtener módulos de acceso rápido (los seleccionados por el usuario)
+  const getQuickAccessModules = () => {
+    const allModules = getAllModules();
+    // Filtrar para mostrar solo los módulos habilitados (excepto dashboard y configuración)
+    return allModules.filter(m => 
+      enabledModules.includes(m.id) && 
+      m.id !== 'dashboard' && 
+      m.id !== 'configuracion'
+    );
+  };
+
   // Determinar tarjetas sugeridas según perfil
   const getContextualMessage = () => {
     if (userRole === 'persona_natural' && userSubtype === 'honorarios') {
@@ -203,18 +249,21 @@ function ClienteDashboard() {
   // Determinar orden de tarjetas según perfil
   const getStatsCardOrder = () => {
     const allCards = [
-      { key: 'ventas', icon: '💰', label: 'Total Ventas', value: formatCurrency(stats.totalVentas), color: '#0f766e', priority: 1 },
-      { key: 'facturas', icon: '📄', label: 'Total Facturas', value: stats.totalFacturas, color: '#14b8a6', priority: 2 },
-      { key: 'pendientes', icon: '⏳', label: 'Pendientes', value: stats.facturasPendientes, color: '#f59e0b', priority: 3 },
-      { key: 'stock', icon: '📦', label: 'Stock Total', value: stats.productosStock, color: '#8b5cf6', priority: 5 },
-      { key: 'hoy', icon: '📅', label: 'Ventas Hoy', value: formatCurrency(stats.ventasHoy), color: '#10b981', priority: 4 },
-      { key: 'clientes', icon: '👥', label: 'Clientes Activos', value: stats.clientesActivos, color: '#3b82f6', priority: 2 }
+      { key: 'ventas', icon: '💰', label: 'Total Ventas', value: formatCurrency(stats.totalVentas), color: '#0f766e', priority: 1, moduleId: 'facturas' },
+      { key: 'facturas', icon: '📄', label: 'Total Facturas', value: stats.totalFacturas, color: '#14b8a6', priority: 2, moduleId: 'facturas' },
+      { key: 'pendientes', icon: '⏳', label: 'Pendientes', value: stats.facturasPendientes, color: '#f59e0b', priority: 3, moduleId: 'cuentas-por-cobrar' },
+      { key: 'stock', icon: '📦', label: 'Stock Total', value: stats.productosStock, color: '#8b5cf6', priority: 5, moduleId: 'productos' },
+      { key: 'hoy', icon: '📅', label: 'Ventas Hoy', value: formatCurrency(stats.ventasHoy), color: '#10b981', priority: 4, moduleId: 'facturas' },
+      { key: 'clientes', icon: '👥', label: 'Clientes Activos', value: stats.clientesActivos, color: '#3b82f6', priority: 2, moduleId: 'clientes' }
     ];
+
+    // Filtrar tarjetas según módulos habilitados
+    const filteredCards = allCards.filter(card => enabledModules.includes(card.moduleId));
 
     // Ajustar prioridades según perfil
     if (userRole === 'persona_natural' && userSubtype === 'honorarios') {
       // Honorarios: priorizar clientes y facturas
-      return allCards.map(card => {
+      return filteredCards.map(card => {
         if (card.key === 'clientes') return { ...card, priority: 1 };
         if (card.key === 'facturas') return { ...card, priority: 2 };
         if (card.key === 'ventas') return { ...card, priority: 3 };
@@ -225,7 +274,7 @@ function ClienteDashboard() {
     
     if (userRole === 'persona_natural' && userSubtype === 'comerciante') {
       // Comerciante: priorizar stock y productos
-      return allCards.map(card => {
+      return filteredCards.map(card => {
         if (card.key === 'stock') return { ...card, priority: 1 };
         if (card.key === 'ventas') return { ...card, priority: 2 };
         if (card.key === 'facturas') return { ...card, priority: 3 };
@@ -234,7 +283,7 @@ function ClienteDashboard() {
     }
 
     // Empresa o default: orden normal
-    return allCards;
+    return filteredCards;
   };
 
   // Datos para gráfico de ventas semanales
@@ -277,6 +326,7 @@ function ClienteDashboard() {
 
   const contextualMessage = getContextualMessage();
   const statsCards = getStatsCardOrder().sort((a, b) => a.priority - b.priority);
+  const quickAccessModules = getQuickAccessModules();
 
   return (
     <div style={styles.container}>
@@ -297,6 +347,34 @@ function ClienteDashboard() {
           <div style={styles.bannerText}>{contextualMessage.message}</div>
         </div>
       </div>
+
+      {/* Accesos Rápidos - Módulos seleccionados */}
+      {quickAccessModules.length > 0 && (
+        <div style={styles.quickAccessSection}>
+          <h2 style={styles.sectionTitle}>
+            <span style={{ marginRight: '8px' }}>⚡</span>
+            Accesos Rápidos
+          </h2>
+          <div style={styles.quickAccessGrid}>
+            {quickAccessModules.map(module => (
+              <button
+                key={module.id}
+                onClick={() => navigate(module.path)}
+                onMouseEnter={() => setHoveredModule(module.id)}
+                onMouseLeave={() => setHoveredModule(null)}
+                style={{
+                  ...styles.quickAccessCard,
+                  ...(hoveredModule === module.id ? styles.quickAccessCardHover : {})
+                }}
+              >
+                <div style={styles.quickAccessIcon}>{module.icon}</div>
+                <div style={styles.quickAccessLabel}>{module.label}</div>
+                <div style={styles.quickAccessDesc}>{module.description}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Tarjetas de estadísticas ordenadas por relevancia */}
       <div style={styles.statsGrid}>
@@ -462,6 +540,56 @@ const styles = {
     fontSize: '14px',
     color: '#115e59',
     lineHeight: '1.5'
+  },
+  quickAccessSection: {
+    marginBottom: '32px'
+  },
+  sectionTitle: {
+    fontSize: '20px',
+    fontWeight: '700',
+    color: '#1f2937',
+    marginBottom: '16px',
+    display: 'flex',
+    alignItems: 'center'
+  },
+  quickAccessGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+    gap: '16px'
+  },
+  quickAccessCard: {
+    backgroundColor: 'white',
+    border: '2px solid #e5e7eb',
+    borderRadius: '12px',
+    padding: '20px',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+    textAlign: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '8px',
+    minHeight: '140px'
+  },
+  quickAccessCardHover: {
+    transform: 'translateY(-4px)',
+    borderColor: '#0f766e',
+    backgroundColor: '#f0fdfa',
+    boxShadow: '0 8px 16px rgba(15, 118, 110, 0.15)'
+  },
+  quickAccessIcon: {
+    fontSize: '40px',
+    marginBottom: '8px'
+  },
+  quickAccessLabel: {
+    fontSize: '15px',
+    fontWeight: '600',
+    color: '#1f2937'
+  },
+  quickAccessDesc: {
+    fontSize: '12px',
+    color: '#6b7280',
+    lineHeight: '1.3'
   },
   statsGrid: {
     display: 'grid',
