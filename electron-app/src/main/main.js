@@ -87,7 +87,7 @@ app.whenReady().then(() => {
   registerImportHandlers();
   registerConfigHandlers();
   registerSyncHandlers();
-  registerSeedHandlers();
+  // registerSeedHandlers(); // Desactivado temporalmente para pruebas de registro desde cero
   registerEmpresasHandlers();
 
   // Crear menú en español
