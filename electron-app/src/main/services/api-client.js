@@ -1,4 +1,3 @@
-import mockServer from '../../../../server/mock/mock-server.js';
 
 /**
  * API Client - Abstracción para comunicación con backend
