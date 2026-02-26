@@ -349,7 +349,7 @@
 #### 5.11 Envío a SII ⚠️ (Parcial)
 - **Servicio:** `api-client.js`
 - **Handler IPC:** `sii:enviarDTE`
-- **Estado:** XML generado, envío en modo mock
+- **Estado:** XML generado, envío
 - **Pendiente:**
   - Firma digital del XML
   - Integración real con ChileAPI
@@ -590,7 +590,7 @@
 ### 1. Integración con SII (40%)
 - ✅ Generación de XML DTE (Tipo 33)
 - ✅ Estructura de envío a API
-- ⚠️ Modo mock funcional
+
 - ❌ Firma digital del XML
 - ❌ Envío real a ChileAPI
 - ❌ Validación de respuesta SII

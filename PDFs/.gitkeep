@@ -1,3 +1,0 @@
-# Esta carpeta almacena los PDFs de las facturas generadas
-# Los PDFs se guardan con el nombre: factura-{folio}.pdf
-# La base de datos solo almacena la ruta relativa al PDF

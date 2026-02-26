@@ -657,7 +657,7 @@ CREATE TABLE config (
 - `app_version` - Versión de la app
 - `last_backup` - Fecha del último backup
 - `backup_frequency` - Frecuencia de backup
-- `api_mode` - `mock` o `production`
+- `api_mode` - `production`
 
 **Ejemplo:**
 ```json

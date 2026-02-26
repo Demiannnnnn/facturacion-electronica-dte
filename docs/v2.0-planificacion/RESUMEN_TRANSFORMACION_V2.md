@@ -58,7 +58,7 @@ SQLite Local Only         →    PostgreSQL (servidor) + SQLite (offline)
     ↓                               ↓
 Un usuario                →    Contador + Múltiples Clientes
     ↓                               ↓
-Mock SII                  →    Integración SII Real
+
 ```
 
 ### Nuevas Entidades Documentadas

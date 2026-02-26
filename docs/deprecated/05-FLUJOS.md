@@ -339,9 +339,9 @@ flowchart TD
 flowchart TD
     A[Factura creada] --> B[XML DTE generado]
     B --> C{¿Modo producción?}
-    C -->|No| D[Modo MOCK]
+    C -->|No| D[Modo PRUEBA]
     D --> E[Simular envío]
-    E --> F[Retornar trackId mock]
+    E --> F[Retornar trackId]
     C -->|Sí| G[Firmar XML con certificado]
     G --> H[Enviar a servidor backend]
     H --> I[Backend envía a ChileAPI]

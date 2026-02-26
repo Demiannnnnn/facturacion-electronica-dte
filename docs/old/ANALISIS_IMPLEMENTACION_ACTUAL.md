@@ -1219,7 +1219,7 @@ try {
 
 **Semana 1:**
 - [ ] Implementar generación de XML DTE básico
-- [ ] Crear servicio de firma digital (mockup)
+
 - [ ] Agregar logo de empresa en configuración
 - [ ] Implementar logo en PDF
 - [ ] Agregar código QR en PDF
@@ -1232,7 +1232,7 @@ try {
 - [ ] Testing de licencias
 
 **Semana 3:**
-- [ ] Integrar ChileAPI (o mockup)
+
 - [ ] Implementar envío de DTE
 - [ ] Implementar consulta de estado
 - [ ] Agregar estados adicionales de factura

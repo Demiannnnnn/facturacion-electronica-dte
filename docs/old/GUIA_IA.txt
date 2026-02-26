@@ -806,7 +806,7 @@ P: ¿El servidor es obligatorio desde el principio?
 R: No, puedes trabajar solo con el cliente y SQLite local primero
 
 P: ¿Cómo pruebo sin tener CHILEAPI key?
-R: Mock la respuesta o usa datos fake hasta tener la key
+
 
 ================================================================================
 20. SIGUIENTE ACCIÓN RECOMENDADA

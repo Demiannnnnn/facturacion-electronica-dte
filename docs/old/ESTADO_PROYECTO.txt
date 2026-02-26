@@ -232,7 +232,7 @@ NOTAS IMPORTANTES
 ================================================================================
 
 - NO implementar servidor hasta tener cliente funcionando 100% local
-- ChileAPI se puede mockear hasta tener la key real
+
 - Priorizar features core antes que extras
 - Documentar cambios arquitectónicos importantes en este archivo
 - Actualizar estado después de cada milestone completado

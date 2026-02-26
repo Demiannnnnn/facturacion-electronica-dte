@@ -96,7 +96,7 @@
 **Tiempo estimado:** 1-2 semanas
 
 - [x] Estructura de API client
-- [x] Modo mock funcional
+
 - [ ] Integración con ChileAPI
 - [ ] Endpoint de envío de DTE
 - [ ] Manejo de respuestas:

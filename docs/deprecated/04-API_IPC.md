@@ -1310,7 +1310,7 @@ Exporta facturas a Excel.
 
 ### `sii:enviarDTE`
 
-Envía un DTE al SII (actualmente en modo mock).
+Envía un DTE al SII.
 
 **Parámetros:**
 ```javascript
@@ -1330,7 +1330,7 @@ Envía un DTE al SII (actualmente en modo mock).
 }
 ```
 
-> 📝 **NOTA:** Actualmente en modo mock. La integración real está en desarrollo.
+
 
 ---
 

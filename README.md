@@ -126,7 +126,7 @@ La aplicación se abrirá automáticamente.
 
 ⚠️ **Integración SII**
 - Firma digital de XML
-- Envío real al SII (actualmente en modo mock)
+Envío real al SII
 - Consulta de estado de DTE
 - Guías de Despacho
 - Notas de Crédito/Débito
