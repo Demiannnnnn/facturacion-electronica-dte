@@ -171,7 +171,7 @@ const styles = {
     gap: '16px'
   },
   menuToggle: {
-    background: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     border: 'none',
     color: 'white',
     fontSize: '20px',
@@ -256,8 +256,11 @@ const styles = {
     alignItems: 'center',
     width: '100%',
     padding: '12px 24px',
-    border: 'none',
-    background: 'none',
+    borderTop: 'none',
+    borderRight: 'none',
+    borderBottom: 'none',
+    borderLeft: 'none',
+    backgroundColor: 'transparent',
     cursor: 'pointer',
     textAlign: 'left',
     fontSize: '14px',

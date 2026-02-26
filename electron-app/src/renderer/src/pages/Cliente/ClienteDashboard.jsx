@@ -495,8 +495,10 @@ const styles = {
   spinner: {
     width: '48px',
     height: '48px',
-    border: '4px solid #e5e7eb',
-    borderTop: '4px solid #0f766e',
+    borderWidth: '4px',
+    borderStyle: 'solid',
+    borderColor: '#e5e7eb',
+    borderTopColor: '#0f766e',
     borderRadius: '50%',
     animation: 'spin 1s linear infinite'
   },
@@ -521,7 +523,9 @@ const styles = {
   },
   contextualBanner: {
     backgroundColor: '#f0fdfa',
-    border: '1px solid #14b8a6',
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderColor: '#14b8a6',
     borderRadius: '8px',
     padding: '16px 20px',
     marginBottom: '24px',
@@ -559,7 +563,9 @@ const styles = {
   },
   quickAccessCard: {
     backgroundColor: 'white',
-    border: '2px solid #e5e7eb',
+    borderWidth: '2px',
+    borderStyle: 'solid',
+    borderColor: '#e5e7eb',
     borderRadius: '12px',
     padding: '20px',
     cursor: 'pointer',

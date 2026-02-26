@@ -39,8 +39,15 @@ export function registerFacturasHandlers() {
 
       const now = new Date().toISOString();
 
-      // Obtener y actualizar folio
-      const folioInfo = db.prepare('SELECT actual, hasta FROM folios WHERE tipo_documento = 33').get();
+      // Obtener folio para tipo_documento 33
+      let folioInfo = db.prepare('SELECT actual, hasta FROM folios WHERE tipo_documento = 33').get();
+      if (!folioInfo) {
+        // Crear folio inicial si no existe
+        db.prepare('INSERT INTO folios (tipo_documento, desde, hasta, actual, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)').run(
+          33, 1, 10000, 1, now, now
+        );
+        folioInfo = db.prepare('SELECT actual, hasta FROM folios WHERE tipo_documento = 33').get();
+      }
 
       if (folioInfo.actual > folioInfo.hasta) {
         throw new Error('Se han agotado los folios disponibles');
@@ -49,7 +56,7 @@ export function registerFacturasHandlers() {
       const folio = folioInfo.actual;
 
       // Actualizar folio para el próximo
-      db.prepare('UPDATE folios SET actual = actual + 1 WHERE tipo_documento = 33').run();
+      db.prepare('UPDATE folios SET actual = actual + 1, updated_at = ? WHERE tipo_documento = 33').run(now);
 
       // Insertar factura
       const stmtFactura = db.prepare(`
@@ -164,7 +171,7 @@ export function registerFacturasHandlers() {
         const xmlPath = path.join(xmlDir, `factura-${folio}.xml`);
         fs.writeFileSync(xmlPath, xmlDTE, 'utf-8');
 
-        // Enviar al SII (mock o producción según API_MODE)
+        // Enviar al SII (producción)
         const dteResult = await api.enviarDTE({
           folio: folio,
           tipoDocumento: 33,

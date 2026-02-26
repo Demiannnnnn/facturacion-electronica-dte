@@ -122,8 +122,8 @@ function Guias() {
     }
   };
 
-  // Filtrar guías
-  const guiasFiltradas = guias.filter(guia => {
+  // Filtrar guías (asegura que guias sea array)
+  const guiasFiltradas = (Array.isArray(guias) ? guias : []).filter(guia => {
     let cumpleFiltros = true;
 
     // Búsqueda por texto
