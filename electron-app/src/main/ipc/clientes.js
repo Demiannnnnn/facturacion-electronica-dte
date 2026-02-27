@@ -1,10 +1,21 @@
 import { ipcMain } from 'electron';
 import { getDatabase } from '../database/connection.js';
+import clientesApi from '../services/api/clientes.js';
 
 export function registerClientesHandlers() {
   // Crear cliente
   ipcMain.handle('clientes:create', async (event, cliente) => {
     try {
+      // 1. Enviar a la API remota
+      let apiResponse = null;
+      try {
+        apiResponse = await clientesApi.crearCliente(cliente);
+      } catch (apiError) {
+        console.error('Error enviando cliente a la API:', apiError);
+        // Puedes decidir si abortar aquí o continuar con el guardado local
+      }
+
+      // 2. Guardar localmente
       const db = getDatabase();
       const now = new Date().toISOString();
 
@@ -50,7 +61,8 @@ export function registerClientesHandlers() {
         success: true,
         data: {
           id: result.lastInsertRowid,
-          ...cliente
+          ...cliente,
+          api: apiResponse
         }
       };
     } catch (error) {
