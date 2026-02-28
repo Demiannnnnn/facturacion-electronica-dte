@@ -22,6 +22,17 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const refreshFirstRun = async () => {
+    try {
+      const result = await window.api.auth.checkFirstRun();
+      setIsFirstRun(result.isFirstRun);
+      return result;
+    } catch (error) {
+      console.error('Error refreshing first run:', error);
+      return { isFirstRun: true, error };
+    }
+  };
+
   const login = async (username, password) => {
     setIsLoading(true);
     try {
@@ -93,6 +104,7 @@ export function AuthProvider({ children }) {
     isFirstRun,
     login,
     register,
+    refreshFirstRun,
     logout,
     changePassword
   };

@@ -6,23 +6,25 @@ function ProtectedRoute({ children, requiredRole }) {
   const { user, isLoading, isFirstRun } = useAuth();
   const [userRole, setUserRole] = useState(null);
   const [loadingRole, setLoadingRole] = useState(true);
+  const [onboardingCompleted, setOnboardingCompleted] = useState(null);
 
   useEffect(() => {
-    const loadUserRole = async () => {
+    const loadUserRoleAndOnboarding = async () => {
       try {
         const roleConfig = await window.api.config.get('user_role');
         if (roleConfig && roleConfig.value) {
           setUserRole(roleConfig.value);
         }
+        const onboardingConfig = await window.api.config.get('onboarding_completed');
+        setOnboardingCompleted(onboardingConfig && onboardingConfig.value === 'true');
       } catch (error) {
-        console.error('Error cargando rol del usuario:', error);
+        console.error('Error cargando rol u onboarding:', error);
       } finally {
         setLoadingRole(false);
       }
     };
-
     if (user) {
-      loadUserRole();
+      loadUserRoleAndOnboarding();
     } else {
       setLoadingRole(false);
     }
@@ -42,7 +44,8 @@ function ProtectedRoute({ children, requiredRole }) {
     );
   }
 
-  if (isFirstRun) {
+  // Solo redirigir a /register si es el primer inicio y no se ha completado el onboarding
+  if (isFirstRun && onboardingCompleted === false) {
     return <Navigate to="/register" replace />;
   }
 

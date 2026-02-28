@@ -1,14 +1,15 @@
 import fetch from 'node-fetch';
+import tokenStore from '../../utils/tokenStore.js';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3000/api';
 
 
-async function register(name, email, password) {
+async function register(email, password, rut, name) {
     try {
         const response = await fetch(`${API_BASE_URL}/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, email, password })
+            body: JSON.stringify({ email, password, rut, name })
         });
         
         if (!response.ok) {
@@ -49,7 +50,7 @@ async function changePassword(currentPassword, newPassword) {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.API_TOKEN || ''}`
+                'Authorization': `Bearer ${tokenStore.getAccessToken() || ''}`
             },
             body: JSON.stringify({ currentPassword, newPassword })
         });
@@ -72,7 +73,7 @@ async function me() {
             method: 'GET',
             headers: { 
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.API_TOKEN || ''}`
+                'Authorization': `Bearer ${tokenStore.getAccessToken() || ''}`
             }
         });
         

@@ -423,11 +423,12 @@ function createTables() {
     // Tipo 33: Factura Electrónica
     const folioExists33 = db.prepare('SELECT COUNT(*) as count FROM folios WHERE tipo_documento = 33').get();
     if (folioExists33.count === 0) {
-      db.prepare('INSERT INTO folios (tipo_documento, desde, hasta, actual, created_at) VALUES (?, ?, ?, ?, ?)').run(
+      db.prepare('INSERT INTO folios (tipo_documento, desde, hasta, actual, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)').run(
         33, // Factura Electrónica
         1,
         10000,
         1,
+        new Date().toISOString(),
         new Date().toISOString()
       );
       console.log('Folio inicial creado para Facturas Electrónicas (Tipo 33)');
@@ -436,24 +437,26 @@ function createTables() {
     // Tipo 52: Guía de Despacho
     const folioExists52 = db.prepare('SELECT COUNT(*) as count FROM folios WHERE tipo_documento = 52').get();
     if (folioExists52.count === 0) {
-      db.prepare('INSERT INTO folios (tipo_documento, desde, hasta, actual, created_at) VALUES (?, ?, ?, ?, ?)').run(
+      db.prepare('INSERT INTO folios (tipo_documento, desde, hasta, actual, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)').run(
         52, // Guía de Despacho
         1,
         10000,
         1,
+        new Date().toISOString(),
         new Date().toISOString()
       );
-      console.log('Folio inicial creado para Guías de Despacho (Tipo 52)');
+      console.log('Folio inicial creado para Guía de Despacho (Tipo 52)');
     }
 
     // Tipo 61: Nota de Crédito
     const folioExists61 = db.prepare('SELECT COUNT(*) as count FROM folios WHERE tipo_documento = 61').get();
     if (folioExists61.count === 0) {
-      db.prepare('INSERT INTO folios (tipo_documento, desde, hasta, actual, created_at) VALUES (?, ?, ?, ?, ?)').run(
+      db.prepare('INSERT INTO folios (tipo_documento, desde, hasta, actual, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)').run(
         61, // Nota de Crédito
         1,
         10000,
         1,
+        new Date().toISOString(),
         new Date().toISOString()
       );
       console.log('Folio inicial creado para Notas de Crédito (Tipo 61)');
@@ -462,11 +465,12 @@ function createTables() {
     // Tipo 56: Nota de Débito
     const folioExists56 = db.prepare('SELECT COUNT(*) as count FROM folios WHERE tipo_documento = 56').get();
     if (folioExists56.count === 0) {
-      db.prepare('INSERT INTO folios (tipo_documento, desde, hasta, actual, created_at) VALUES (?, ?, ?, ?, ?)').run(
+      db.prepare('INSERT INTO folios (tipo_documento, desde, hasta, actual, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)').run(
         56, // Nota de Débito
         1,
         10000,
         1,
+        new Date().toISOString(),
         new Date().toISOString()
       );
       console.log('Folio inicial creado para Notas de Débito (Tipo 56)');

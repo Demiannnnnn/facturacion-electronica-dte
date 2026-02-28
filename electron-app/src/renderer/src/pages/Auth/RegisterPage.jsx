@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
 
 function RegisterPage() {
   const [searchParams] = useSearchParams();
@@ -31,7 +30,7 @@ function RegisterPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const { register } = useAuth();
+  // Eliminamos el uso de register de AuthContext
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -128,7 +127,18 @@ function RegisterPage() {
 
     try {
       // 1. Registrar usuario
-      const result = await register(username, password);
+      let emailValue = '';
+      if (userRole === 'contador') {
+        emailValue = contadorEmail;
+      } else if (userRole === 'empresa' || userRole === 'persona_natural') {
+        emailValue = empresaEmail;
+      }
+      const result = await window.api.auth.register({
+        username,
+        password,
+        email: emailValue,
+        rut: empresaRut || contadorRut
+      });
 
       if (!result.success) {
         setError(result.error || 'Error al registrar usuario');
@@ -563,20 +573,6 @@ const styles = {
     backgroundColor: 'white',
     width: '100%',
     boxSizing: 'border-box'
-  },
-  label: {
-    fontSize: '13px',
-    fontWeight: '600',
-    color: '#4a5568'
-  },
-  input: {
-    padding: '10px 12px',
-    fontSize: '14px',
-    border: '1px solid #cbd5e0',
-    borderRadius: '6px',
-    outline: 'none',
-    transition: 'border-color 0.2s',
-    backgroundColor: 'white'
   },
   strengthIndicator: {
     fontSize: '12px',

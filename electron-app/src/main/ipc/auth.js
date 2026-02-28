@@ -2,6 +2,7 @@ import { ipcMain } from 'electron';
 import bcrypt from 'bcrypt';
 import { getDatabase, isFirstRun } from '../database/connection.js';
 import { setCurrentUser, getCurrentUser, clearCurrentUser } from '../utils/session.js';
+import tokenStore from '../utils/tokenStore.js';
 
 const SALT_ROUNDS = 10;
 
@@ -19,7 +20,7 @@ export function registerAuthHandlers() {
   });
 
   // Registrar primer usuario
-  ipcMain.handle('auth:register', async (event, { username, password }) => {
+  ipcMain.handle('auth:register', async (event, { username, password, email, rut }) => {
     try {
       // Validaciones
       if (!username || username.length < 3 || username.length > 50) {
@@ -37,6 +38,39 @@ export function registerAuthHandlers() {
 
       const db = getDatabase();
 
+      // Primero registrar en la API externa (si está disponible)
+      try {
+        const apiAuth = (await import('../services/api/auth.js')).default;
+        const apiResult = await apiAuth.register(email, password, rut, username);
+        console.log('External API register result:', apiResult);
+        if (!apiResult || apiResult.success === false) {
+          // Si la API devuelve error, detener el registro local
+          return { success: false, error: apiResult?.error || 'Error en el registro externo' };
+        }
+
+        // Extraer tokens desde distintos formatos posibles que devuelva la API
+        const access = apiResult.accessToken
+          || (apiResult.tokens && apiResult.tokens.accessToken)
+          || (apiResult.data && (apiResult.data.token || apiResult.data.accessToken))
+          || apiResult.token || null;
+        const refresh = apiResult.refreshToken
+          || (apiResult.tokens && apiResult.tokens.refreshToken)
+          || (apiResult.data && apiResult.data.refreshToken)
+          || null;
+        if (access || refresh) {
+          try {
+            await tokenStore.setTokens({ access, refresh });
+            console.log('Tokens saved after external registration - access present?', !!access, 'access:', access ? access.slice(0,10)+'...' : null);
+          } catch (e) {
+            console.warn('Could not save tokens after registration:', e);
+          }
+        }
+      } catch (apiError) {
+        console.error('Error registering user in API:', apiError);
+        return { success: false, error: 'Error al registrar usuario en el servidor externo' };
+      }
+
+      // Si la API fue exitosa, proceder a crear el usuario localmente
       // Hashear contraseña
       const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
@@ -45,10 +79,9 @@ export function registerAuthHandlers() {
       const stmt = db.prepare(
         'INSERT INTO users (username, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?)'
       );
-
       const result = stmt.run(username, passwordHash, now, now);
 
-      console.log('User registered successfully:', username);
+      console.log('User registered successfully locally:', username);
 
       return {
         success: true,
@@ -71,27 +104,48 @@ export function registerAuthHandlers() {
       }
 
       const db = getDatabase();
-
-      // Buscar usuario
+      // Buscar usuario localmente
       const stmt = db.prepare('SELECT * FROM users WHERE username = ?');
       const user = stmt.get(username);
 
       if (!user) {
-        return { success: false, error: 'Usuario o contraseña incorrectos' };
+        return { success: false, error: 'Usuario no encontrado' };
       }
 
       // Verificar contraseña
       const match = await bcrypt.compare(password, user.password_hash);
-
       if (!match) {
-        return { success: false, error: 'Usuario o contraseña incorrectos' };
+        return { success: false, error: 'Contraseña incorrecta' };
       }
 
-      // Establecer sesión
-      const userData = {
-        id: user.id,
-        username: user.username
-      };
+      const userData = { id: user.id, username: user.username };
+
+      // Intentar autenticar contra la API externa para obtener tokens (si disponible)
+      try {
+        const apiAuth = (await import('../services/api/auth.js')).default;
+        const apiResult = await apiAuth.login(username, password);
+        console.log('External API login result:', apiResult);
+        if (apiResult && apiResult.success !== false) {
+          const access = apiResult.accessToken
+            || (apiResult.tokens && apiResult.tokens.accessToken)
+            || (apiResult.data && (apiResult.data.token || apiResult.data.accessToken))
+            || apiResult.token || null;
+          const refresh = apiResult.refreshToken
+            || (apiResult.tokens && apiResult.tokens.refreshToken)
+            || (apiResult.data && apiResult.data.refreshToken)
+            || null;
+          if (access || refresh) {
+            try {
+              await tokenStore.setTokens({ access, refresh });
+              console.log('Tokens saved after external login - access present?', !!access, 'access:', access ? access.slice(0,10)+'...' : null);
+            } catch (e) {
+              console.warn('Could not save tokens after login:', e);
+            }
+          }
+        }
+      } catch (apiErr) {
+        console.warn('External API login failed (optional):', apiErr);
+      }
 
       setCurrentUser(userData);
 

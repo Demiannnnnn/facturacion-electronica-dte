@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 
 function ModuleSelector() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshFirstRun } = useAuth();
   const [userRole, setUserRole] = useState(null);
   const [userSubtype, setUserSubtype] = useState(null);
   const [userName, setUserName] = useState('');
@@ -159,8 +159,15 @@ function ModuleSelector() {
       await window.api.config.set('enabled_modules', JSON.stringify(selectedModules));
       await window.api.config.set('onboarding_completed', 'true');
 
-      // Redirigir al dashboard del cliente
-      navigate('/cliente');
+      // Actualizar el estado de "first run" en el contexto de autenticación
+      try {
+        await refreshFirstRun();
+      } catch (e) {
+        console.warn('No se pudo refrescar firstRun:', e);
+      }
+
+      // Redirigir al login después de la personalización
+      navigate('/login');
     } catch (error) {
       console.error('Error guardando configuración:', error);
       alert('Error al guardar la configuración');
