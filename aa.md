@@ -1,0 +1,1 @@
+hay error en el flujo, despues del registro, no entra al login

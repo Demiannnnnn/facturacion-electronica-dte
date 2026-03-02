@@ -14,7 +14,7 @@ async function register(email, password, rut, name) {
         
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Error de registro');
+            throw new Error(errorData.error || errorData.message || 'Error de registro');
         }
         return await response.json();
     }
@@ -35,7 +35,7 @@ async function login(email, password) {
         
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Error de autenticación');
+            throw new Error(errorData.error || errorData.message || 'Error de autenticación');
         }
         return await response.json();
     } catch (error) {
@@ -57,7 +57,7 @@ async function changePassword(currentPassword, newPassword) {
         
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Error al cambiar contraseña');
+            throw new Error(errorData.error || errorData.message || 'Error al cambiar contraseña');
         }
         return await response.json();
     }
@@ -79,7 +79,7 @@ async function me() {
         
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Error al obtener perfil');
+            throw new Error(errorData.error || errorData.message || 'Error al obtener perfil');
         }
         return await response.json();
     }

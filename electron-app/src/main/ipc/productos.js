@@ -1,11 +1,33 @@
 import { ipcMain } from 'electron';
 import { getDatabase } from '../database/connection.js';
 import { safeLog, safeError } from '../utils/logger.js';
+import productosApi from '../services/api/productos.js';
+
 
 export function registerProductosHandlers() {
   // Crear producto
   ipcMain.handle('productos:create', async (event, producto) => {
     try {
+
+      //enviar datos a la API
+      let apiResponse = null
+      try{
+        apiResponse = await productosApi.createProducto(producto);
+        if (!apiResponse.success) {
+          safeError('API error creating producto:', apiResponse.error);
+          return {
+            success: false,
+            error: `API error: ${apiResponse.error}`
+          };
+        }
+        safeLog('Producto creado en API:', apiResponse.data);
+      }catch(apiError){
+        safeError('Error calling API:', apiError);
+        return {
+          success: false,
+          error: `Error calling API: ${apiError.message}`
+        };
+      }
       const db = getDatabase();
       const now = new Date().toISOString();
 

@@ -60,13 +60,20 @@ function ClienteLayout({ children }) {
 
   const menuItems = [
     { path: '/cliente', label: 'Dashboard', icon: '📊', description: 'Vista general' },
+    { path: '/cliente/pos', label: 'Punto de Venta', icon: '🛒', description: 'POS para ventas rápidas' },
+    { path: '/cliente/caja', label: 'Caja', icon: '💵', description: 'Gestión de caja y arqueo' },
     { path: '/cliente/clientes', label: 'Clientes', icon: '👥', description: 'Gestión de clientes' },
     { path: '/cliente/productos', label: 'Productos', icon: '📦', description: 'Catálogo e inventario' },
     { path: '/cliente/vendedores', label: 'Vendedores', icon: '👨‍💼', description: 'Equipo de ventas' },
-    { path: '/cliente/facturas', label: 'Facturas', icon: '📄', description: 'Documentos tributarios' },
-    { path: '/cliente/guias', label: 'Guías de Despacho', icon: '📦', description: 'Guías tipo 52' },
+    { path: '/cliente/compras', label: 'Compras', icon: '🛍️', description: 'Proveedores y compras' },
+    { path: '/cliente/documentos', label: 'Documentos', icon: '📑', description: 'Todos los documentos' },
+    { path: '/cliente/facturas', label: 'Facturas', icon: '📄', description: 'Facturas electrónicas' },
+    { path: '/cliente/boletas', label: 'Boletas', icon: '🧾', description: 'Boletas electrónicas' },
+    { path: '/cliente/guias', label: 'Guías', icon: '📦', description: 'Guías de despacho' },
+    { path: '/cliente/nota-credito', label: 'Notas de Crédito', icon: '📉', description: 'Notas de crédito' },
+    { path: '/cliente/nota-debito', label: 'Notas de Débito', icon: '📈', description: 'Notas de débito' },
     { path: '/cliente/cuentas-por-cobrar', label: 'Cuentas por Cobrar', icon: '💰', description: 'Control de pagos' },
-    { path: '/cliente/reportes', label: 'Reportes', icon: '📈', description: 'Análisis y estadísticas' },
+    { path: '/cliente/reportes', label: 'Reportes', icon: '📊', description: 'Análisis y estadísticas' },
     { path: '/cliente/folios', label: 'Folios', icon: '🔢', description: 'Gestión de folios SII' },
     { path: '/cliente/configuracion', label: 'Configuración', icon: '⚙️', description: 'Ajustes generales' }
   ].map(item => ({

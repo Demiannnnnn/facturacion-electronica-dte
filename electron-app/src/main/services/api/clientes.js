@@ -11,7 +11,10 @@ async function getClientes() {
       'Authorization': `Bearer ${tokenStore.getAccessToken() || ''}`
     }
   });
-  if (!res.ok) throw new Error('Error al obtener clientes');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || errorData.message || 'Error al obtener clientes');
+  }
   return res.json();
 }
 
@@ -22,7 +25,10 @@ async function getClienteById(id) {
       'Authorization': `Bearer ${tokenStore.getAccessToken() || ''}`
     }
   });
-  if (!res.ok) throw new Error('Cliente no encontrado');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || errorData.message || 'Cliente no encontrado');
+  }
   return res.json();
 }
 
@@ -40,7 +46,10 @@ async function crearCliente(data) {
     },
     body: JSON.stringify(data)
   });
-  if (!res.ok) throw new Error('Error al crear cliente');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || errorData.message || 'Error al crear cliente');
+  }
   return res.json();
 }
 

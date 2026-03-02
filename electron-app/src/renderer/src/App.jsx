@@ -28,6 +28,13 @@ import EmisorConfig from './pages/Configuracion/EmisorConfig';
 import UserManual from './pages/Configuracion/UserManual';
 import Folios from './pages/Configuracion/Folios';
 import CuentasPorCobrar from './pages/Facturacion/CuentasPorCobrar';
+import NotaCredito from './pages/Facturacion/NotaCredito';
+import NotaDebito from './pages/Facturacion/NotaDebito';
+import PuntoVenta from './pages/PuntoVenta';
+import Caja from './pages/Caja';
+import Boletas from './pages/Boletas';
+import Compras from './pages/Compras';
+import Documentos from './pages/Documentos';
 
 function App() {
   // Listener para eventos del menú
@@ -314,6 +321,83 @@ function App() {
               <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
                 <ClienteLayout>
                   <CuentasPorCobrar />
+                </ClienteLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/cliente/nota-credito"
+            element={
+              <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
+                <ClienteLayout>
+                  <NotaCredito />
+                </ClienteLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/cliente/nota-debito"
+            element={
+              <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
+                <ClienteLayout>
+                  <NotaDebito />
+                </ClienteLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/cliente/pos"
+            element={
+              <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
+                <ClienteLayout>
+                  <PuntoVenta />
+                </ClienteLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/cliente/caja"
+            element={
+              <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
+                <ClienteLayout>
+                  <Caja />
+                </ClienteLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/cliente/boletas"
+            element={
+              <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
+                <ClienteLayout>
+                  <Boletas />
+                </ClienteLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/cliente/compras"
+            element={
+              <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
+                <ClienteLayout>
+                  <Compras />
+                </ClienteLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/cliente/documentos"
+            element={
+              <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
+                <ClienteLayout>
+                  <Documentos />
                 </ClienteLayout>
               </ProtectedRoute>
             }

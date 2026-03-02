@@ -110,7 +110,7 @@ export function registerGuiasHandlers() {
 
                 return {
                     success: true,
-                    guia: { ...guia, items }
+                    data: { ...guia, items }
                 };
             } catch (error) {
                 throw error;
@@ -137,7 +137,7 @@ export function registerGuiasHandlers() {
         ORDER BY g.folio DESC
       `).all();
 
-            return { success: true, guias };
+            return { success: true, data: guias };
         } catch (error) {
             console.error('Error getting guias:', error);
             return { success: false, message: error.message };
@@ -157,6 +157,7 @@ export function registerGuiasHandlers() {
         WHERE g.id = ?
       `).get(id);
 
+
             if (!guia) {
                 return { success: false, message: 'Guía no encontrada' };
             }
@@ -171,7 +172,7 @@ export function registerGuiasHandlers() {
 
             return {
                 success: true,
-                guia: { ...guia, items }
+                data: { ...guia, items }
             };
         } catch (error) {
             console.error('Error getting guia:', error);
@@ -220,7 +221,7 @@ export function registerGuiasHandlers() {
 
             const guias = db.prepare(query).all(...params);
 
-            return { success: true, guias };
+            return { success: true, data: guias };
         } catch (error) {
             console.error('Error searching guias:', error);
             return { success: false, message: error.message };
