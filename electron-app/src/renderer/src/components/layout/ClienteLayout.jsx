@@ -9,15 +9,29 @@ function ClienteLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [userRole, setUserRole] = useState(null);
   const [userSubtype, setUserSubtype] = useState(null);
+  const [enabledModules, setEnabledModules] = useState([]);
+  const [showAllModules, setShowAllModules] = useState(false);
 
   useEffect(() => {
     const loadUserProfile = async () => {
       try {
         const roleConfig = await window.api.config.get('user_role');
         const subtypeConfig = await window.api.config.get('user_subtype');
+        const modulesConfig = await window.api.config.get('enabled_modules');
         
         if (roleConfig?.value) setUserRole(roleConfig.value);
         if (subtypeConfig?.value) setUserSubtype(subtypeConfig.value);
+        
+        // Cargar módulos habilitados o usar todos por defecto
+        if (modulesConfig?.value) {
+          setEnabledModules(modulesConfig.value);
+        } else {
+          // Si no hay configuración, mostrar todos los módulos
+          setEnabledModules(['dashboard', 'pos', 'caja', 'clientes', 'productos', 'vendedores', 
+                            'compras', 'documentos', 'facturas', 'boletas', 'guias', 
+                            'nota-credito', 'nota-debito', 'cuentas-por-cobrar', 'reportes', 
+                            'folios', 'configuracion']);
+        }
       } catch (error) {
         console.error('Error loading user profile:', error);
       }
@@ -59,27 +73,35 @@ function ClienteLayout({ children }) {
   const suggestedPaths = getSuggestedModules();
 
   const menuItems = [
-    { path: '/cliente', label: 'Dashboard', icon: '📊', description: 'Vista general' },
-    { path: '/cliente/pos', label: 'Punto de Venta', icon: '🛒', description: 'POS para ventas rápidas' },
-    { path: '/cliente/caja', label: 'Caja', icon: '💵', description: 'Gestión de caja y arqueo' },
-    { path: '/cliente/clientes', label: 'Clientes', icon: '👥', description: 'Gestión de clientes' },
-    { path: '/cliente/productos', label: 'Productos', icon: '📦', description: 'Catálogo e inventario' },
-    { path: '/cliente/vendedores', label: 'Vendedores', icon: '👨‍💼', description: 'Equipo de ventas' },
-    { path: '/cliente/compras', label: 'Compras', icon: '🛍️', description: 'Proveedores y compras' },
-    { path: '/cliente/documentos', label: 'Documentos', icon: '📑', description: 'Todos los documentos' },
-    { path: '/cliente/facturas', label: 'Facturas', icon: '📄', description: 'Facturas electrónicas' },
-    { path: '/cliente/boletas', label: 'Boletas', icon: '🧾', description: 'Boletas electrónicas' },
-    { path: '/cliente/guias', label: 'Guías', icon: '📦', description: 'Guías de despacho' },
-    { path: '/cliente/nota-credito', label: 'Notas de Crédito', icon: '📉', description: 'Notas de crédito' },
-    { path: '/cliente/nota-debito', label: 'Notas de Débito', icon: '📈', description: 'Notas de débito' },
-    { path: '/cliente/cuentas-por-cobrar', label: 'Cuentas por Cobrar', icon: '💰', description: 'Control de pagos' },
-    { path: '/cliente/reportes', label: 'Reportes', icon: '📊', description: 'Análisis y estadísticas' },
-    { path: '/cliente/folios', label: 'Folios', icon: '🔢', description: 'Gestión de folios SII' },
-    { path: '/cliente/configuracion', label: 'Configuración', icon: '⚙️', description: 'Ajustes generales' }
+    { id: 'dashboard', path: '/cliente', label: 'Dashboard', icon: '📊', description: 'Vista general' },
+    { id: 'pos', path: '/cliente/pos', label: 'Punto de Venta', icon: '🛒', description: 'POS para ventas rápidas' },
+    { id: 'caja', path: '/cliente/caja', label: 'Caja', icon: '💵', description: 'Gestión de caja y arqueo' },
+    { id: 'clientes', path: '/cliente/clientes', label: 'Clientes', icon: '👥', description: 'Gestión de clientes' },
+    { id: 'productos', path: '/cliente/productos', label: 'Productos', icon: '📦', description: 'Catálogo e inventario' },
+    { id: 'vendedores', path: '/cliente/vendedores', label: 'Vendedores', icon: '👨‍💼', description: 'Equipo de ventas' },
+    { id: 'compras', path: '/cliente/compras', label: 'Compras', icon: '🛍️', description: 'Proveedores y compras' },
+    { id: 'documentos', path: '/cliente/documentos', label: 'Documentos', icon: '📑', description: 'Todos los documentos' },
+    { id: 'facturas', path: '/cliente/facturas', label: 'Facturas', icon: '📄', description: 'Facturas electrónicas' },
+    { id: 'boletas', path: '/cliente/boletas', label: 'Boletas', icon: '🧾', description: 'Boletas electrónicas' },
+    { id: 'guias', path: '/cliente/guias', label: 'Guías', icon: '📦', description: 'Guías de despacho' },
+    { id: 'nota-credito', path: '/cliente/nota-credito', label: 'Notas de Crédito', icon: '📉', description: 'Notas de crédito' },
+    { id: 'nota-debito', path: '/cliente/nota-debito', label: 'Notas de Débito', icon: '📈', description: 'Notas de débito' },
+    { id: 'cuentas-por-cobrar', path: '/cliente/cuentas-por-cobrar', label: 'Cuentas por Cobrar', icon: '💰', description: 'Control de pagos' },
+    { id: 'reportes', path: '/cliente/reportes', label: 'Reportes', icon: '📊', description: 'Análisis y estadísticas' },
+    { id: 'folios', path: '/cliente/folios', label: 'Folios', icon: '🔢', description: 'Gestión de folios SII' },
+    { id: 'configuracion', path: '/cliente/configuracion', label: 'Configuración', icon: '⚙️', description: 'Ajustes generales' }
   ].map(item => ({
     ...item,
     suggested: suggestedPaths.includes(item.path)
   }));
+
+  // Dividir items según si están habilitados o no
+  const enabledItems = menuItems.filter(item => enabledModules.includes(item.id));
+  const disabledItems = menuItems.filter(item => !enabledModules.includes(item.id));
+
+  // Determinar qué items mostrar
+  const visibleItems = showAllModules ? menuItems : enabledItems;
+  const hasHiddenModules = disabledItems.length > 0;
 
   const isActive = (path) => {
     return location.pathname === path;
@@ -119,7 +141,7 @@ function ClienteLayout({ children }) {
         {sidebarOpen && (
           <aside style={styles.sidebar}>
             <nav style={styles.nav}>
-              {menuItems.map((item) => (
+              {visibleItems.map((item) => (
                 <div key={item.path} style={styles.navItemContainer}>
                   <button
                     onClick={() => navigate(item.path)}
@@ -138,6 +160,36 @@ function ClienteLayout({ children }) {
                   </button>
                 </div>
               ))}
+              
+              {!showAllModules && hasHiddenModules && (
+                <div style={styles.navItemContainer}>
+                  <button
+                    onClick={() => setShowAllModules(true)}
+                    style={styles.moreButton}
+                    title="Ver más módulos"
+                  >
+                    <span style={styles.navIcon}>➕</span>
+                    <span style={styles.navLabel}>
+                      Más... ({disabledItems.length} módulos)
+                    </span>
+                  </button>
+                </div>
+              )}
+              
+              {showAllModules && hasHiddenModules && (
+                <div style={styles.navItemContainer}>
+                  <button
+                    onClick={() => setShowAllModules(false)}
+                    style={styles.lessButton}
+                    title="Ver menos módulos"
+                  >
+                    <span style={styles.navIcon}>➖</span>
+                    <span style={styles.navLabel}>
+                      Mostrar menos
+                    </span>
+                  </button>
+                </div>
+              )}
             </nav>
           </aside>
         )}
@@ -303,6 +355,42 @@ const styles = {
     fontSize: '12px',
     marginLeft: '4px',
     filter: 'drop-shadow(0 0 2px rgba(20, 184, 166, 0.3))'
+  },
+  moreButton: {
+    display: 'flex',
+    alignItems: 'center',
+    width: '100%',
+    padding: '12px 24px',
+    border: 'none',
+    backgroundColor: 'transparent',
+    cursor: 'pointer',
+    textAlign: 'left',
+    fontSize: '14px',
+    color: '#6b7280',
+    transition: 'all 0.2s',
+    gap: '12px',
+    fontStyle: 'italic',
+    borderTop: '1px solid #e5e7eb',
+    marginTop: '8px',
+    paddingTop: '16px'
+  },
+  lessButton: {
+    display: 'flex',
+    alignItems: 'center',
+    width: '100%',
+    padding: '12px 24px',
+    border: 'none',
+    backgroundColor: 'transparent',
+    cursor: 'pointer',
+    textAlign: 'left',
+    fontSize: '14px',
+    color: '#6b7280',
+    transition: 'all 0.2s',
+    gap: '12px',
+    fontStyle: 'italic',
+    borderTop: '1px solid #e5e7eb',
+    marginTop: '8px',
+    paddingTop: '16px'
   },
   main: {
     flex: 1,

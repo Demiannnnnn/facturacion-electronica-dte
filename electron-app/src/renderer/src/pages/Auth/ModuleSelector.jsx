@@ -22,6 +22,22 @@ function ModuleSelector() {
       category: 'Esencial'
     },
     {
+      id: 'pos',
+      label: 'Punto de Venta',
+      icon: '🛒',
+      description: 'Sistema POS para ventas rápidas con productos',
+      category: 'Ventas',
+      recommendedFor: ['empresa', 'comerciante']
+    },
+    {
+      id: 'caja',
+      label: 'Caja',
+      icon: '💵',
+      description: 'Gestión de caja, arqueo y movimientos de efectivo',
+      category: 'Ventas',
+      recommendedFor: ['empresa', 'comerciante']
+    },
+    {
       id: 'clientes',
       label: 'Clientes',
       icon: '👥',
@@ -36,17 +52,54 @@ function ModuleSelector() {
       category: 'Gestión'
     },
     {
+      id: 'compras',
+      label: 'Compras',
+      icon: '🛍️',
+      description: 'Gestión de proveedores, órdenes de compra y cuentas por pagar',
+      category: 'Gestión',
+      recommendedFor: ['empresa', 'comerciante']
+    },
+    {
+      id: 'documentos',
+      label: 'Documentos',
+      icon: '📑',
+      description: 'Vista unificada de todos los documentos tributarios',
+      category: 'Facturación'
+    },
+    {
       id: 'facturas',
       label: 'Facturas',
-      icon: '🧾',
-      description: 'Emisión y gestión de facturas y boletas electrónicas',
+      icon: '📄',
+      description: 'Emisión y gestión de facturas electrónicas (DTE 33)',
       category: 'Facturación'
+    },
+    {
+      id: 'boletas',
+      label: 'Boletas',
+      icon: '🧾',
+      description: 'Emisión de boletas electrónicas para ventas al público (DTE 39)',
+      category: 'Facturación',
+      recommendedFor: ['empresa', 'comerciante']
     },
     {
       id: 'guias',
       label: 'Guías de Despacho',
       icon: '📦',
       description: 'Guías de despacho tipo 52 para envíos',
+      category: 'Facturación'
+    },
+    {
+      id: 'nota-credito',
+      label: 'Notas de Crédito',
+      icon: '📉',
+      description: 'Anulaciones y correcciones de facturas (DTE 61)',
+      category: 'Facturación'
+    },
+    {
+      id: 'nota-debito',
+      label: 'Notas de Débito',
+      icon: '📈',
+      description: 'Aumentos a facturas existentes (DTE 56)',
       category: 'Facturación'
     },
     {
@@ -67,7 +120,7 @@ function ModuleSelector() {
     {
       id: 'reportes',
       label: 'Reportes',
-      icon: '📈',
+      icon: '📊',
       description: 'Informes de ventas, productos y análisis de negocio',
       category: 'Análisis'
     },
@@ -124,15 +177,15 @@ function ModuleSelector() {
 
   const getRecommendedModules = (role, subtype) => {
     if (role === 'persona_natural' && subtype === 'honorarios') {
-      return ['dashboard', 'clientes', 'facturas', 'reportes', 'configuracion'];
+      return ['dashboard', 'clientes', 'facturas', 'cuentas-por-cobrar', 'reportes', 'configuracion'];
     }
     if (role === 'persona_natural' && subtype === 'comerciante') {
-      return ['dashboard', 'productos', 'facturas', 'clientes', 'cuentas-por-cobrar', 'configuracion'];
+      return ['dashboard', 'pos', 'caja', 'productos', 'boletas', 'facturas', 'clientes', 'compras', 'cuentas-por-cobrar', 'documentos', 'configuracion'];
     }
     if (role === 'empresa') {
-      return ['dashboard', 'facturas', 'productos', 'clientes', 'vendedores', 'cuentas-por-cobrar', 'reportes', 'configuracion'];
+      return ['dashboard', 'pos', 'caja', 'facturas', 'boletas', 'productos', 'clientes', 'vendedores', 'compras', 'cuentas-por-cobrar', 'documentos', 'reportes', 'configuracion'];
     }
-    return ['dashboard', 'clientes', 'facturas', 'configuracion'];
+    return ['dashboard', 'clientes', 'facturas', 'documentos', 'configuracion'];
   };
 
   const isRecommended = (moduleId) => {
@@ -294,6 +347,8 @@ function ModuleSelector() {
                         ...styles.moduleCard,
                         ...(isSelected ? styles.moduleCardSelected : {}),
                         ...(module.required ? styles.moduleCardRequired : {}),
+                        ...(!isSelected && isRec ? styles.moduleCardRecommended : {}),
+                        ...(!isSelected && !isRec && !module.required ? styles.moduleCardInactive : {}),
                         cursor: module.required ? 'not-allowed' : 'pointer'
                       }}
                     >
@@ -538,6 +593,16 @@ const styles = {
     borderStyle: 'solid',
     borderColor: '#9ca3af',
     opacity: 0.9
+  },
+  moduleCardRecommended: {
+    borderColor: '#fbbf24',
+    backgroundColor: '#fffbeb',
+    borderWidth: '2px',
+    borderStyle: 'solid'
+  },
+  moduleCardInactive: {
+    opacity: 0.6,
+    backgroundColor: '#f9fafb'
   },
   recommendedBadge: {
     position: 'absolute',

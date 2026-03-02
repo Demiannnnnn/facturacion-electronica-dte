@@ -72,6 +72,19 @@ function RegisterPage() {
       return false;
     }
 
+    // Validar email
+    const email = userRole === 'contador' ? contadorEmail : empresaEmail;
+    if (!email) {
+      setError('El email es requerido');
+      return false;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('El email no tiene un formato válido');
+      return false;
+    }
+
     if (password.length < 8) {
       setError('La contraseña debe tener al menos 8 caracteres');
       return false;
@@ -84,8 +97,8 @@ function RegisterPage() {
 
     // Validar datos específicos según rol
     if (userRole === 'contador') {
-      if (!contadorRut || !contadorRazonSocial || !contadorEmail) {
-        setError('RUT, Razón Social y Email son requeridos');
+      if (!contadorRut || !contadorRazonSocial) {
+        setError('RUT y Razón Social son requeridos');
         return false;
       }
     }
@@ -264,6 +277,23 @@ function RegisterPage() {
               />
             </div>
 
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Email *</label>
+              <input
+                type="email"
+                value={userRole === 'contador' ? contadorEmail : empresaEmail}
+                onChange={(e) => {
+                  if (userRole === 'contador') {
+                    setContadorEmail(e.target.value);
+                  } else {
+                    setEmpresaEmail(e.target.value);
+                  }
+                }}
+                style={styles.input}
+                placeholder={userRole === 'contador' ? 'contador@ejemplo.cl' : 'contacto@empresa.cl'}
+              />
+            </div>
+
             <div style={styles.formRow}>
               <div style={styles.formGroup}>
                 <label style={styles.label}>Contraseña *</label>
@@ -321,28 +351,15 @@ function RegisterPage() {
                 />
               </div>
 
-              <div style={styles.formRow}>
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Email *</label>
-                  <input
-                    type="email"
-                    value={contadorEmail}
-                    onChange={(e) => setContadorEmail(e.target.value)}
-                    style={styles.input}
-                    placeholder="contador@ejemplo.cl"
-                  />
-                </div>
-
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Teléfono</label>
-                  <input
-                    type="text"
-                    value={contadorTelefono}
-                    onChange={(e) => setContadorTelefono(e.target.value)}
-                    style={styles.input}
-                    placeholder="+56 9 1234 5678"
-                  />
-                </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Teléfono</label>
+                <input
+                  type="text"
+                  value={contadorTelefono}
+                  onChange={(e) => setContadorTelefono(e.target.value)}
+                  style={styles.input}
+                  placeholder="+56 9 1234 5678"
+                />
               </div>
             </div>
           )}
@@ -438,28 +455,15 @@ function RegisterPage() {
                 </div>
               </div>
 
-              <div style={styles.formRow}>
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Email</label>
-                  <input
-                    type="email"
-                    value={empresaEmail}
-                    onChange={(e) => setEmpresaEmail(e.target.value)}
-                    style={styles.input}
-                    placeholder="contacto@empresa.cl"
-                  />
-                </div>
-
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Teléfono</label>
-                  <input
-                    type="text"
-                    value={empresaTelefono}
-                    onChange={(e) => setEmpresaTelefono(e.target.value)}
-                    style={styles.input}
-                    placeholder="+56 2 1234 5678"
-                  />
-                </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Teléfono</label>
+                <input
+                  type="text"
+                  value={empresaTelefono}
+                  onChange={(e) => setEmpresaTelefono(e.target.value)}
+                  style={styles.input}
+                  placeholder="+56 2 1234 5678"
+                />
               </div>
             </div>
           )}
