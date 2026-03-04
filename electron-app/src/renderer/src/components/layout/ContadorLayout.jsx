@@ -51,7 +51,7 @@ function ContadorLayout({ children }) {
           </div>
           <div style={styles.userSection}>
             <span style={styles.userBadge}>
-              👤 {user?.username} <span style={styles.roleBadge}>CONTADOR</span>
+              👤 {user?.nombre || user?.email} <span style={styles.roleBadge}>CONTADOR</span>
             </span>
             <button onClick={handleUserManual} style={styles.manualBtn}>
               📚 Manual
@@ -159,7 +159,7 @@ const styles = {
     fontWeight: '700',
     letterSpacing: '0.5px'
   },
-  username: {
+  userName: {
     marginRight: '8px',
     fontSize: '14px'
   },

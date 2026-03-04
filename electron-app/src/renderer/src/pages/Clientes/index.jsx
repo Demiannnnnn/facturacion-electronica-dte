@@ -16,7 +16,6 @@ function Clientes() {
   const [error, setError] = useState('');
   const [validationErrors, setValidationErrors] = useState({});
   const [comunasDisponibles, setComunasDisponibles] = useState([]);
-  const [vendedores, setVendedores] = useState([]);
   const [formData, setFormData] = useState({
     tipoDocumento: 'rut_empresa',
     rut: '',
@@ -36,27 +35,12 @@ function Clientes() {
     condicionPago: 'contado',
     diasCredito: 0,
     limiteCredito: 0,
-    vendedorId: null,
-    zona: '',
-    descuentoAutomatico: 0,
-    listaPrecios: 'normal'
+    descuentoAutomatico: 0
   });
 
   useEffect(() => {
     loadClientes();
-    loadVendedores();
   }, []);
-
-  const loadVendedores = async () => {
-    try {
-      const result = await window.api.vendedores.getActivos();
-      if (result.success) {
-        setVendedores(result.data);
-      }
-    } catch (error) {
-      console.error('Error loading vendedores:', error);
-    }
-  };
 
   // Fix: Auto-focus en el primer campo cuando se abre el formulario
   useEffect(() => {
@@ -212,10 +196,7 @@ function Clientes() {
       condicionPago: cliente.condicion_pago || 'contado',
       diasCredito: cliente.dias_credito || 0,
       limiteCredito: cliente.limite_credito || 0,
-      vendedorId: cliente.vendedor_id || null,
-      zona: cliente.zona || '',
-      descuentoAutomatico: cliente.descuento_automatico || 0,
-      listaPrecios: cliente.lista_precios || 'normal'
+      descuentoAutomatico: cliente.descuento_automatico || 0
     });
     setValidationErrors({});
     setView('form');
@@ -266,10 +247,7 @@ function Clientes() {
       condicionPago: 'contado',
       diasCredito: 0,
       limiteCredito: 0,
-      vendedorId: null,
-      zona: '',
-      descuentoAutomatico: 0,
-      listaPrecios: 'normal'
+      descuentoAutomatico: 0
     });
   };
 
@@ -643,36 +621,6 @@ function Clientes() {
                   />
                 </div>
                 <div style={styles.formGroup}>
-                  <label style={styles.label}>Vendedor Asignado</label>
-                  <select
-                    name="vendedorId"
-                    value={formData.vendedorId || ''}
-                    onChange={handleInputChange}
-                    style={styles.input}
-                  >
-                    <option value="">Sin vendedor asignado</option>
-                    {vendedores.map(v => (
-                      <option key={v.id} value={v.id}>
-                        {v.nombre} {v.apellido}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div style={styles.formRow}>
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Zona / Ruta</label>
-                  <input
-                    type="text"
-                    name="zona"
-                    value={formData.zona}
-                    onChange={handleInputChange}
-                    style={styles.input}
-                    placeholder="Ej: Zona Norte, Zona Centro, etc."
-                  />
-                </div>
-                <div style={styles.formGroup}>
                   <label style={styles.label}>Descuento Automático (%)</label>
                   <input
                     type="number"
@@ -686,21 +634,6 @@ function Clientes() {
                     step="0.1"
                   />
                 </div>
-              </div>
-
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Lista de Precios</label>
-                <select
-                  name="listaPrecios"
-                  value={formData.listaPrecios}
-                  onChange={handleInputChange}
-                  style={styles.input}
-                >
-                  <option value="normal">Precio Normal</option>
-                  <option value="mayorista">Mayorista (-10%)</option>
-                  <option value="distribuidor">Distribuidor (-15%)</option>
-                  <option value="especial">Especial (Personalizado)</option>
-                </select>
               </div>
             </div>
 

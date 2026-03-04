@@ -33,10 +33,10 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const login = async (username, password) => {
+  const login = async (email, password) => {
     setIsLoading(true);
     try {
-      const result = await window.api.auth.login({ username, password });
+      const result = await window.api.auth.login({ email, password });
       if (result.success) {
         setUser(result.user);
         setIsFirstRun(false);
@@ -50,10 +50,10 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const register = async (username, password) => {
+  const register = async (email, password, nombre, rut) => {
     setIsLoading(true);
     try {
-      const result = await window.api.auth.register({ username, password });
+      const result = await window.api.auth.register({ email, password, nombre, rut });
       if (result.success) {
         setIsFirstRun(false);
       }

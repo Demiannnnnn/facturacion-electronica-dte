@@ -11,9 +11,9 @@ const profiles = [
   {
     name: 'contador',
     user: {
-      username: 'contador',
+      email: 'contador@test.cl',
       password: 'contador123',
-      email: 'contador@test.cl'
+      nombre: 'Contador Test'
     },
     config: {
       user_role: 'contador',
@@ -26,9 +26,9 @@ const profiles = [
   {
     name: 'empresa',
     user: {
-      username: 'empresa',
+      email: 'empresa@test.cl',
       password: 'empresa123',
-      email: 'empresa@test.cl'
+      nombre: 'Empresa Test'
     },
     config: {
       user_role: 'empresa'
@@ -48,9 +48,9 @@ const profiles = [
   {
     name: 'personaA',
     user: {
-      username: 'honorarios',
+      email: 'honorarios@test.cl',
       password: 'honorarios123',
-      email: 'honorarios@test.cl'
+      nombre: 'Juan Pérez González'
     },
     config: {
       user_role: 'persona_natural',
@@ -71,9 +71,9 @@ const profiles = [
   {
     name: 'personaB',
     user: {
-      username: 'comerciante',
+      email: 'comerciante@test.cl',
       password: 'comerciante123',
-      email: 'comerciante@test.cl'
+      nombre: 'María González López'
     },
     config: {
       user_role: 'persona_natural',
@@ -134,8 +134,12 @@ function createTablesForSeed(db) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT UNIQUE NOT NULL,
+      email TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
+      rut TEXT,
+      nombre TEXT,
+      rol TEXT DEFAULT 'admin',
+      activo INTEGER DEFAULT 1,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     )
@@ -287,12 +291,12 @@ async function seedProfile(profile) {
     const hashedPassword = await bcrypt.hash(profile.user.password, SALT_ROUNDS);
     const now = new Date().toISOString();
     const insertUser = db.prepare(`
-      INSERT INTO users (username, password_hash, created_at, updated_at) 
-      VALUES (?, ?, ?, ?)
+      INSERT INTO users (email, password_hash, nombre, created_at, updated_at) 
+      VALUES (?, ?, ?, ?, ?)
     `);
-    const userResult = insertUser.run(profile.user.username, hashedPassword, now, now);
+    const userResult = insertUser.run(profile.user.email, hashedPassword, profile.user.nombre, now, now);
     const userId = userResult.lastInsertRowid;
-    console.log(`   ✅ User created: ${profile.user.username} (ID: ${userId})`);
+    console.log(`   ✅ User created: ${profile.user.email} (ID: ${userId})`);
     
     // Insertar configuración
     const insertConfig = db.prepare(`

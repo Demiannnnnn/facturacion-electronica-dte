@@ -122,7 +122,7 @@ function ClienteLayout({ children }) {
           </div>
           <div style={styles.userSection}>
             <span style={styles.userBadge}>
-              {user?.username}
+              {user?.nombre || user?.email}
             </span>
             <button onClick={handleUserManual} style={styles.manualBtn}>
               📚 Manual
@@ -255,7 +255,7 @@ const styles = {
     borderRadius: '6px',
     fontSize: '14px'
   },
-  username: {
+  userName: {
     marginRight: '8px',
     fontSize: '14px'
   },

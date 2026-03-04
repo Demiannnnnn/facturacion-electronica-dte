@@ -20,11 +20,11 @@ export function registerAuthHandlers() {
   });
 
   // Registrar primer usuario
-  ipcMain.handle('auth:register', async (event, { username, password, email, rut }) => {
+  ipcMain.handle('auth:register', async (event, { email, password, rut, nombre }) => {
     try {
       // Validaciones
-      if (!username || username.length < 3 || username.length > 50) {
-        return { success: false, error: 'El nombre de usuario debe tener entre 3 y 50 caracteres' };
+      if (!email || !email.includes('@')) {
+        return { success: false, error: 'Email válido es requerido' };
       }
 
       if (!password || password.length < 8) {
@@ -41,7 +41,7 @@ export function registerAuthHandlers() {
       // Primero registrar en la API externa (si está disponible)
       try {
         const apiAuth = (await import('../services/api/auth.js')).default;
-        const apiResult = await apiAuth.register(email, password, rut, username);
+        const apiResult = await apiAuth.register(email, password, rut, nombre);
         console.log('External API register result:', apiResult);
         if (!apiResult || apiResult.success === false) {
           // Si la API devuelve error, detener el registro local
@@ -77,17 +77,18 @@ export function registerAuthHandlers() {
       // Insertar usuario
       const now = new Date().toISOString();
       const stmt = db.prepare(
-        'INSERT INTO users (username, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?)'
+        'INSERT INTO users (email, password_hash, rut, nombre, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)'
       );
-      const result = stmt.run(username, passwordHash, now, now);
+      const result = stmt.run(email, passwordHash, rut, nombre, now, now);
 
-      console.log('User registered successfully locally:', username);
+      console.log('User registered successfully locally:', email);
 
       return {
         success: true,
         user: {
           id: result.lastInsertRowid,
-          username
+          email,
+          nombre
         }
       };
     } catch (error) {
@@ -97,16 +98,16 @@ export function registerAuthHandlers() {
   });
 
   // Login
-  ipcMain.handle('auth:login', async (event, { username, password }) => {
+  ipcMain.handle('auth:login', async (event, { email, password }) => {
     try {
-      if (!username || !password) {
-        return { success: false, error: 'Usuario y contraseña son requeridos' };
+      if (!email || !password) {
+        return { success: false, error: 'Email y contraseña son requeridos' };
       }
 
       const db = getDatabase();
       // Buscar usuario localmente
-      const stmt = db.prepare('SELECT * FROM users WHERE username = ?');
-      const user = stmt.get(username);
+      const stmt = db.prepare('SELECT * FROM users WHERE email = ?');
+      const user = stmt.get(email);
 
       if (!user) {
         return { success: false, error: 'Usuario no encontrado' };
@@ -118,12 +119,12 @@ export function registerAuthHandlers() {
         return { success: false, error: 'Contraseña incorrecta' };
       }
 
-      const userData = { id: user.id, username: user.username };
+      const userData = { id: user.id, email: user.email, nombre: user.nombre, rut: user.rut };
 
       // Intentar autenticar contra la API externa para obtener tokens (si disponible)
       try {
         const apiAuth = (await import('../services/api/auth.js')).default;
-        const apiResult = await apiAuth.login(username, password);
+        const apiResult = await apiAuth.login(email, password);
         console.log('External API login result:', apiResult);
         if (apiResult && apiResult.success !== false) {
           const access = apiResult.accessToken
@@ -149,7 +150,7 @@ export function registerAuthHandlers() {
 
       setCurrentUser(userData);
 
-      console.log('User logged in:', username);
+      console.log('User logged in:', email);
 
       return {
         success: true,
@@ -228,7 +229,7 @@ export function registerAuthHandlers() {
 
       updateStmt.run(newPasswordHash, now, userId);
 
-      console.log('Password changed successfully for user:', user.username);
+      console.log('Password changed successfully for user:', user.email);
 
       return { success: true };
     } catch (error) {

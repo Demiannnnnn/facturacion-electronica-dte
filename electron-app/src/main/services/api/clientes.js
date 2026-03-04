@@ -53,8 +53,28 @@ async function crearCliente(data) {
   return res.json();
 }
 
+async function actualizarCliente(id, data) {
+  const token = tokenStore.getAccessToken();
+  console.log('API clientes: actualizando cliente', id);
+
+  const res = await fetch(`${API_BASE_URL}/clientes/${id}`, {
+    method: 'PUT',
+    headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token || ''}`,
+    },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || errorData.message || 'Error al actualizar cliente');
+  }
+  return res.json();
+}
+
 export default {
   getClientes,
   getClienteById,
-  crearCliente
+  crearCliente,
+  actualizarCliente
 };

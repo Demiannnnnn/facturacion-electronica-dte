@@ -336,7 +336,7 @@ function ClienteDashboard() {
             <span style={{ marginRight: '12px' }}>{contextualMessage.icon}</span>
             {contextualMessage.title}
           </h1>
-          <p style={styles.subtitle}>Bienvenido, {user?.username}</p>
+          <p style={styles.subtitle}>Bienvenido, {user?.nombre || user?.email}</p>
         </div>
       </div>
 

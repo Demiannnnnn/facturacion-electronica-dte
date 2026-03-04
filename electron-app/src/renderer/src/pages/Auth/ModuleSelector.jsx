@@ -149,11 +149,10 @@ function ModuleSelector() {
     try {
       const roleResult = await window.api.config.get('user_role');
       const subtypeResult = await window.api.config.get('user_subtype');
-      const nameResult = await window.api.config.get('user_name');
       
       const role = roleResult?.value || roleResult;
       const subtype = subtypeResult?.value || subtypeResult;
-      const name = nameResult?.value || 'Usuario';
+      const name = user?.nombre || user?.email || 'Usuario';
       
       setUserRole(role);
       setUserSubtype(subtype);

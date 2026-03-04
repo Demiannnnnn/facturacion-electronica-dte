@@ -6,7 +6,7 @@ function RegisterPage() {
   const [userRole, setUserRole] = useState(null);
   
   // Datos de usuario
-  const [username, setUsername] = useState('');
+  const [nombre, setNombre] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
@@ -62,13 +62,13 @@ function RegisterPage() {
 
   const validateForm = () => {
     // Validar datos de usuario
-    if (!username || !password || !confirmPassword) {
-      setError('Usuario y contraseña son requeridos');
+    if (!nombre || !password || !confirmPassword) {
+      setError('Nombre y contraseña son requeridos');
       return false;
     }
 
-    if (username.length < 3 || username.length > 50) {
-      setError('El usuario debe tener entre 3 y 50 caracteres');
+    if (nombre.length < 3 || nombre.length > 100) {
+      setError('El nombre debe tener entre 3 y 100 caracteres');
       return false;
     }
 
@@ -147,9 +147,9 @@ function RegisterPage() {
         emailValue = empresaEmail;
       }
       const result = await window.api.auth.register({
-        username,
-        password,
         email: emailValue,
+        password,
+        nombre: nombre,
         rut: empresaRut || contadorRut
       });
 
@@ -266,13 +266,13 @@ function RegisterPage() {
             <h3 style={styles.sectionTitle}>👤 Datos de Acceso</h3>
             
             <div style={styles.formGroup}>
-              <label style={styles.label}>Usuario *</label>
+              <label style={styles.label}>Nombre Completo *</label>
               <input
                 type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                value={nombre}
+                onChange={(e) => setNombre(e.target.value)}
                 style={styles.input}
-                placeholder="Nombre de usuario"
+                placeholder="Tu nombre completo"
                 autoFocus
               />
             </div>

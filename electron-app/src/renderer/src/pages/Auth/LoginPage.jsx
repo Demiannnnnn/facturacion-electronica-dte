@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 function LoginPage() {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -32,9 +32,9 @@ function LoginPage() {
   // Fix: Auto-focus en el campo de usuario al montar el componente
   useEffect(() => {
     const timer = setTimeout(() => {
-      const usernameInput = document.querySelector('input[type="text"]');
-      if (usernameInput) {
-        usernameInput.focus();
+      const emailInput = document.querySelector('input[type="email"]');
+      if (emailInput) {
+        emailInput.focus();
       }
     }, 100);
     return () => clearTimeout(timer);
@@ -44,14 +44,14 @@ function LoginPage() {
     e.preventDefault();
     setError('');
 
-    if (!username || !password) {
-      setError('Por favor ingresa usuario y contraseña');
+    if (!email || !password) {
+      setError('Por favor ingresa email y contraseña');
       return;
     }
 
     setIsLoading(true);
 
-    const result = await login(username, password);
+    const result = await login(email, password);
 
     if (result.success) {
       // Obtener el rol del usuario para redirigir correctamente
@@ -86,13 +86,13 @@ function LoginPage() {
 
         <form onSubmit={handleSubmit} style={styles.form}>
           <div style={styles.formGroup}>
-            <label style={styles.label}>Usuario</label>
+            <label style={styles.label}>Email</label>
             <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               style={styles.input}
-              placeholder="Ingresa tu usuario"
+              placeholder="tu@email.com"
               autoFocus
             />
           </div>

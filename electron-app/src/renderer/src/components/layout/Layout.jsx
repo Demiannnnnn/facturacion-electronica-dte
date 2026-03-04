@@ -53,7 +53,7 @@ function Layout({ children }) {
             <h2 style={styles.logo}>Sistema de Facturación</h2>
           </div>
           <div style={styles.userSection}>
-            <span style={styles.username}>{user?.username}</span>
+            <span style={styles.userName}>{user?.nombre || user?.email}</span>
             <button onClick={handleUserManual} style={styles.manualBtn}>
               📚 Manual de Usuario
             </button>
@@ -149,7 +149,7 @@ const styles = {
     alignItems: 'center',
     gap: '15px'
   },
-  username: {
+  userName: {
     fontSize: '14px',
     fontWeight: '500'
   },

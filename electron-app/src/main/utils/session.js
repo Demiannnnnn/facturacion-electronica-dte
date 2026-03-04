@@ -5,7 +5,7 @@ let currentUser = null;
 
 export function setCurrentUser(user) {
   currentUser = user;
-  console.log('Session set for user:', user?.username);
+  console.log('Session set for user:', user?.email);
 }
 
 export function getCurrentUser() {
@@ -13,7 +13,7 @@ export function getCurrentUser() {
 }
 
 export function clearCurrentUser() {
-  console.log('Session cleared for user:', currentUser?.username);
+  console.log('Session cleared for user:', currentUser?.email);
   currentUser = null;
 }
 

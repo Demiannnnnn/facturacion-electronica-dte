@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron';
 import { getDatabase } from '../database/connection.js';
 import clientesApi from '../services/api/clientes.js';
+import { formatearRutParaApi } from '../utils/rutFormatter.js';
 
 export function registerClientesHandlers() {
   // Crear cliente
@@ -9,7 +10,12 @@ export function registerClientesHandlers() {
       // 1. Enviar a la API remota
       let apiResponse = null;
       try {
-        apiResponse = await clientesApi.crearCliente(cliente);
+        // Formatear datos para la API (RUT con guión)
+        const clienteParaApi = {
+          ...cliente,
+          rut: formatearRutParaApi(cliente.rut)
+        };
+        apiResponse = await clientesApi.crearCliente(clienteParaApi);
       } catch (apiError) {
         console.error('Error enviando cliente a la API:', apiError);
         // Puedes decidir si abortar aquí o continuar con el guardado local
@@ -151,6 +157,18 @@ export function registerClientesHandlers() {
   // Actualizar cliente
   ipcMain.handle('clientes:update', async (event, { id, cliente }) => {
     try {
+      // 1. Actualizar en la API remota (si existe)
+      try {
+        const clienteParaApi = {
+          ...cliente,
+          rut: formatearRutParaApi(cliente.rut)
+        };
+        await clientesApi.actualizarCliente(id, clienteParaApi);
+      } catch (apiError) {
+        console.error('Error actualizando cliente en la API:', apiError);
+      }
+
+      // 2. Actualizar localmente
       const db = getDatabase();
       const now = new Date().toISOString();
 

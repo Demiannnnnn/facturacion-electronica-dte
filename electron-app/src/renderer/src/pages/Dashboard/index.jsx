@@ -355,7 +355,7 @@ function Dashboard() {
       {/* Header */}
       <div style={{ marginBottom: '30px' }}>
         <h1 style={{ fontSize: '32px', fontWeight: '700', color: '#111827', marginBottom: '8px' }}>
-          ¡Bienvenido, {user?.username}! 👋
+          ¡Bienvenido, {user?.nombre || user?.email}! 👋
         </h1>
         <p style={{ fontSize: '16px', color: '#6b7280' }}>
           Aquí está el resumen de tu negocio

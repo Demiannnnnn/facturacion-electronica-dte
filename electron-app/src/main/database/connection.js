@@ -51,12 +51,67 @@ function createTables() {
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT UNIQUE NOT NULL,
+      email TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
+      rut TEXT,
+      nombre TEXT,
+      rol TEXT DEFAULT 'admin',
+      activo INTEGER DEFAULT 1,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     )
   `);
+
+  // Migración: Actualizar tabla users de username a email
+  try {
+    const tableInfo = db.prepare("PRAGMA table_info(users)").all();
+    const hasUsername = tableInfo.some(col => col.name === 'username');
+    const hasEmail = tableInfo.some(col => col.name === 'email');
+
+    if (hasUsername && !hasEmail) {
+      console.log('Migrating users table from username to email...');
+
+      db.exec(`
+        BEGIN TRANSACTION;
+        
+        -- Crear tabla temporal con la estructura nueva
+        CREATE TABLE users_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          email TEXT UNIQUE NOT NULL,
+          password_hash TEXT NOT NULL,
+          rut TEXT,
+          nombre TEXT,
+          rol TEXT DEFAULT 'admin',
+          activo INTEGER DEFAULT 1,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        );
+        
+        -- Copiar datos existentes (username -> email)
+        INSERT INTO users_new (id, email, password_hash, created_at, updated_at)
+        SELECT id, username || '@temp.local' as email, password_hash, created_at, updated_at
+        FROM users;
+        
+        -- Eliminar tabla antigua
+        DROP TABLE users;
+        
+        -- Renombrar tabla nueva
+        ALTER TABLE users_new RENAME TO users;
+        
+        COMMIT;
+      `);
+
+      console.log('✅ Users table migrated successfully! Please update user emails.');
+      console.log('⚠️  Note: Existing usernames were converted to email format (username@temp.local)');
+    }
+  } catch (error) {
+    console.error('Error migrating users table:', error);
+    try {
+      db.exec('ROLLBACK');
+    } catch (e) {
+      // Ignorar error de rollback
+    }
+  }
 
   // Tabla de clientes
   db.exec(`
