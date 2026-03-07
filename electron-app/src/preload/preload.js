@@ -15,6 +15,28 @@ contextBridge.exposeInMainWorld('api', {
     changePassword: (data) => ipcRenderer.invoke('auth:changePassword', data)
   },
 
+  // Usuarios (gestión de usuarios y permisos)
+  usuarios: {
+    getAll: () => ipcRenderer.invoke('usuarios:getAll'),
+    getById: (id) => ipcRenderer.invoke('usuarios:getById', id),
+    create: (data) => ipcRenderer.invoke('usuarios:create', data),
+    update: (data) => ipcRenderer.invoke('usuarios:update', data),
+    changePassword: (data) => ipcRenderer.invoke('usuarios:changePassword', data),
+    toggleActive: (data) => ipcRenderer.invoke('usuarios:toggleActive', data),
+    delete: (data) => ipcRenderer.invoke('usuarios:delete', data),
+    checkPermission: (data) => ipcRenderer.invoke('usuarios:checkPermission', data),
+    getPermisos: (userId) => ipcRenderer.invoke('usuarios:getPermisos', userId),
+    getAuditLog: (userId) => ipcRenderer.invoke('usuarios:getAuditLog', userId),
+    updateLastAccess: (userId) => ipcRenderer.invoke('usuarios:updateLastAccess', userId)
+  },
+
+  // Roles
+  roles: {
+    getAll: () => ipcRenderer.invoke('roles:getAll'),
+    getPermisos: (nombreRol) => ipcRenderer.invoke('roles:getPermisos', nombreRol),
+    updatePermisos: (data) => ipcRenderer.invoke('roles:updatePermisos', data)
+  },
+
   // Clientes
   clientes: {
     create: (cliente) => ipcRenderer.invoke('clientes:create', cliente),

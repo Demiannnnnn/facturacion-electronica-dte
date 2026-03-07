@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import { promises as fs } from 'fs';
 import { initDatabase } from './database/connection.js';
 import { registerAuthHandlers } from './ipc/auth.js';
+import { registerUsuariosHandlers } from './ipc/usuarios.js';
 import { registerClientesHandlers } from './ipc/clientes.js';
 import { registerProductosHandlers } from './ipc/productos.js';
 import { registerFacturasHandlers } from './ipc/facturas.js';
@@ -75,6 +76,7 @@ app.whenReady().then(() => {
 
   // Registrar handlers IPC
   registerAuthHandlers();
+  registerUsuariosHandlers();
   registerClientesHandlers();
   registerProductosHandlers();
   registerFacturasHandlers();

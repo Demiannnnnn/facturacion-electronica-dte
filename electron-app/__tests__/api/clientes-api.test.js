@@ -5,13 +5,24 @@
 
 import { describe, test, expect, beforeAll, jest } from '@jest/globals';
 import clientesApi from '../../src/main/services/api/clientes.js';
+import { isAuthenticated, getAuthToken } from '../auth-helper.js';
 
 describe('API Clientes - Pruebas de Conexión', () => {
   const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3000/api';
 
-  beforeAll(() => {
+  beforeAll(async () => {
     console.log('🔧 Iniciando tests de API Clientes...');
     console.log('📡 API URL:', API_BASE_URL);
+    
+    // Esperar un poco para que el setup global complete la autenticación
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    if (isAuthenticated()) {
+      console.log('✅ Tests ejecutándose con autenticación JWT');
+      console.log('🔑 Token disponible:', getAuthToken() ? 'SÍ' : 'NO');
+    } else {
+      console.log('⚠️  Tests ejecutándose sin autenticación (esperado sin backend)');
+    }
   });
 
   describe('Métodos disponibles', () => {

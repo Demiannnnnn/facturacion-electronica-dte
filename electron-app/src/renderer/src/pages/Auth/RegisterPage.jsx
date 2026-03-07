@@ -170,7 +170,7 @@ function RegisterPage() {
 
       if (userRole === 'empresa' || userRole === 'persona_natural') {
         // Guardar datos del emisor (empresa o persona natural)
-        const emisorResult = await window.api.emisor.save({
+        const emisorData = {
           rut: empresaRut,
           razon_social: empresaRazonSocial,
           nombre_fantasia: empresaNombreFantasia,
@@ -181,13 +181,25 @@ function RegisterPage() {
           telefono: empresaTelefono,
           email: empresaEmail,
           region: '' // Se puede agregar después
-        });
+        };
+        
+        console.log('📤 Enviando datos del emisor:', emisorData);
+        console.log('📋 razon_social:', emisorData.razon_social);
+        console.log('📋 giro:', emisorData.giro);
+        console.log('📋 direccion:', emisorData.direccion);
+        
+        const emisorResult = await window.api.emisor.save(emisorData);
+        
+        console.log('📥 Respuesta del servidor:', emisorResult);
 
         if (!emisorResult.success) {
+          console.error('❌ Error guardando emisor:', emisorResult.error);
           setError('Usuario creado, pero error guardando datos de empresa');
           setIsLoading(false);
           return;
         }
+        
+        console.log('✅ Emisor guardado exitosamente');
       }
 
       // 3. Redirigir según el rol

@@ -1,6 +1,14 @@
 # 🧪 Tests del Sistema de Facturación
 
-Esta carpeta contiene todos los tests automatizados del proyecto.
+Esta carpeta contiene todos los tests automatizados del proyecto **con autenticación JWT completamente integrada**.
+
+## ✅ Estado Actual
+
+```
+Test Suites: 5 passed, 5 total
+Tests:       46 passed, 46 total
+Autenticación: JWT Token ✅
+```
 
 ## 📋 Estructura
 

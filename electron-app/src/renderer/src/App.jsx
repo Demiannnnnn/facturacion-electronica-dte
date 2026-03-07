@@ -27,6 +27,7 @@ import ChangePassword from './pages/Configuracion/ChangePassword';
 import EmisorConfig from './pages/Configuracion/EmisorConfig';
 import UserManual from './pages/Configuracion/UserManual';
 import Folios from './pages/Configuracion/Folios';
+import Usuarios from './pages/Usuarios';
 import CuentasPorCobrar from './pages/Facturacion/CuentasPorCobrar';
 import NotaCredito from './pages/Facturacion/NotaCredito';
 import NotaDebito from './pages/Facturacion/NotaDebito';
@@ -453,6 +454,17 @@ function App() {
               <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
                 <ClienteLayout>
                   <UserManual />
+                </ClienteLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/cliente/configuracion/usuarios"
+            element={
+              <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
+                <ClienteLayout>
+                  <Usuarios />
                 </ClienteLayout>
               </ProtectedRoute>
             }

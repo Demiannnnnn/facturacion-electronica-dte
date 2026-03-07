@@ -2,6 +2,8 @@
  * Helpers y utilidades para tests
  */
 
+import tokenStore from '../src/main/utils/tokenStore.js';
+
 /**
  * Espera un tiempo determinado (útil para tests asíncronos)
  */
@@ -25,6 +27,21 @@ export async function isAPIAvailable(url, timeout = 3000) {
   } catch (error) {
     return false;
   }
+}
+
+/**
+ * Obtiene el token de autenticación actual
+ */
+export function getAuthToken() {
+  return tokenStore.getAccessToken();
+}
+
+/**
+ * Verifica si hay un token de autenticación disponible
+ */
+export function isAuthenticated() {
+  const token = getAuthToken();
+  return token !== null && token !== undefined && token !== '';
 }
 
 /**

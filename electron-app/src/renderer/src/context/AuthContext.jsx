@@ -4,6 +4,7 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [permisos, setPermisos] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isFirstRun, setIsFirstRun] = useState(false);
 
@@ -40,6 +41,46 @@ export function AuthProvider({ children }) {
       if (result.success) {
         setUser(result.user);
         setIsFirstRun(false);
+        
+        // Cargar permisos del usuario
+        if (result.user?.id) {
+          // Si el usuario ya tiene rol y permisos en el objeto (nuevo sistema)
+          if (result.user.rol) {
+            let permisosObj = result.user.permisos;
+            // Si permisos es un string JSON, parsearlo
+            if (typeof permisosObj === 'string') {
+              try {
+                permisosObj = JSON.parse(permisosObj);
+              } catch (e) {
+                console.error('Error parsing permisos:', e);
+              }
+            }
+            setPermisos({
+              rol: result.user.rol,
+              permisos: permisosObj
+            });
+          } else {
+            // Fallback: cargar permisos de la API (usuarios antiguos)
+            try {
+              const permisosResult = await window.api.usuarios.getPermisos(result.user.id);
+              if (permisosResult.success) {
+                setPermisos({
+                  rol: permisosResult.rol,
+                  permisos: permisosResult.permisos
+                });
+              }
+            } catch (e) {
+              console.warn('Could not load permisos:', e);
+            }
+          }
+          
+          // Actualizar último acceso
+          try {
+            await window.api.usuarios.updateLastAccess(result.user.id);
+          } catch (e) {
+            console.warn('Could not update last access:', e);
+          }
+        }
       }
       return result;
     } catch (error) {
@@ -70,6 +111,7 @@ export function AuthProvider({ children }) {
     try {
       await window.api.auth.logout();
       setUser(null);
+      setPermisos(null);
       return { success: true };
     } catch (error) {
       console.error('Logout error:', error);
@@ -98,15 +140,42 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // Funciones auxiliares para verificar permisos
+  const hasPermission = (recurso, accion) => {
+    if (!permisos) return false;
+    
+    // El dueño siempre tiene todos los permisos
+    if (permisos.rol === 'dueño') return true;
+    
+    return permisos.permisos?.[recurso]?.[accion] === true;
+  };
+
+  const isOwner = () => {
+    return permisos?.rol === 'dueño';
+  };
+
+  const isAdmin = () => {
+    return permisos?.rol === 'administrador' || permisos?.rol === 'dueño';
+  };
+
+  const canAccessUsuarios = () => {
+    return hasPermission('configuracion', 'usuarios');
+  };
+
   const value = {
     user,
+    permisos,
     isLoading,
     isFirstRun,
     login,
     register,
     refreshFirstRun,
     logout,
-    changePassword
+    changePassword,
+    hasPermission,
+    isOwner,
+    isAdmin,
+    canAccessUsuarios
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 function ClienteLayout({ children }) {
-  const { user, logout } = useAuth();
+  const { user, logout, canAccessUsuarios } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -53,6 +53,10 @@ function ClienteLayout({ children }) {
 
   const handleUserManual = () => {
     navigate('/cliente/configuracion/manual');
+  };
+
+  const handleUsuarios = () => {
+    navigate('/cliente/configuracion/usuarios');
   };
 
   // Definir módulos sugeridos según perfil
@@ -127,6 +131,11 @@ function ClienteLayout({ children }) {
             <button onClick={handleUserManual} style={styles.manualBtn}>
               📚 Manual
             </button>
+            {canAccessUsuarios && canAccessUsuarios() && (
+              <button onClick={handleUsuarios} style={styles.usuariosBtn}>
+                👥 Usuarios
+              </button>
+            )}
             <button onClick={handleChangePassword} style={styles.changePasswordBtn}>
               🔐 Contraseña
             </button>
@@ -260,6 +269,16 @@ const styles = {
     fontSize: '14px'
   },
   manualBtn: {
+    padding: '6px 12px',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '13px',
+    transition: 'background 0.2s'
+  },
+  usuariosBtn: {
     padding: '6px 12px',
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     color: 'white',

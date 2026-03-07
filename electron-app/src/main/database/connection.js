@@ -47,7 +47,7 @@ export function getDatabase() {
 function createTables() {
   const db = getDatabase();
 
-  // Tabla de usuarios
+  // Tabla de usuarios con sistema de roles y permisos
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,8 +55,11 @@ function createTables() {
       password_hash TEXT NOT NULL,
       rut TEXT,
       nombre TEXT,
-      rol TEXT DEFAULT 'admin',
+      rol TEXT DEFAULT 'vendedor',
+      permisos TEXT DEFAULT '{}',
       activo INTEGER DEFAULT 1,
+      requiere_autorizacion INTEGER DEFAULT 0,
+      ultimo_acceso TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     )
@@ -81,15 +84,18 @@ function createTables() {
           password_hash TEXT NOT NULL,
           rut TEXT,
           nombre TEXT,
-          rol TEXT DEFAULT 'admin',
+          rol TEXT DEFAULT 'vendedor',
+          permisos TEXT DEFAULT '{}',
           activo INTEGER DEFAULT 1,
+          requiere_autorizacion INTEGER DEFAULT 0,
+          ultimo_acceso TEXT,
           created_at TEXT NOT NULL,
           updated_at TEXT NOT NULL
         );
         
-        -- Copiar datos existentes (username -> email)
-        INSERT INTO users_new (id, email, password_hash, created_at, updated_at)
-        SELECT id, username || '@temp.local' as email, password_hash, created_at, updated_at
+        -- Copiar datos existentes (username -> email, asignar rol dueño al primer usuario)
+        INSERT INTO users_new (id, email, password_hash, rut, nombre, rol, created_at, updated_at)
+        SELECT id, username || '@temp.local' as email, password_hash, NULL, NULL, 'dueño', created_at, updated_at
         FROM users;
         
         -- Eliminar tabla antigua
@@ -111,6 +117,181 @@ function createTables() {
     } catch (e) {
       // Ignorar error de rollback
     }
+  }
+
+  // Migración: Agregar columnas de permisos a users si no existen
+  try {
+    const tableInfo = db.prepare("PRAGMA table_info(users)").all();
+    const hasPermisos = tableInfo.some(col => col.name === 'permisos');
+    const hasRequiereAutorizacion = tableInfo.some(col => col.name === 'requiere_autorizacion');
+    const hasUltimoAcceso = tableInfo.some(col => col.name === 'ultimo_acceso');
+
+    if (!hasPermisos) {
+      db.exec(`ALTER TABLE users ADD COLUMN permisos TEXT DEFAULT '{}'`);
+      console.log('✅ Column permisos added to users table');
+    }
+    if (!hasRequiereAutorizacion) {
+      db.exec(`ALTER TABLE users ADD COLUMN requiere_autorizacion INTEGER DEFAULT 0`);
+      console.log('✅ Column requiere_autorizacion added to users table');
+    }
+    if (!hasUltimoAcceso) {
+      db.exec(`ALTER TABLE users ADD COLUMN ultimo_acceso TEXT`);
+      console.log('✅ Column ultimo_acceso added to users table');
+    }
+  } catch (error) {
+    console.error('Error adding permissions columns:', error);
+  }
+
+  // Tabla de roles predefinidos con sus permisos
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS roles (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nombre TEXT UNIQUE NOT NULL,
+      descripcion TEXT,
+      permisos TEXT NOT NULL,
+      es_modificable INTEGER DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+
+  // Tabla de auditoría de usuarios
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS audit_usuarios (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      usuario_id INTEGER NOT NULL,
+      usuario_responsable_id INTEGER,
+      accion TEXT NOT NULL,
+      datos_anteriores TEXT,
+      datos_nuevos TEXT,
+      ip_address TEXT,
+      detalles TEXT,
+      timestamp TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (usuario_id) REFERENCES users(id),
+      FOREIGN KEY (usuario_responsable_id) REFERENCES users(id)
+    )
+  `);
+
+  // Insertar roles predefinidos si no existen
+  const rolesExisten = db.prepare('SELECT COUNT(*) as count FROM roles').get();
+  if (rolesExisten.count === 0) {
+    const insertRole = db.prepare(`
+      INSERT INTO roles (nombre, descripcion, permisos, es_modificable)
+      VALUES (?, ?, ?, ?)
+    `);
+
+    const roles = [
+      {
+        nombre: 'dueño',
+        descripcion: 'Acceso total al sistema, puede gestionar usuarios y configuración',
+        permisos: JSON.stringify({
+          facturas: { crear: true, ver: true, editar: true, eliminar: true, emitir: true, anular: true },
+          boletas: { crear: true, ver: true, editar: true, eliminar: true, emitir: true, anular: true },
+          clientes: { crear: true, ver: true, editar: true, eliminar: true },
+          productos: { crear: true, ver: true, editar: true, eliminar: true },
+          vendedores: { crear: true, ver: true, editar: true, eliminar: true },
+          caja: { acceder: true, abrir: true, cerrar: true, ver_movimientos: true },
+          reportes: { ver: true, exportar: true, financieros: true },
+          configuracion: { acceder: true, empresa: true, folios: true, usuarios: true },
+          documentos: { ver: true, anular: true, reenviar: true }
+        }),
+        es_modificable: 0
+      },
+      {
+        nombre: 'administrador',
+        descripcion: 'Gestión completa excepto eliminación de ventas y usuarios',
+        permisos: JSON.stringify({
+          facturas: { crear: true, ver: true, editar: true, eliminar: false, emitir: true, anular: false },
+          boletas: { crear: true, ver: true, editar: true, eliminar: false, emitir: true, anular: false },
+          clientes: { crear: true, ver: true, editar: true, eliminar: true },
+          productos: { crear: true, ver: true, editar: true, eliminar: true },
+          vendedores: { crear: true, ver: true, editar: true, eliminar: false },
+          caja: { acceder: true, abrir: true, cerrar: true, ver_movimientos: true },
+          reportes: { ver: true, exportar: true, financieros: true },
+          configuracion: { acceder: true, empresa: true, folios: true, usuarios: false },
+          documentos: { ver: true, anular: false, reenviar: true }
+        }),
+        es_modificable: 1
+      },
+      {
+        nombre: 'vendedor',
+        descripcion: 'Crear ventas y gestionar clientes, sin acceso a eliminación',
+        permisos: JSON.stringify({
+          facturas: { crear: true, ver: true, editar: false, eliminar: false, emitir: true, anular: false },
+          boletas: { crear: true, ver: true, editar: false, eliminar: false, emitir: true, anular: false },
+          clientes: { crear: true, ver: true, editar: true, eliminar: false },
+          productos: { crear: false, ver: true, editar: false, eliminar: false },
+          vendedores: { crear: false, ver: true, editar: false, eliminar: false },
+          caja: { acceder: true, abrir: false, cerrar: false, ver_movimientos: true },
+          reportes: { ver: true, exportar: false, financieros: false },
+          configuracion: { acceder: false, empresa: false, folios: false, usuarios: false },
+          documentos: { ver: true, anular: false, reenviar: false }
+        }),
+        es_modificable: 1
+      },
+      {
+        nombre: 'cajero',
+        descripcion: 'Solo gestión de caja y registro de pagos',
+        permisos: JSON.stringify({
+          facturas: { crear: false, ver: true, editar: false, eliminar: false, emitir: false, anular: false },
+          boletas: { crear: true, ver: true, editar: false, eliminar: false, emitir: true, anular: false },
+          clientes: { crear: false, ver: true, editar: false, eliminar: false },
+          productos: { crear: false, ver: true, editar: false, eliminar: false },
+          vendedores: { crear: false, ver: true, editar: false, eliminar: false },
+          caja: { acceder: true, abrir: true, cerrar: true, ver_movimientos: true },
+          reportes: { ver: false, exportar: false, financieros: false },
+          configuracion: { acceder: false, empresa: false, folios: false, usuarios: false },
+          documentos: { ver: true, anular: false, reenviar: false }
+        }),
+        es_modificable: 1
+      },
+      {
+        nombre: 'contador',
+        descripcion: 'Solo lectura y generación de reportes',
+        permisos: JSON.stringify({
+          facturas: { crear: false, ver: true, editar: false, eliminar: false, emitir: false, anular: false },
+          boletas: { crear: false, ver: true, editar: false, eliminar: false, emitir: false, anular: false },
+          clientes: { crear: false, ver: true, editar: false, eliminar: false },
+          productos: { crear: false, ver: true, editar: false, eliminar: false },
+          vendedores: { crear: false, ver: true, editar: false, eliminar: false },
+          caja: { acceder: true, abrir: false, cerrar: false, ver_movimientos: true },
+          reportes: { ver: true, exportar: true, financieros: true },
+          configuracion: { acceder: false, empresa: false, folios: false, usuarios: false },
+          documentos: { ver: true, anular: false, reenviar: false }
+        }),
+        es_modificable: 1
+      }
+    ];
+
+    for (const rol of roles) {
+      insertRole.run(rol.nombre, rol.descripcion, rol.permisos, rol.es_modificable);
+    }
+    console.log('✅ Roles predefinidos insertados correctamente');
+  }
+
+  // Migración: Asignar rol y permisos de dueño al primer usuario si no los tiene
+  try {
+    const primerUsuario = db.prepare('SELECT id, rol, permisos FROM users ORDER BY id ASC LIMIT 1').get();
+    
+    if (primerUsuario) {
+      const necesitaMigracion = !primerUsuario.rol || 
+                               primerUsuario.rol === 'vendedor' || 
+                               !primerUsuario.permisos || 
+                               primerUsuario.permisos === '{}';
+      
+      if (necesitaMigracion) {
+        const rolDueno = db.prepare('SELECT permisos FROM roles WHERE nombre = ?').get('dueño');
+        
+        if (rolDueno) {
+          db.prepare('UPDATE users SET rol = ?, permisos = ? WHERE id = ?')
+            .run('dueño', rolDueno.permisos, primerUsuario.id);
+          
+          console.log('✅ Primer usuario actualizado con rol y permisos de dueño');
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error actualizando primer usuario:', error);
   }
 
   // Tabla de clientes

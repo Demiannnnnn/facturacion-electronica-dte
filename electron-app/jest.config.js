@@ -44,5 +44,11 @@ export default {
   verbose: true,
   
   // Setup files
-  setupFilesAfterEnv: ['<rootDir>/__tests__/setup.js']
+  setupFilesAfterEnv: ['<rootDir>/__tests__/setup.js'],
+  
+  // Custom reporters
+  reporters: [
+    'default', // Mantener el reporter por defecto en la consola
+    '<rootDir>/__tests__/reporters/markdown-reporter.js' // Agregar reporter de markdown
+  ]
 };

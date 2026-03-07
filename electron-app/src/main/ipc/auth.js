@@ -74,14 +74,20 @@ export function registerAuthHandlers() {
       // Hashear contraseña
       const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
-      // Insertar usuario
+      // Insertar usuario con rol de dueño (primer usuario)
       const now = new Date().toISOString();
+      
+      // Obtener permisos completos del rol dueño
+      const rolesDb = db.prepare('SELECT permisos FROM roles WHERE nombre = ?');
+      const rolDueno = rolesDb.get('dueño');
+      const permisosCompletos = rolDueno ? rolDueno.permisos : null;
+      
       const stmt = db.prepare(
-        'INSERT INTO users (email, password_hash, rut, nombre, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)'
+        'INSERT INTO users (email, password_hash, rut, nombre, rol, permisos, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
       );
-      const result = stmt.run(email, passwordHash, rut, nombre, now, now);
+      const result = stmt.run(email, passwordHash, rut, nombre, 'dueño', permisosCompletos, now, now);
 
-      console.log('User registered successfully locally:', email);
+      console.log('User registered successfully locally:', email, 'with role: dueño');
 
       return {
         success: true,
@@ -119,7 +125,28 @@ export function registerAuthHandlers() {
         return { success: false, error: 'Contraseña incorrecta' };
       }
 
-      const userData = { id: user.id, email: user.email, nombre: user.nombre, rut: user.rut };
+      // Si el usuario no tiene rol (usuario antiguo), asignar rol de dueño si es el primer usuario
+      if (!user.rol && user.id === 1) {
+        const rolesDb = db.prepare('SELECT permisos FROM roles WHERE nombre = ?');
+        const rolDueno = rolesDb.get('dueño');
+        const permisosCompletos = rolDueno ? rolDueno.permisos : null;
+        
+        const updateStmt = db.prepare('UPDATE users SET rol = ?, permisos = ? WHERE id = ?');
+        updateStmt.run('dueño', permisosCompletos, user.id);
+        
+        user.rol = 'dueño';
+        user.permisos = permisosCompletos;
+        console.log('Assigned dueño role to first user:', user.email);
+      }
+
+      const userData = { 
+        id: user.id, 
+        email: user.email, 
+        nombre: user.nombre, 
+        rut: user.rut,
+        rol: user.rol,
+        permisos: user.permisos 
+      };
 
       // Intentar autenticar contra la API externa para obtener tokens (si disponible)
       try {

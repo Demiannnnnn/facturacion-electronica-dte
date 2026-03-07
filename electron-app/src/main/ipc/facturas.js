@@ -1,5 +1,6 @@
 import { ipcMain } from 'electron';
 import { getDatabase } from '../database/connection.js';
+import { requirePermission } from '../utils/permissions.js';
 import dteGenerator from '../services/dte-generator.js';
 import { getAPIClient } from '../services/api-client.js';
 import fs from 'fs';
@@ -304,8 +305,27 @@ export function registerFacturasHandlers() {
   });
 
   // Actualizar estado de factura
-  ipcMain.handle('facturas:updateEstado', async (event, { id, estado }) => {
+  ipcMain.handle('facturas:updateEstado', async (event, { id, estado, userId }) => {
     try {
+      // Validar permisos según el estado
+      if (estado === 'anulada') {
+        const permissionCheck = requirePermission(userId, 'facturas', 'anular');
+        if (!permissionCheck.autorizado) {
+          return {
+            success: false,
+            error: permissionCheck.error || 'No tienes permiso para anular facturas'
+          };
+        }
+      } else {
+        const permissionCheck = requirePermission(userId, 'facturas', 'editar');
+        if (!permissionCheck.autorizado) {
+          return {
+            success: false,
+            error: permissionCheck.error || 'No tienes permiso para editar facturas'
+          };
+        }
+      }
+
       const db = getDatabase();
       const now = new Date().toISOString();
 
@@ -412,6 +432,11 @@ export function registerFacturasHandlers() {
 
   ipcMain.handle('emisor:save', async (event, emisor) => {
     try {
+      console.log('\n📦 [EMISOR:SAVE] Datos recibidos:', JSON.stringify(emisor, null, 2));
+      console.log('📋 razon_social:', emisor.razon_social, '(type:', typeof emisor.razon_social, ')');
+      console.log('📋 giro:', emisor.giro, '(type:', typeof emisor.giro, ')');
+      console.log('📋 direccion:', emisor.direccion, '(type:', typeof emisor.direccion, ')');
+      
       const db = getDatabase();
       const now = new Date().toISOString();
 
@@ -427,6 +452,13 @@ export function registerFacturasHandlers() {
           WHERE id = 1
         `);
 
+        console.log('🔄 [EMISOR:SAVE] Actualizando emisor con valores:', {
+          rut: emisor.rut,
+          razon_social: emisor.razon_social,
+          giro: emisor.giro,
+          direccion: emisor.direccion
+        });
+        
         stmt.run(
           emisor.rut,
           emisor.razon_social,
@@ -450,6 +482,13 @@ export function registerFacturasHandlers() {
           ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
 
+        console.log('✨ [EMISOR:SAVE] Creando nuevo emisor con valores:', {
+          rut: emisor.rut,
+          razon_social: emisor.razon_social,
+          giro: emisor.giro,
+          direccion: emisor.direccion
+        });
+        
         stmt.run(
           emisor.rut,
           emisor.razon_social,
@@ -466,7 +505,12 @@ export function registerFacturasHandlers() {
         );
       }
 
-      console.log('Datos de emisor guardados');
+      console.log('✅ [EMISOR:SAVE] Datos guardados');
+      
+      // Verificar lo que quedó en la DB
+      const saved = db.prepare('SELECT * FROM emisor WHERE id = 1').get();
+      console.log('🔍 [EMISOR:SAVE] Datos en DB después de guardar:', JSON.stringify(saved, null, 2));
+      console.log('');
 
       return {
         success: true
