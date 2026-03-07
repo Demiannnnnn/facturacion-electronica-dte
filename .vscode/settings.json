@@ -1,0 +1,19 @@
+{
+    "files.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/dist-renderer": true,
+    "**/electron-builder.yml": true,
+    "**/vite.config.js": true,
+    "**/package.json": true,
+    "**/package-lock.json": true,
+    "**/PROXIMOS_PASOS.md": true,
+    "**/README_V2.md": true,
+    "**/.gitignore": false,
+    "**/scripts": true,
+    "**/.env.production.example": true,
+    "**/jest.config.js": false
+    
+    
+    }
+}
