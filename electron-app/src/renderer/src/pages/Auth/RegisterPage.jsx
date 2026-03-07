@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { formatearRut } from '../../utils/validaciones';
 
 function RegisterPage() {
   const [searchParams] = useSearchParams();
@@ -202,16 +203,13 @@ function RegisterPage() {
         console.log('✅ Emisor guardado exitosamente');
       }
 
-      // 3. Redirigir según el rol
-      if (userRole === 'contador') {
-        // Contador va directo al login (no necesita selector de módulos)
-        alert('✅ Cuenta de contador configurada exitosamente. Ahora puedes iniciar sesión.');
-        navigate('/login');
-      } else {
-        // Empresa y Persona Natural van al selector de módulos
-        alert('✅ Cuenta creada exitosamente. Ahora personaliza tu espacio de trabajo.');
-        navigate('/module-selector');
-      }
+      // 3. Guardar email para suscripción
+      await window.api.config.set('user_email', emailValue);
+
+      // 4. Redirigir a página de suscripción primero
+      alert('✅ Cuenta creada exitosamente. Ahora selecciona tu plan.');
+      navigate('/subscription');
+      
     } catch (error) {
       console.error('Error en registro:', error);
       setError('Error al completar el registro');
@@ -346,7 +344,7 @@ function RegisterPage() {
                 <input
                   type="text"
                   value={contadorRut}
-                  onChange={(e) => setContadorRut(e.target.value)}
+                  onChange={(e) => setContadorRut(formatearRut(e.target.value))}
                   style={styles.input}
                   placeholder="12.345.678-9"
                 />
@@ -390,7 +388,7 @@ function RegisterPage() {
                   <input
                     type="text"
                     value={empresaRut}
-                    onChange={(e) => setEmpresaRut(e.target.value)}
+                    onChange={(e) => setEmpresaRut(formatearRut(e.target.value))}
                     style={styles.input}
                     placeholder={userRole === 'empresa' ? '76.123.456-7' : '12.345.678-9'}
                   />

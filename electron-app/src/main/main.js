@@ -22,6 +22,7 @@ import { registerConfigHandlers } from './ipc/config.js';
 import { registerSyncHandlers } from './ipc/sync.js';
 import { registerSeedHandlers } from './ipc/seed.js';
 import { registerEmpresasHandlers } from './ipc/empresas.js';
+import './ipc/subscription.js'; // Importar handlers de suscripción
 import { createMenu } from './menu.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -127,7 +128,16 @@ app.whenReady().then(() => {
       return { success: false, message: error.message };
     }
   });
-
+  // Handler para abrir URLs externas (ej: Flow)
+  ipcMain.handle('openExternal', async (event, url) => {
+    try {
+      await shell.openExternal(url);
+      return { success: true };
+    } catch (error) {
+      console.error('Error opening external URL:', error);
+      return { success: false, error: error.message };
+    }
+  });
   ipcMain.handle('openPDF', async (event, filePath) => {
     try {
       await shell.openPath(filePath);

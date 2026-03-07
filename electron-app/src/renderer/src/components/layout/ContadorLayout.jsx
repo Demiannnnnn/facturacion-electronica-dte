@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import SubscriptionWarning from '../SubscriptionWarning';
 
 function ContadorLayout({ children }) {
-  const { user, logout } = useAuth();
+  const { user, logout, permisos } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -36,8 +37,29 @@ function ContadorLayout({ children }) {
     return location.pathname === path;
   };
 
+  // Función para obtener información visual del rol
+  const getRoleBadgeInfo = () => {
+    if (!permisos?.rol) {
+      // Fallback para contador (siempre es contador este layout)
+      return { label: 'Contador', icon: '📊', color: '#7c3aed', bgColor: '#ede9fe' };
+    }
+    
+    const roleInfo = {
+      'dueño': { label: 'Dueño', icon: '👑', color: '#dc2626', bgColor: '#fee2e2' },
+      'administrador': { label: 'Administrador', icon: '⭐', color: '#ea580c', bgColor: '#ffedd5' },
+      'vendedor': { label: 'Vendedor', icon: '💼', color: '#2563eb', bgColor: '#dbeafe' },
+      'cajero': { label: 'Cajero', icon: '💵', color: '#16a34a', bgColor: '#dcfce7' },
+      'contador': { label: 'Contador', icon: '📊', color: '#7c3aed', bgColor: '#ede9fe' }
+    };
+    
+    return roleInfo[permisos.rol] || { label: permisos.rol, icon: '👤', color: '#6b7280', bgColor: '#f3f4f6' };
+  };
+
+  const roleBadge = getRoleBadgeInfo();
+
   return (
     <div style={styles.container}>
+      <SubscriptionWarning />
       <header style={styles.header}>
         <div style={styles.headerContent}>
           <div style={styles.headerLeft}>
@@ -50,8 +72,19 @@ function ContadorLayout({ children }) {
             <h2 style={styles.logo}>📊 Contador - Sistema Facturación</h2>
           </div>
           <div style={styles.userSection}>
+            {roleBadge && (
+              <span style={{
+                ...styles.newRoleBadge,
+                color: roleBadge.color,
+                backgroundColor: roleBadge.bgColor,
+                borderColor: roleBadge.color
+              }}>
+                <span style={styles.roleIcon}>{roleBadge.icon}</span>
+                {roleBadge.label}
+              </span>
+            )}
             <span style={styles.userBadge}>
-              👤 {user?.nombre || user?.email} <span style={styles.roleBadge}>CONTADOR</span>
+              {user?.nombre || user?.email}
             </span>
             <button onClick={handleUserManual} style={styles.manualBtn}>
               📚 Manual
@@ -141,6 +174,20 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '12px'
+  },
+  newRoleBadge: {
+    padding: '6px 12px',
+    borderRadius: '6px',
+    fontSize: '13px',
+    fontWeight: '600',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    border: '1.5px solid',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+  },
+  roleIcon: {
+    fontSize: '14px'
   },
   userBadge: {
     display: 'flex',

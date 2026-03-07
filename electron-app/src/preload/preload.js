@@ -181,6 +181,19 @@ contextBridge.exposeInMainWorld('api', {
     getStats: (contadorId) => ipcRenderer.invoke('empresas:getStats', contadorId)
   },
 
+  // Subscription (suscripciones y pagos)
+  subscription: {
+    getStatus: () => ipcRenderer.invoke('subscription:getStatus'),
+    activateTrial: () => ipcRenderer.invoke('subscription:activateTrial'),
+    initializePayment: (data) => ipcRenderer.invoke('subscription:initializePayment', data),
+    verifyPayment: () => ipcRenderer.invoke('subscription:verifyPayment'),
+    cancel: () => ipcRenderer.invoke('subscription:cancel'),
+    renew: () => ipcRenderer.invoke('subscription:renew')
+  },
+
+  // Open external URL
+  openExternal: (url) => ipcRenderer.invoke('openExternal', url),
+
   // PDF utilities (generic)
   savePDF: (data) => ipcRenderer.invoke('savePDF', data),
   openPDF: (path) => ipcRenderer.invoke('openPDF', path),

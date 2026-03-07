@@ -13,6 +13,8 @@ function PuntoVenta() {
   const [mostrarPago, setMostrarPago] = useState(false);
   const [mostrarResumen, setMostrarResumen] = useState(false);
   const [ventaCompletada, setVentaCompletada] = useState(null);
+  const [hoveredProduct, setHoveredProduct] = useState(null);
+  const [hoveredButton, setHoveredButton] = useState(null);
 
   useEffect(() => {
     cargarProductos();
@@ -57,6 +59,12 @@ function PuntoVenta() {
   };
 
   const agregarAlCarrito = (producto) => {
+    // Validar que el producto tenga precio
+    if (!producto.precio || producto.precio <= 0) {
+      alert('⚠️ Este producto no tiene un precio válido');
+      return;
+    }
+
     const itemExistente = carrito.find(item => item.id === producto.id);
     
     if (itemExistente) {
@@ -69,7 +77,7 @@ function PuntoVenta() {
       setCarrito([...carrito, {
         id: producto.id,
         nombre: producto.nombre,
-        precio: producto.precio_venta,
+        precio: parseFloat(producto.precio) || 0,
         cantidad: 1,
         codigo: producto.codigo
       }]);
@@ -91,10 +99,18 @@ function PuntoVenta() {
   };
 
   const calcularTotales = () => {
-    const subtotal = carrito.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+    const subtotal = carrito.reduce((sum, item) => {
+      const precio = parseFloat(item.precio) || 0;
+      const cantidad = parseInt(item.cantidad) || 0;
+      return sum + (precio * cantidad);
+    }, 0);
     const iva = subtotal * 0.19;
     const total = subtotal + iva;
-    return { subtotal, iva, total };
+    return { 
+      subtotal: Math.round(subtotal), 
+      iva: Math.round(iva), 
+      total: Math.round(total) 
+    };
   };
 
   const handleProcederPago = () => {
@@ -171,27 +187,41 @@ function PuntoVenta() {
           />
 
           <div style={styles.productGrid}>
-            {productosFiltrados.map(producto => (
-              <div
-                key={producto.id}
-                style={styles.productCard}
-                onClick={() => agregarAlCarrito(producto)}
-              >
-                <div style={styles.productImage}>
-                  {producto.nombre.charAt(0)}
-                </div>
-                <div style={styles.productInfo}>
-                  <div style={styles.productName}>{producto.nombre}</div>
-                  <div style={styles.productCode}>{producto.codigo || 'S/C'}</div>
-                  <div style={styles.productPrice}>
-                    ${producto.precio_venta?.toLocaleString('es-CL') || '0'}
-                  </div>
-                  <div style={styles.productStock}>
-                    Stock: {producto.stock || 0}
-                  </div>
-                </div>
+            {productosFiltrados.length === 0 ? (
+              <div style={styles.noProducts}>
+                <div style={styles.noProductsIcon}>📦</div>
+                <p style={styles.noProductsText}>
+                  {searchTerm ? 'No se encontraron productos' : 'No hay productos disponibles'}
+                </p>
               </div>
-            ))}
+            ) : (
+              productosFiltrados.map(producto => (
+                <div
+                  key={producto.id}
+                  style={{
+                    ...styles.productCard,
+                    ...(hoveredProduct === producto.id ? styles.productCardHover : {})
+                  }}
+                  onClick={() => agregarAlCarrito(producto)}
+                  onMouseEnter={() => setHoveredProduct(producto.id)}
+                  onMouseLeave={() => setHoveredProduct(null)}
+                >
+                  <div style={styles.productImage}>
+                    {producto.nombre.charAt(0).toUpperCase()}
+                  </div>
+                  <div style={styles.productInfo}>
+                    <div style={styles.productName}>{producto.nombre}</div>
+                    <div style={styles.productCode}>{producto.codigo || 'S/C'}</div>
+                    <div style={styles.productPrice}>
+                      ${(parseFloat(producto.precio) || 0).toLocaleString('es-CL')}
+                    </div>
+                    <div style={styles.productStock}>
+                      Stock: {producto.stock || 0}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -201,8 +231,17 @@ function PuntoVenta() {
             <h2 style={styles.carritoTitle}>Carrito de Compra</h2>
             {carrito.length > 0 && (
               <button
-                onClick={() => setCarrito([])}
-                style={styles.limpiarButton}
+                onClick={() => {
+                  if (window.confirm('¿Estás seguro de que deseas vaciar el carrito?')) {
+                    setCarrito([]);
+                  }
+                }}
+                onMouseEnter={() => setHoveredButton('limpiar')}
+                onMouseLeave={() => setHoveredButton(null)}
+                style={{
+                  ...styles.limpiarButton,
+                  ...(hoveredButton === 'limpiar' ? styles.limpiarButtonHover : {})
+                }}
               >
                 🗑️ Limpiar
               </button>
@@ -236,9 +275,13 @@ function PuntoVenta() {
             <button
               onClick={handleProcederPago}
               disabled={carrito.length === 0}
+              onMouseEnter={() => setHoveredButton('pagar')}
+              onMouseLeave={() => setHoveredButton(null)}
               style={{
                 ...styles.pagarButton,
-                opacity: carrito.length === 0 ? 0.5 : 1
+                opacity: carrito.length === 0 ? 0.5 : 1,
+                cursor: carrito.length === 0 ? 'not-allowed' : 'pointer',
+                ...(hoveredButton === 'pagar' && carrito.length > 0 ? styles.pagarButtonHover : {})
               }}
             >
               💳 PROCEDER AL PAGO
@@ -332,7 +375,13 @@ const styles = {
     color: '#991b1b',
     cursor: 'pointer',
     fontSize: '13px',
-    fontWeight: '600'
+    fontWeight: '600',
+    transition: 'all 0.2s'
+  },
+  limpiarButtonHover: {
+    backgroundColor: '#fecaca',
+    borderColor: '#f87171',
+    transform: 'translateY(-1px)'
   },
   productGrid: {
     display: 'grid',
@@ -340,18 +389,38 @@ const styles = {
     gap: '16px',
     marginTop: '20px'
   },
+  noProducts: {
+    gridColumn: '1 / -1',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '60px 20px',
+    color: '#9ca3af'
+  },
+  noProductsIcon: {
+    fontSize: '64px',
+    marginBottom: '16px',
+    opacity: 0.5
+  },
+  noProductsText: {
+    fontSize: '16px',
+    fontWeight: '600',
+    margin: 0
+  },
   productCard: {
     backgroundColor: 'white',
     border: '2px solid #e5e7eb',
     borderRadius: '12px',
     padding: '16px',
     cursor: 'pointer',
-    transition: 'all 0.2s',
-    ':hover': {
-      borderColor: '#0f766e',
-      transform: 'translateY(-2px)',
-      boxShadow: '0 4px 12px rgba(15, 118, 110, 0.1)'
-    }
+    transition: 'all 0.2s ease',
+    userSelect: 'none'
+  },
+  productCardHover: {
+    borderColor: '#0f766e',
+    transform: 'translateY(-2px)',
+    boxShadow: '0 4px 12px rgba(15, 118, 110, 0.15)'
   },
   productImage: {
     width: '100%',
@@ -434,6 +503,11 @@ const styles = {
     fontWeight: '700',
     cursor: 'pointer',
     transition: 'all 0.2s'
+  },
+  pagarButtonHover: {
+    backgroundColor: '#115e59',
+    transform: 'translateY(-1px)',
+    boxShadow: '0 4px 12px rgba(15, 118, 110, 0.3)'
   }
 };
 

@@ -1,9 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import SubscriptionWarning from '../SubscriptionWarning';
 
 function ClienteLayout({ children }) {
-  const { user, logout, canAccessUsuarios } = useAuth();
+  const { 
+    user, 
+    logout, 
+    canAccessUsuarios,
+    canAccessFacturas,
+    canAccessBoletas,
+    canAccessClientes,
+    canAccessProductos,
+    canAccessVendedores,
+    canAccessCaja,
+    canAccessReportes,
+    canAccessConfiguracion,
+    canAccessDocumentos,
+    permisos
+  } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -76,7 +91,39 @@ function ClienteLayout({ children }) {
 
   const suggestedPaths = getSuggestedModules();
 
-  const menuItems = [
+  // Función para verificar si el usuario tiene acceso a un módulo
+  const canAccessModule = (moduleId) => {
+    // Dashboard siempre disponible
+    if (moduleId === 'dashboard') return true;
+    
+    // Si no hay permisos cargados, no mostrar nada (excepto dashboard)
+    if (!permisos) return false;
+
+    // Mapeo de módulos a permisos
+    const modulePermissions = {
+      'facturas': canAccessFacturas,
+      'boletas': canAccessBoletas,
+      'clientes': canAccessClientes,
+      'productos': canAccessProductos,
+      'vendedores': canAccessVendedores,
+      'caja': canAccessCaja,
+      'pos': canAccessCaja, // POS requiere permisos de caja
+      'reportes': canAccessReportes,
+      'configuracion': canAccessConfiguracion,
+      'folios': canAccessConfiguracion,
+      'documentos': canAccessDocumentos,
+      'guias': canAccessDocumentos,
+      'nota-credito': canAccessDocumentos,
+      'nota-debito': canAccessDocumentos,
+      'compras': () => true, // Por ahora todos pueden ver compras
+      'cuentas-por-cobrar': () => canAccessFacturas() || canAccessBoletas() // Requiere acceso a facturas/boletas
+    };
+
+    const permissionCheck = modulePermissions[moduleId];
+    return permissionCheck ? permissionCheck() : false;
+  };
+
+  const allMenuItems = [
     { id: 'dashboard', path: '/cliente', label: 'Dashboard', icon: '📊', description: 'Vista general' },
     { id: 'pos', path: '/cliente/pos', label: 'Punto de Venta', icon: '🛒', description: 'POS para ventas rápidas' },
     { id: 'caja', path: '/cliente/caja', label: 'Caja', icon: '💵', description: 'Gestión de caja y arqueo' },
@@ -94,7 +141,13 @@ function ClienteLayout({ children }) {
     { id: 'reportes', path: '/cliente/reportes', label: 'Reportes', icon: '📊', description: 'Análisis y estadísticas' },
     { id: 'folios', path: '/cliente/folios', label: 'Folios', icon: '🔢', description: 'Gestión de folios SII' },
     { id: 'configuracion', path: '/cliente/configuracion', label: 'Configuración', icon: '⚙️', description: 'Ajustes generales' }
-  ].map(item => ({
+  ];
+
+  // FILTRAR por permisos primero, luego por módulos habilitados
+  const menuItemsWithPermissions = allMenuItems.filter(item => canAccessModule(item.id));
+  
+  // Aplicar lógica de módulos habilitados/deshabilitados
+  const menuItems = menuItemsWithPermissions.map(item => ({
     ...item,
     suggested: suggestedPaths.includes(item.path)
   }));
@@ -111,8 +164,26 @@ function ClienteLayout({ children }) {
     return location.pathname === path;
   };
 
+  // Función para obtener información visual del rol
+  const getRoleBadgeInfo = () => {
+    if (!permisos?.rol) return null;
+    
+    const roleInfo = {
+      'dueño': { label: 'Dueño', icon: '👑', color: '#dc2626', bgColor: '#fee2e2' },
+      'administrador': { label: 'Administrador', icon: '⭐', color: '#ea580c', bgColor: '#ffedd5' },
+      'vendedor': { label: 'Vendedor', icon: '💼', color: '#2563eb', bgColor: '#dbeafe' },
+      'cajero': { label: 'Cajero', icon: '💵', color: '#16a34a', bgColor: '#dcfce7' },
+      'contador': { label: 'Contador', icon: '📊', color: '#7c3aed', bgColor: '#ede9fe' }
+    };
+    
+    return roleInfo[permisos.rol] || { label: permisos.rol, icon: '👤', color: '#6b7280', bgColor: '#f3f4f6' };
+  };
+
+  const roleBadge = getRoleBadgeInfo();
+
   return (
     <div style={styles.container}>
+      <SubscriptionWarning />
       <header style={styles.header}>
         <div style={styles.headerContent}>
           <div style={styles.headerLeft}>
@@ -125,6 +196,17 @@ function ClienteLayout({ children }) {
             <h2 style={styles.logo}>💼 Sistema de Facturación</h2>
           </div>
           <div style={styles.userSection}>
+            {roleBadge && (
+              <span style={{
+                ...styles.roleBadge,
+                color: roleBadge.color,
+                backgroundColor: roleBadge.bgColor,
+                borderColor: roleBadge.color
+              }}>
+                <span style={styles.roleIcon}>{roleBadge.icon}</span>
+                {roleBadge.label}
+              </span>
+            )}
             <span style={styles.userBadge}>
               {user?.nombre || user?.email}
             </span>
@@ -257,6 +339,20 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '12px'
+  },
+  roleBadge: {
+    padding: '6px 12px',
+    borderRadius: '6px',
+    fontSize: '13px',
+    fontWeight: '600',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    border: '1.5px solid',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+  },
+  roleIcon: {
+    fontSize: '14px'
   },
   userBadge: {
     padding: '6px 12px',

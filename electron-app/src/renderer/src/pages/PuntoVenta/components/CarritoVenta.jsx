@@ -57,10 +57,10 @@ function CarritoVenta({ items, onModificarCantidad, onEliminar }) {
 
               <div style={styles.itemPrecio}>
                 <div style={styles.precioUnitario}>
-                  ${item.precio.toLocaleString('es-CL')} c/u
+                  ${(parseFloat(item.precio) || 0).toLocaleString('es-CL')} c/u
                 </div>
                 <div style={styles.precioTotal}>
-                  ${(item.precio * item.cantidad).toLocaleString('es-CL')}
+                  ${((parseFloat(item.precio) || 0) * item.cantidad).toLocaleString('es-CL')}
                 </div>
               </div>
             </div>

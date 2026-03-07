@@ -7,6 +7,7 @@ export function AuthProvider({ children }) {
   const [permisos, setPermisos] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isFirstRun, setIsFirstRun] = useState(false);
+  const [subscription, setSubscription] = useState(null);
 
   useEffect(() => {
     checkFirstRun();
@@ -37,6 +38,24 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     setIsLoading(true);
     try {
+      // Verificar suscripción primero
+      const subStatus = await window.api.subscription.getStatus();
+      if (!subStatus.hasActiveSubscription) {
+        setIsLoading(false);
+        return { 
+          success: false, 
+          error: 'No tienes una suscripción activa',
+          needsSubscription: true
+        };
+      }
+
+      // Si la suscripción está por vencer (menos de 7 días)
+      if (subStatus.daysRemaining && subStatus.daysRemaining <= 7) {
+        console.warn(`⚠️ Suscripción vence en ${subStatus.daysRemaining} días`);
+      }
+
+      setSubscription(subStatus);
+
       const result = await window.api.auth.login({ email, password });
       if (result.success) {
         setUser(result.user);
@@ -162,11 +181,49 @@ export function AuthProvider({ children }) {
     return hasPermission('configuracion', 'usuarios');
   };
 
+  // Nuevas funciones para verificar acceso a módulos
+  const canAccessFacturas = () => {
+    return hasPermission('facturas', 'ver') || hasPermission('facturas', 'crear');
+  };
+
+  const canAccessBoletas = () => {
+    return hasPermission('boletas', 'ver') || hasPermission('boletas', 'crear');
+  };
+
+  const canAccessClientes = () => {
+    return hasPermission('clientes', 'ver') || hasPermission('clientes', 'crear');
+  };
+
+  const canAccessProductos = () => {
+    return hasPermission('productos', 'ver') || hasPermission('productos', 'crear');
+  };
+
+  const canAccessVendedores = () => {
+    return hasPermission('vendedores', 'ver') || hasPermission('vendedores', 'crear');
+  };
+
+  const canAccessCaja = () => {
+    return hasPermission('caja', 'acceder');
+  };
+
+  const canAccessReportes = () => {
+    return hasPermission('reportes', 'ver');
+  };
+
+  const canAccessConfiguracion = () => {
+    return hasPermission('configuracion', 'acceder');
+  };
+
+  const canAccessDocumentos = () => {
+    return hasPermission('documentos', 'ver');
+  };
+
   const value = {
     user,
     permisos,
     isLoading,
     isFirstRun,
+    subscription,
     login,
     register,
     refreshFirstRun,
@@ -175,7 +232,16 @@ export function AuthProvider({ children }) {
     hasPermission,
     isOwner,
     isAdmin,
-    canAccessUsuarios
+    canAccessUsuarios,
+    canAccessFacturas,
+    canAccessBoletas,
+    canAccessClientes,
+    canAccessProductos,
+    canAccessVendedores,
+    canAccessCaja,
+    canAccessReportes,
+    canAccessConfiguracion,
+    canAccessDocumentos
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

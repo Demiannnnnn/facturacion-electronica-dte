@@ -1,11 +1,13 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import PermissionRoute from './components/auth/PermissionRoute';
 import RoleSelectionPage from './pages/Auth/RoleSelectionPage';
 import LoginPage from './pages/Auth/LoginPage';
 import RegisterPage from './pages/Auth/RegisterPage';
 import ModuleSelector from './pages/Auth/ModuleSelector';
+import SubscriptionPage from './pages/Auth/SubscriptionPage';
 
 // Layouts
 import ContadorLayout from './components/layout/ContadorLayout';
@@ -168,6 +170,7 @@ function App() {
           <Route path="/role-selection" element={<RoleSelectionPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/subscription" element={<SubscriptionPage />} />
           <Route path="/module-selector" element={<ModuleSelector />} />
 
           {/* ==================== RUTAS CONTADOR ==================== */}
@@ -265,9 +268,11 @@ function App() {
             path="/cliente/clientes"
             element={
               <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
-                <ClienteLayout>
-                  <Clientes />
-                </ClienteLayout>
+                <PermissionRoute requiredPermission="clientes">
+                  <ClienteLayout>
+                    <Clientes />
+                  </ClienteLayout>
+                </PermissionRoute>
               </ProtectedRoute>
             }
           />
@@ -276,9 +281,11 @@ function App() {
             path="/cliente/productos"
             element={
               <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
-                <ClienteLayout>
-                  <Productos />
-                </ClienteLayout>
+                <PermissionRoute requiredPermission="productos">
+                  <ClienteLayout>
+                    <Productos />
+                  </ClienteLayout>
+                </PermissionRoute>
               </ProtectedRoute>
             }
           />
@@ -287,9 +294,11 @@ function App() {
             path="/cliente/vendedores"
             element={
               <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
-                <ClienteLayout>
-                  <Vendedores />
-                </ClienteLayout>
+                <PermissionRoute requiredPermission="vendedores">
+                  <ClienteLayout>
+                    <Vendedores />
+                  </ClienteLayout>
+                </PermissionRoute>
               </ProtectedRoute>
             }
           />
@@ -298,9 +307,11 @@ function App() {
             path="/cliente/facturas"
             element={
               <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
-                <ClienteLayout>
-                  <Facturas />
-                </ClienteLayout>
+                <PermissionRoute requiredPermission="facturas">
+                  <ClienteLayout>
+                    <Facturas />
+                  </ClienteLayout>
+                </PermissionRoute>
               </ProtectedRoute>
             }
           />
@@ -364,9 +375,11 @@ function App() {
             path="/cliente/caja"
             element={
               <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
-                <ClienteLayout>
-                  <Caja />
-                </ClienteLayout>
+                <PermissionRoute requiredPermission="caja">
+                  <ClienteLayout>
+                    <Caja />
+                  </ClienteLayout>
+                </PermissionRoute>
               </ProtectedRoute>
             }
           />
@@ -375,9 +388,11 @@ function App() {
             path="/cliente/boletas"
             element={
               <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
-                <ClienteLayout>
-                  <Boletas />
-                </ClienteLayout>
+                <PermissionRoute requiredPermission="boletas">
+                  <ClienteLayout>
+                    <Boletas />
+                  </ClienteLayout>
+                </PermissionRoute>
               </ProtectedRoute>
             }
           />
@@ -397,9 +412,11 @@ function App() {
             path="/cliente/documentos"
             element={
               <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
-                <ClienteLayout>
-                  <Documentos />
-                </ClienteLayout>
+                <PermissionRoute requiredPermission="documentos">
+                  <ClienteLayout>
+                    <Documentos />
+                  </ClienteLayout>
+                </PermissionRoute>
               </ProtectedRoute>
             }
           />
@@ -408,9 +425,11 @@ function App() {
             path="/cliente/reportes"
             element={
               <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
-                <ClienteLayout>
-                  <Reportes />
-                </ClienteLayout>
+                <PermissionRoute requiredPermission="reportes">
+                  <ClienteLayout>
+                    <Reportes />
+                  </ClienteLayout>
+                </PermissionRoute>
               </ProtectedRoute>
             }
           />

@@ -72,7 +72,13 @@ function LoginPage() {
         navigate('/');
       }
     } else {
-      setError(result.error || 'Error al iniciar sesión');
+      // Si no tiene suscripción activa, redirigir a página de suscripción
+      if (result.needsSubscription) {
+        setError('Suscripción inactiva. Redirigiendo...');
+        setTimeout(() => navigate('/subscription'), 1500);
+      } else {
+        setError(result.error || 'Error al iniciar sesión');
+      }
     }
 
     setIsLoading(false);

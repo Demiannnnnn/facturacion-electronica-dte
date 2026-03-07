@@ -3,7 +3,17 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 function Layout({ children }) {
-  const { user, logout } = useAuth();
+  const { 
+    user, 
+    logout,
+    canAccessFacturas,
+    canAccessClientes,
+    canAccessProductos,
+    canAccessVendedores,
+    canAccessReportes,
+    canAccessConfiguracion,
+    permisos
+  } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -23,21 +33,61 @@ function Layout({ children }) {
     navigate('/configuracion/manual');
   };
 
-  const menuItems = [
-    { path: '/', label: 'Dashboard', icon: '📊' },
-    { path: '/clientes', label: 'Clientes', icon: '👥' },
-    { path: '/productos', label: 'Productos', icon: '📦' },
-    { path: '/vendedores', label: 'Vendedores', icon: '👨‍💼' },
-    { path: '/facturas', label: 'Facturas', icon: '📄' },
-    { path: '/cuentas-por-cobrar', label: 'Cuentas por Cobrar', icon: '💰' },
-    { path: '/reportes', label: 'Reportes', icon: '📈' },
-    { path: '/configuracion/folios', label: 'Folios', icon: '🔢' },
-    { path: '/configuracion/emisor', label: 'Configuración', icon: '⚙️' }
+  // Función para verificar acceso a módulos
+  const canAccessModule = (moduleId) => {
+    if (!permisos) return false;
+    
+    const modulePermissions = {
+      'dashboard': () => true, // Siempre disponible
+      'clientes': canAccessClientes,
+      'productos': canAccessProductos,
+      'vendedores': canAccessVendedores,
+      'facturas': canAccessFacturas,
+      'cuentas-por-cobrar': () => canAccessFacturas() || canAccessClientes(),
+      'reportes': canAccessReportes,
+      'folios': canAccessConfiguracion,
+      'configuracion': canAccessConfiguracion
+    };
+
+    const permissionCheck = modulePermissions[moduleId];
+    return permissionCheck ? permissionCheck() : false;
+  };
+
+  const allMenuItems = [
+    { id: 'dashboard', path: '/', label: 'Dashboard', icon: '📊' },
+    { id: 'clientes', path: '/clientes', label: 'Clientes', icon: '👥' },
+    { id: 'productos', path: '/productos', label: 'Productos', icon: '📦' },
+    { id: 'vendedores', path: '/vendedores', label: 'Vendedores', icon: '👨‍💼' },
+    { id: 'facturas', path: '/facturas', label: 'Facturas', icon: '📄' },
+    { id: 'cuentas-por-cobrar', path: '/cuentas-por-cobrar', label: 'Cuentas por Cobrar', icon: '💰' },
+    { id: 'reportes', path: '/reportes', label: 'Reportes', icon: '📈' },
+    { id: 'folios', path: '/configuracion/folios', label: 'Folios', icon: '🔢' },
+    { id: 'configuracion', path: '/configuracion/emisor', label: 'Configuración', icon: '⚙️' }
   ];
+
+  // Filtrar items según permisos
+  const menuItems = allMenuItems.filter(item => canAccessModule(item.id));
 
   const isActive = (path) => {
     return location.pathname === path;
   };
+
+  // Función para obtener información visual del rol
+  const getRoleBadgeInfo = () => {
+    if (!permisos?.rol) return null;
+    
+    const roleInfo = {
+      'dueño': { label: 'Dueño', icon: '👑', color: '#dc2626', bgColor: '#fee2e2' },
+      'administrador': { label: 'Administrador', icon: '⭐', color: '#ea580c', bgColor: '#ffedd5' },
+      'vendedor': { label: 'Vendedor', icon: '💼', color: '#2563eb', bgColor: '#dbeafe' },
+      'cajero': { label: 'Cajero', icon: '💵', color: '#16a34a', bgColor: '#dcfce7' },
+      'contador': { label: 'Contador', icon: '📊', color: '#7c3aed', bgColor: '#ede9fe' }
+    };
+    
+    return roleInfo[permisos.rol] || { label: permisos.rol, icon: '👤', color: '#6b7280', bgColor: '#f3f4f6' };
+  };
+
+  const roleBadge = getRoleBadgeInfo();
 
   return (
     <div style={styles.container}>
@@ -53,6 +103,17 @@ function Layout({ children }) {
             <h2 style={styles.logo}>Sistema de Facturación</h2>
           </div>
           <div style={styles.userSection}>
+            {roleBadge && (
+              <span style={{
+                ...styles.roleBadge,
+                color: roleBadge.color,
+                backgroundColor: roleBadge.bgColor,
+                borderColor: roleBadge.color
+              }}>
+                <span style={styles.roleIcon}>{roleBadge.icon}</span>
+                {roleBadge.label}
+              </span>
+            )}
             <span style={styles.userName}>{user?.nombre || user?.email}</span>
             <button onClick={handleUserManual} style={styles.manualBtn}>
               📚 Manual de Usuario
@@ -148,6 +209,20 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '15px'
+  },
+  roleBadge: {
+    padding: '6px 12px',
+    borderRadius: '6px',
+    fontSize: '13px',
+    fontWeight: '600',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    border: '1.5px solid',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+  },
+  roleIcon: {
+    fontSize: '14px'
   },
   userName: {
     fontSize: '14px',
