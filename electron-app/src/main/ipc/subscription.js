@@ -1,10 +1,21 @@
 import { ipcMain } from 'electron';
 import axios from 'axios';
+import tokenStore from '../utils/tokenStore.js';
 
 // URL de tu API REST (configurable)
 const API_URL = process.env.API_URL || 'http://localhost:3000/api';
 
-let subscriptionCache = null;
+/**
+ * Helper para obtener headers de autenticación
+ */
+function getAuthHeaders() {
+  const token = tokenStore.getAccessToken();
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
 
 /**
  * Handlers IPC para gestión de suscripciones
@@ -13,12 +24,56 @@ let subscriptionCache = null;
 // Obtener estado de suscripción
 ipcMain.handle('subscription:getStatus', async () => {
   try {
-    // Primero verificar en configuración local
     const { default: Store } = await import('electron-store');
     const store = new Store();
-    
+
+    // Intentar obtener licencia desde la API
+    try {
+      const response = await axios.get(`${API_URL}/licencias/status`, {
+        headers: getAuthHeaders()
+      });
+
+      if (response.data.success && response.data.licence) {
+        const licence = response.data.licence;
+        const now = new Date();
+        const expiresAt = new Date(licence.expiresAt);
+        const isActive = licence.status === 'active' && now < expiresAt;
+
+        // Sincronizar a store local
+        const subscription = {
+          type: licence.type || (licence.notes === 'trial' ? 'trial' : 'paid'),
+          status: licence.status,
+          startedAt: licence.issuedAt,
+          expiresAt: licence.expiresAt,
+          licenceKey: licence.licenceKey,
+          autoRenew: licence.type === 'paid'
+        };
+        store.set('subscription', subscription);
+
+        return {
+          success: true,
+          hasActiveSubscription: isActive,
+          isTrial: subscription.type === 'trial',
+          type: subscription.type,
+          expiresAt: licence.expiresAt,
+          isActive,
+          daysRemaining: Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24))
+        };
+      }
+    } catch (apiError) {
+      if (apiError.response?.status === 404) {
+        // API confirma que no existe licencia — limpiar cache local stale
+        console.log('Usuario sin licencia en la API, limpiando cache local');
+        store.delete('subscription');
+        store.delete('trial_used');
+      } else {
+        console.log('No se pudo consultar licencia en API, usando cache local:', apiError.message);
+      }
+    }
+
+    // Fallback: verificar en configuración local
     const subscription = store.get('subscription');
-    
+
     if (!subscription) {
       return {
         success: true,
@@ -69,34 +124,46 @@ ipcMain.handle('subscription:activateTrial', async () => {
     const expiresAt = new Date();
     expiresAt.setMonth(expiresAt.getMonth() + 3);
 
+    let licenceKey = null;
+
+    // Crear licencia trial en la API
+    try {
+      const response = await axios.post(`${API_URL}/licencias/activate`, {
+        type: 'trial',
+        expiresAt: expiresAt.toISOString(),
+        notes: 'Período de prueba gratuito - 3 meses'
+      }, {
+        headers: getAuthHeaders()
+      });
+
+      if (response.data.success && response.data.licence) {
+        licenceKey = response.data.licence.licenceKey;
+        // Usar la fecha de expiración de la API (es la fuente de verdad)
+        if (response.data.licence.expiresAt) {
+          expiresAt.setTime(new Date(response.data.licence.expiresAt).getTime());
+        }
+      }
+    } catch (apiError) {
+      console.log('No se pudo crear licencia en la API:', apiError.message);
+      // Continuar con activación local si la API no está disponible
+    }
+
     const subscription = {
       type: 'trial',
       status: 'active',
       startedAt: new Date().toISOString(),
       expiresAt: expiresAt.toISOString(),
-      autoRenew: false
+      autoRenew: false,
+      licenceKey
     };
 
     store.set('subscription', subscription);
     store.set('trial_used', true);
 
-    // Opcional: Notificar a tu API
-    try {
-      const userEmail = store.get('user_email');
-      if (userEmail) {
-        await axios.post(`${API_URL}/subscriptions/trial`, {
-          email: userEmail,
-          expiresAt: subscription.expiresAt
-        });
-      }
-    } catch (apiError) {
-      console.log('No se pudo notificar a la API:', apiError.message);
-      // No fallar si la API no está disponible
-    }
-
     return {
       success: true,
       expiresAt: subscription.expiresAt,
+      licenceKey,
       message: 'Período de prueba activado correctamente'
     };
   } catch (error) {
@@ -108,34 +175,54 @@ ipcMain.handle('subscription:activateTrial', async () => {
   }
 });
 
+// Precios por plan (CLP)
+const PLAN_PRICES = {
+  monthly: 19990,
+  yearly: 199900
+};
+
 // Inicializar pago con Flow
 ipcMain.handle('subscription:initializePayment', async (event, { email, plan }) => {
   try {
     const { default: Store } = await import('electron-store');
     const store = new Store();
 
-    // Llamar a tu API REST para obtener URL de Flow
-    const response = await axios.post(`${API_URL}/subscriptions/flow/create`, {
+    const selectedPlan = plan || 'monthly';
+    const amount = PLAN_PRICES[selectedPlan] || PLAN_PRICES.monthly;
+
+    // Llamar a la API para crear orden de pago en Flow
+    const response = await axios.post(`${API_URL}/flow/create-order`, {
       email: email || store.get('user_email'),
-      plan,
-      returnUrl: 'http://localhost:5173/subscription/callback', // URL de retorno
-      cancelUrl: 'http://localhost:5173/subscription/cancel'
+      plan: selectedPlan,
+      amount
+    }, {
+      headers: getAuthHeaders()
     });
 
-    if (response.data.success && response.data.paymentUrl) {
-      // Guardar token de pago para verificación posterior
-      store.set('pending_payment_token', response.data.token);
-      
+    console.log('Flow create-order response:', JSON.stringify(response.data, null, 2));
+
+    const data = response.data;
+    const paymentUrl = data.paymentUrl || data.url || data.redirect_url || data.payment_url
+      || data.data?.paymentUrl || data.data?.url || data.data?.redirect_url;
+    const token = data.token || data.orderId || data.orderNumber || data.flowOrder
+      || data.data?.token || data.data?.orderId || data.data?.orderNumber;
+
+    if (paymentUrl) {
+      // Guardar token/orderId para verificación posterior
+      if (token) {
+        store.set('pending_payment_token', token);
+      }
+
       return {
         success: true,
-        paymentUrl: response.data.paymentUrl,
-        token: response.data.token
+        paymentUrl,
+        token
       };
     }
 
     return {
       success: false,
-      error: 'No se pudo generar la URL de pago'
+      error: data.error || data.message || 'No se pudo generar la URL de pago'
     };
   } catch (error) {
     console.error('Error initializing payment:', error);
@@ -160,19 +247,40 @@ ipcMain.handle('subscription:verifyPayment', async () => {
       };
     }
 
-    // Verificar con tu API
-    const response = await axios.get(`${API_URL}/subscriptions/flow/verify/${token}`);
+    // Verificar estado del pago en Flow a través de la API
+    const response = await axios.get(`${API_URL}/flow/status/${token}`, {
+      headers: getAuthHeaders()
+    });
 
     if (response.data.success && response.data.status === 'approved') {
-      // Guardar suscripción activa
+      // El pago fue aprobado - la API ya debería haber creado la Licence vía webhook
+      // Obtener la licencia actualizada desde la API
+      let licence = response.data.licence;
+
+      if (!licence) {
+        // Si la respuesta no incluye la licencia, consultarla
+        try {
+          const licResponse = await axios.get(`${API_URL}/licencias/status`, {
+            headers: getAuthHeaders()
+          });
+          if (licResponse.data.success) {
+            licence = licResponse.data.licence;
+          }
+        } catch (e) {
+          console.log('No se pudo obtener licencia del API:', e.message);
+        }
+      }
+
+      // Guardar suscripción activa localmente
       const subscription = {
         type: 'paid',
         status: 'active',
-        startedAt: new Date().toISOString(),
-        expiresAt: response.data.expiresAt,
+        startedAt: licence?.issuedAt || new Date().toISOString(),
+        expiresAt: licence?.expiresAt || response.data.expiresAt,
         autoRenew: true,
         paymentMethod: 'flow',
-        transactionId: response.data.transactionId
+        transactionId: response.data.transactionId,
+        licenceKey: licence?.licenceKey
       };
 
       store.set('subscription', subscription);
@@ -213,11 +321,10 @@ ipcMain.handle('subscription:cancel', async () => {
       };
     }
 
-    // Notificar a la API
+    // Cancelar en la API (actualiza status de Licence)
     try {
-      const userEmail = store.get('user_email');
-      await axios.post(`${API_URL}/subscriptions/cancel`, {
-        email: userEmail
+      await axios.post(`${API_URL}/licencias/cancel`, {}, {
+        headers: getAuthHeaders()
       });
     } catch (apiError) {
       console.log('No se pudo notificar cancelación a la API:', apiError.message);

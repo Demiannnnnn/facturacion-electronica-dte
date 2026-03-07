@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { formatearRut } from '../../utils/validaciones';
 
 function RegisterPage() {
@@ -31,7 +32,7 @@ function RegisterPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Eliminamos el uso de register de AuthContext
+  const { refreshFirstRun } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -206,7 +207,10 @@ function RegisterPage() {
       // 3. Guardar email para suscripción
       await window.api.config.set('user_email', emailValue);
 
-      // 4. Redirigir a página de suscripción primero
+      // 4. Actualizar estado isFirstRun para que LoginPage no redirija a /register
+      await refreshFirstRun();
+
+      // 5. Redirigir a página de suscripción primero
       alert('✅ Cuenta creada exitosamente. Ahora selecciona tu plan.');
       navigate('/subscription');
       

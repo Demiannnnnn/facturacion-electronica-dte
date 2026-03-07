@@ -43,6 +43,7 @@
     "bcrypt": "^6.0.0",
     "better-sqlite3": "^9.2.2",
     "chart.js": "^4.5.1",
+    "electron-store": "^11.0.2",
     "jspdf": "^2.5.2",
     "jspdf-autotable": "^5.0.2",
     "keytar": "^7.9.0",

@@ -35,11 +35,16 @@ function SubscriptionPage() {
     setError('');
 
     try {
-      // Activar período de prueba de 3 meses
+      // Activar período de prueba de 3 meses (crea licencia trial en la API)
       const result = await window.api.subscription.activateTrial();
       
       if (result.success) {
-        alert('✅ ¡Período de prueba activado!\n\nTienes 3 meses para usar el sistema sin costo.\n\nFecha de vencimiento: ' + new Date(result.expiresAt).toLocaleDateString('es-CL'));
+        const fecha = new Date(result.expiresAt).toLocaleDateString('es-CL');
+        let msg = `¡Período de prueba activado!\n\nTienes 3 meses para usar el sistema sin costo.\nFecha de vencimiento: ${fecha}`;
+        if (result.licenceKey) {
+          msg += `\n\nTu clave de licencia: ${result.licenceKey}`;
+        }
+        alert('✅ ' + msg);
         navigate('/login');
       } else {
         setError(result.error || 'Error al activar período de prueba');
