@@ -38,12 +38,16 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     setIsLoading(true);
     try {
-      // Verificar suscripción primero
+      const result = await window.api.auth.login({ email, password });
+      if (!result.success) {
+        return result;
+      }
+
+      // Verificar suscripción después del login para asegurar que exista token
       const subStatus = await window.api.subscription.getStatus();
       if (!subStatus.hasActiveSubscription) {
-        setIsLoading(false);
-        return { 
-          success: false, 
+        return {
+          success: false,
           error: 'No tienes una suscripción activa',
           needsSubscription: true
         };
@@ -55,52 +59,49 @@ export function AuthProvider({ children }) {
       }
 
       setSubscription(subStatus);
-
-      const result = await window.api.auth.login({ email, password });
-      if (result.success) {
-        setUser(result.user);
-        setIsFirstRun(false);
+      setUser(result.user);
+      setIsFirstRun(false);
         
-        // Cargar permisos del usuario
-        if (result.user?.id) {
-          // Si el usuario ya tiene rol y permisos en el objeto (nuevo sistema)
-          if (result.user.rol) {
-            let permisosObj = result.user.permisos;
-            // Si permisos es un string JSON, parsearlo
-            if (typeof permisosObj === 'string') {
-              try {
-                permisosObj = JSON.parse(permisosObj);
-              } catch (e) {
-                console.error('Error parsing permisos:', e);
-              }
-            }
-            setPermisos({
-              rol: result.user.rol,
-              permisos: permisosObj
-            });
-          } else {
-            // Fallback: cargar permisos de la API (usuarios antiguos)
+      // Cargar permisos del usuario
+      if (result.user?.id) {
+        // Si el usuario ya tiene rol y permisos en el objeto (nuevo sistema)
+        if (result.user.rol) {
+          let permisosObj = result.user.permisos;
+          // Si permisos es un string JSON, parsearlo
+          if (typeof permisosObj === 'string') {
             try {
-              const permisosResult = await window.api.usuarios.getPermisos(result.user.id);
-              if (permisosResult.success) {
-                setPermisos({
-                  rol: permisosResult.rol,
-                  permisos: permisosResult.permisos
-                });
-              }
+              permisosObj = JSON.parse(permisosObj);
             } catch (e) {
-              console.warn('Could not load permisos:', e);
+              console.error('Error parsing permisos:', e);
             }
           }
-          
-          // Actualizar último acceso
+          setPermisos({
+            rol: result.user.rol,
+            permisos: permisosObj
+          });
+        } else {
+          // Fallback: cargar permisos de la API (usuarios antiguos)
           try {
-            await window.api.usuarios.updateLastAccess(result.user.id);
+            const permisosResult = await window.api.usuarios.getPermisos(result.user.id);
+            if (permisosResult.success) {
+              setPermisos({
+                rol: permisosResult.rol,
+                permisos: permisosResult.permisos
+              });
+            }
           } catch (e) {
-            console.warn('Could not update last access:', e);
+            console.warn('Could not load permisos:', e);
           }
         }
+        
+        // Actualizar último acceso
+        try {
+          await window.api.usuarios.updateLastAccess(result.user.id);
+        } catch (e) {
+          console.warn('Could not update last access:', e);
+        }
       }
+
       return result;
     } catch (error) {
       console.error('Login error:', error);

@@ -8,7 +8,7 @@ import {
   checkServerConnection,
   getSyncQueueSize,
   processSyncQueue
-} from '../services/sync-service.js';
+} from '../services/api/sync-service.js';
 
 /**
  * Handlers IPC para sincronización con el servidor central

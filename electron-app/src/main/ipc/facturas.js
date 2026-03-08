@@ -2,7 +2,7 @@ import { ipcMain } from 'electron';
 import { getDatabase } from '../database/connection.js';
 import { requirePermission } from '../utils/permissions.js';
 import dteGenerator from '../services/dte-generator.js';
-import { getAPIClient } from '../services/api-client.js';
+import { getAPIClient } from '../services/api/api-client.js';
 import fs from 'fs';
 import path from 'path';
 

@@ -1,5 +1,5 @@
 const { ipcMain } = require('electron');
-const { getAPIClient } = require('../services/api-client');
+const { getAPIClient } = require('../services/api/api-client');
 
 /**
  * Handlers IPC para integración con SII

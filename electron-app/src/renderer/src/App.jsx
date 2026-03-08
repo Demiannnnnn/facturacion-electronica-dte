@@ -8,6 +8,7 @@ import LoginPage from './pages/Auth/LoginPage';
 import RegisterPage from './pages/Auth/RegisterPage';
 import ModuleSelector from './pages/Auth/ModuleSelector';
 import SubscriptionPage from './pages/Auth/SubscriptionPage';
+import DesignSystem from './pages/DesignSystem';
 
 // Layouts
 import ContadorLayout from './components/layout/ContadorLayout';
@@ -172,6 +173,7 @@ function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/subscription" element={<SubscriptionPage />} />
           <Route path="/module-selector" element={<ModuleSelector />} />
+          <Route path="/design-system" element={<DesignSystem />} />
 
           {/* ==================== RUTAS CONTADOR ==================== */}
           <Route

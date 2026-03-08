@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 function LoginPage() {
@@ -10,10 +10,16 @@ function LoginPage() {
 
   const { login, isFirstRun } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     const checkRoleAndRedirect = async () => {
       if (isFirstRun) {
+        const forceLogin = searchParams.get('existing') === '1';
+        if (forceLogin) {
+          return;
+        }
+
         // Verificar si ya hay rol seleccionado
         const roleConfig = await window.api.config.get('user_role');
         if (!roleConfig.value) {
@@ -27,7 +33,7 @@ function LoginPage() {
     };
     
     checkRoleAndRedirect();
-  }, [isFirstRun, navigate]);
+  }, [isFirstRun, navigate, searchParams]);
 
   // Fix: Auto-focus en el campo de usuario al montar el componente
   useEffect(() => {
@@ -57,19 +63,38 @@ function LoginPage() {
       // Obtener el rol del usuario para redirigir correctamente
       try {
         const roleConfig = await window.api.config.get('user_role');
-        const userRole = roleConfig?.value;
+        let userRole = roleConfig?.value;
+
+        // Si no existe rol de cuenta en configuración (usuarios antiguos / login directo),
+        // inferir uno por defecto para evitar bucle login -> / -> login.
+        if (!userRole) {
+          if (result.user?.rol === 'contador') {
+            userRole = 'contador';
+          } else {
+            // Dueño/administrador/vendedor pertenecen al módulo cliente en esta app
+            userRole = 'empresa';
+          }
+
+          try {
+            await window.api.config.set('user_role', userRole);
+            // Al iniciar con cuenta existente damos onboarding por completado
+            await window.api.config.set('onboarding_completed', 'true');
+          } catch (configError) {
+            console.warn('No se pudo persistir user_role inferido:', configError);
+          }
+        }
 
         if (userRole === 'contador') {
           navigate('/contador');
         } else if (userRole === 'empresa' || userRole === 'persona_natural') {
           navigate('/cliente');
         } else {
-          // Fallback si no hay rol definido
-          navigate('/');
+          // Último fallback seguro
+          navigate('/cliente');
         }
       } catch (error) {
         console.error('Error obteniendo rol:', error);
-        navigate('/');
+        navigate('/cliente');
       }
     } else {
       // Si no tiene suscripción activa, redirigir a página de suscripción
@@ -87,6 +112,14 @@ function LoginPage() {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
+        <button
+          type="button"
+          onClick={() => navigate('/role-selection')}
+          style={styles.backButton}
+        >
+          ← Volver al inicio
+        </button>
+
         <h1 style={styles.title}>Sistema de Facturación</h1>
         <h2 style={styles.subtitle}>Iniciar Sesión</h2>
 
@@ -145,6 +178,17 @@ const styles = {
     boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
     width: '100%',
     maxWidth: '400px'
+  },
+  backButton: {
+    backgroundColor: '#f8fafc',
+    border: '1px solid #cbd5e1',
+    color: '#334155',
+    borderRadius: '6px',
+    fontSize: '13px',
+    fontWeight: '600',
+    padding: '8px 12px',
+    cursor: 'pointer',
+    marginBottom: '14px'
   },
   title: {
     fontSize: '24px',

@@ -1,5 +1,5 @@
 const { ipcMain } = require('electron');
-const { getAPIClient } = require('../services/api-client');
+const { getAPIClient } = require('../services/api/api-client');
 const os = require('os');
 const crypto = require('crypto');
 

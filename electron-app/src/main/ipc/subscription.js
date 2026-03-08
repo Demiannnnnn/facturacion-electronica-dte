@@ -26,49 +26,55 @@ ipcMain.handle('subscription:getStatus', async () => {
   try {
     const { default: Store } = await import('electron-store');
     const store = new Store();
+    const hasAccessToken = !!tokenStore.getAccessToken();
 
     // Intentar obtener licencia desde la API
-    try {
-      const response = await axios.get(`${API_URL}/licencias/status`, {
-        headers: getAuthHeaders()
-      });
+    if (hasAccessToken) {
+      try {
+        const response = await axios.get(`${API_URL}/licencias/status`, {
+          headers: getAuthHeaders()
+        });
 
-      if (response.data.success && response.data.licence) {
-        const licence = response.data.licence;
-        const now = new Date();
-        const expiresAt = new Date(licence.expiresAt);
-        const isActive = licence.status === 'active' && now < expiresAt;
+        if (response.data.success && response.data.licence) {
+          const licence = response.data.licence;
+          const now = new Date();
+          const expiresAt = new Date(licence.expiresAt);
+          const isActive = licence.status === 'active' && now < expiresAt;
 
-        // Sincronizar a store local
-        const subscription = {
-          type: licence.type || (licence.notes === 'trial' ? 'trial' : 'paid'),
-          status: licence.status,
-          startedAt: licence.issuedAt,
-          expiresAt: licence.expiresAt,
-          licenceKey: licence.licenceKey,
-          autoRenew: licence.type === 'paid'
-        };
-        store.set('subscription', subscription);
+          // Sincronizar a store local
+          const subscription = {
+            type: licence.type || (licence.notes === 'trial' ? 'trial' : 'paid'),
+            status: licence.status,
+            startedAt: licence.issuedAt,
+            expiresAt: licence.expiresAt,
+            licenceKey: licence.licenceKey,
+            autoRenew: licence.type === 'paid'
+          };
+          store.set('subscription', subscription);
 
-        return {
-          success: true,
-          hasActiveSubscription: isActive,
-          isTrial: subscription.type === 'trial',
-          type: subscription.type,
-          expiresAt: licence.expiresAt,
-          isActive,
-          daysRemaining: Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24))
-        };
+          return {
+            success: true,
+            hasActiveSubscription: isActive,
+            isTrial: subscription.type === 'trial',
+            type: subscription.type,
+            expiresAt: licence.expiresAt,
+            isActive,
+            daysRemaining: Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24))
+          };
+        }
+      } catch (apiError) {
+        if (apiError.response?.status === 404) {
+          // API confirma que no existe licencia — limpiar cache local stale
+          console.log('Usuario sin licencia en la API, limpiando cache local');
+          store.delete('subscription');
+          store.delete('trial_used');
+        } else {
+          console.log('No se pudo consultar licencia en API, usando cache local:', apiError.message);
+        }
       }
-    } catch (apiError) {
-      if (apiError.response?.status === 404) {
-        // API confirma que no existe licencia — limpiar cache local stale
-        console.log('Usuario sin licencia en la API, limpiando cache local');
-        store.delete('subscription');
-        store.delete('trial_used');
-      } else {
-        console.log('No se pudo consultar licencia en API, usando cache local:', apiError.message);
-      }
+    } else {
+      // Sin token en memoria: evitar llamadas a API que devuelven 401 y usar cache local
+      console.log('Sin token de acceso, consultando estado de suscripción local');
     }
 
     // Fallback: verificar en configuración local

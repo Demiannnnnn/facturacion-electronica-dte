@@ -247,6 +247,17 @@ function RoleSelectionPage() {
           Continuar con {getRoleTitle()}
         </button>
 
+        <div style={styles.quickAccessWrap}>
+          <span style={styles.quickAccessText}>¿Ya tienes tu cuenta?</span>
+          <button
+            type="button"
+            style={styles.quickAccessButton}
+            onClick={() => navigate('/login?existing=1')}
+          >
+            Ir directo al Login
+          </button>
+        </div>
+
         <div style={styles.footer}>
           <p style={styles.footerText}>
             💡 <strong>¿No estás seguro?</strong>
@@ -471,6 +482,29 @@ const styles = {
     backgroundColor: '#cbd5e0',
     cursor: 'not-allowed',
     boxShadow: 'none'
+  },
+  quickAccessWrap: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: '12px',
+    marginTop: '18px',
+    flexWrap: 'wrap'
+  },
+  quickAccessText: {
+    fontSize: '14px',
+    color: '#4a5568',
+    fontWeight: '500'
+  },
+  quickAccessButton: {
+    padding: '10px 16px',
+    borderRadius: '8px',
+    border: '1px solid #2b6cb0',
+    backgroundColor: '#ebf8ff',
+    color: '#2b6cb0',
+    fontSize: '14px',
+    fontWeight: '600',
+    cursor: 'pointer'
   },
   footer: {
     marginTop: '40px',

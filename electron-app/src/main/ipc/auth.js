@@ -111,18 +111,86 @@ export function registerAuthHandlers() {
       }
 
       const db = getDatabase();
-      // Buscar usuario localmente
-      const stmt = db.prepare('SELECT * FROM users WHERE email = ?');
-      const user = stmt.get(email);
+      const userByEmailStmt = db.prepare('SELECT * FROM users WHERE email = ?');
+      let user = userByEmailStmt.get(email);
+      let localPasswordMatch = false;
 
-      if (!user) {
-        return { success: false, error: 'Usuario no encontrado' };
+      if (user) {
+        localPasswordMatch = await bcrypt.compare(password, user.password_hash);
       }
 
-      // Verificar contraseña
-      const match = await bcrypt.compare(password, user.password_hash);
-      if (!match) {
-        return { success: false, error: 'Contraseña incorrecta' };
+      let externalLoginOk = false;
+
+      // Si no existe localmente o la contraseña no coincide, intentar login externo
+      if (!user || !localPasswordMatch) {
+        try {
+          const apiAuth = (await import('../services/api/auth.js')).default;
+          const apiResult = await apiAuth.login(email, password);
+
+          if (!apiResult || apiResult.success === false) {
+            if (!user) {
+              return { success: false, error: apiResult?.error || 'Usuario no encontrado' };
+            }
+            return { success: false, error: apiResult?.error || 'Contraseña incorrecta' };
+          }
+
+          const access = apiResult.accessToken
+            || (apiResult.tokens && apiResult.tokens.accessToken)
+            || (apiResult.data && (apiResult.data.token || apiResult.data.accessToken))
+            || apiResult.token || null;
+          const refresh = apiResult.refreshToken
+            || (apiResult.tokens && apiResult.tokens.refreshToken)
+            || (apiResult.data && apiResult.data.refreshToken)
+            || null;
+
+          if (access || refresh) {
+            await tokenStore.setTokens({ access, refresh });
+            console.log('Tokens saved after external login (fallback path) - access present?', !!access);
+          }
+
+          externalLoginOk = true;
+
+          // Sincronizar/crear usuario local con contraseña actual
+          const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+
+          if (!user) {
+            const rolesDb = db.prepare('SELECT permisos FROM roles WHERE nombre = ?');
+            const rolDueno = rolesDb.get('dueño');
+            const permisosCompletos = rolDueno ? rolDueno.permisos : null;
+            const now = new Date().toISOString();
+
+            const insertStmt = db.prepare(
+              'INSERT INTO users (email, password_hash, rut, nombre, rol, permisos, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+            );
+
+            const apiUser = apiResult.user || apiResult.data?.user || {};
+
+            insertStmt.run(
+              email,
+              passwordHash,
+              apiUser.rut || null,
+              apiUser.nombre || apiUser.name || email.split('@')[0],
+              'dueño',
+              permisosCompletos,
+              now,
+              now
+            );
+
+            user = userByEmailStmt.get(email);
+            console.log('Local user auto-created from API login:', email);
+          } else {
+            const updateStmt = db.prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?');
+            updateStmt.run(passwordHash, new Date().toISOString(), user.id);
+            user = userByEmailStmt.get(email);
+            console.log('Local password synced from API login:', email);
+          }
+        } catch (apiErr) {
+          console.error('External API login failed in fallback path:', apiErr);
+          if (!user) {
+            return { success: false, error: 'Usuario no encontrado' };
+          }
+          return { success: false, error: 'Contraseña incorrecta' };
+        }
       }
 
       // Si el usuario no tiene rol (usuario antiguo), asignar rol de dueño si es el primer usuario
@@ -148,31 +216,33 @@ export function registerAuthHandlers() {
         permisos: user.permisos 
       };
 
-      // Intentar autenticar contra la API externa para obtener tokens (si disponible)
-      try {
-        const apiAuth = (await import('../services/api/auth.js')).default;
-        const apiResult = await apiAuth.login(email, password);
-        console.log('External API login result:', apiResult);
-        if (apiResult && apiResult.success !== false) {
-          const access = apiResult.accessToken
-            || (apiResult.tokens && apiResult.tokens.accessToken)
-            || (apiResult.data && (apiResult.data.token || apiResult.data.accessToken))
-            || apiResult.token || null;
-          const refresh = apiResult.refreshToken
-            || (apiResult.tokens && apiResult.tokens.refreshToken)
-            || (apiResult.data && apiResult.data.refreshToken)
-            || null;
-          if (access || refresh) {
-            try {
-              await tokenStore.setTokens({ access, refresh });
-              console.log('Tokens saved after external login - access present?', !!access, 'access:', access ? access.slice(0,10)+'...' : null);
-            } catch (e) {
-              console.warn('Could not save tokens after login:', e);
+      // Si no hicimos login externo aún, intentarlo para mantener tokens actualizados
+      if (!externalLoginOk) {
+        try {
+          const apiAuth = (await import('../services/api/auth.js')).default;
+          const apiResult = await apiAuth.login(email, password);
+          console.log('External API login result:', apiResult);
+          if (apiResult && apiResult.success !== false) {
+            const access = apiResult.accessToken
+              || (apiResult.tokens && apiResult.tokens.accessToken)
+              || (apiResult.data && (apiResult.data.token || apiResult.data.accessToken))
+              || apiResult.token || null;
+            const refresh = apiResult.refreshToken
+              || (apiResult.tokens && apiResult.tokens.refreshToken)
+              || (apiResult.data && apiResult.data.refreshToken)
+              || null;
+            if (access || refresh) {
+              try {
+                await tokenStore.setTokens({ access, refresh });
+                console.log('Tokens saved after external login - access present?', !!access, 'access:', access ? access.slice(0, 10) + '...' : null);
+              } catch (e) {
+                console.warn('Could not save tokens after login:', e);
+              }
             }
           }
+        } catch (apiErr) {
+          console.warn('External API login failed (optional):', apiErr);
         }
-      } catch (apiErr) {
-        console.warn('External API login failed (optional):', apiErr);
       }
 
       setCurrentUser(userData);
