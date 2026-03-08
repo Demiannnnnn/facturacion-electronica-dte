@@ -1,6 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+function PlanCard({ children, premium, style: extraStyle }) {
+  const [hovered, setHovered] = useState(false);
+  const base = {
+    ...styles.planCard,
+    ...(premium ? styles.planCardPremium : {}),
+    ...(hovered ? {
+      transform: premium ? 'scale(1.05)' : 'scale(1.04)',
+      boxShadow: '0 12px 28px rgba(0,0,0,0.15)',
+      borderColor: premium ? '#0f766e' : '#3b82f6'
+    } : {}),
+    ...extraStyle
+  };
+  return (
+    <div
+      style={base}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {children}
+    </div>
+  );
+}
+
 function SubscriptionPage() {
   const navigate = useNavigate();
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -57,22 +80,19 @@ function SubscriptionPage() {
     }
   };
 
-  const handleSelectPaid = async () => {
+  const handleSelectPaid = async (plan) => {
     setIsLoading(true);
     setError('');
 
     try {
-      // Solicitar URL de pago a Flow a través de la API
       const result = await window.api.subscription.initializePayment({
         email: userEmail,
-        plan: 'monthly' // o 'yearly' según lo que implementes
+        plan
       });
 
       if (result.success && result.paymentUrl) {
-        // Abrir la URL de Flow en el navegador externo
         await window.api.openExternal(result.paymentUrl);
         
-        // Mostrar mensaje y esperar confirmación
         alert('🌐 Se abrirá Flow en tu navegador para procesar el pago.\n\nUna vez completado el pago, vuelve aquí y presiona "Verificar Pago"');
         
         setSelectedPlan('paid');
@@ -121,7 +141,7 @@ function SubscriptionPage() {
 
         <div style={styles.plansContainer}>
           {/* Plan de Prueba */}
-          <div style={styles.planCard}>
+          <PlanCard>
             <div style={styles.planHeader}>
               <div style={styles.planIcon}>🎁</div>
               <h3 style={styles.planTitle}>Prueba Gratuita</h3>
@@ -148,18 +168,17 @@ function SubscriptionPage() {
             >
               {isLoading ? 'Activando...' : 'Comenzar Prueba Gratuita'}
             </button>
-          </div>
+          </PlanCard>
 
-          {/* Plan de Pago */}
-          <div style={{...styles.planCard, ...styles.planCardPremium}}>
+          {/* Plan Mensual */}
+          <PlanCard>
             <div style={styles.planHeader}>
               <div style={{...styles.planIcon, backgroundColor: '#0f766e'}}>⭐</div>
               <h3 style={styles.planTitle}>Suscripción Mensual</h3>
-              <div style={{...styles.planBadge, ...styles.planBadgePremium}}>Recomendado</div>
             </div>
             
             <div style={styles.planPrice}>
-              <span style={styles.priceAmount}>$19.990</span>
+              <span style={styles.priceAmount}>$49.990</span>
               <span style={styles.pricePeriod}>/ mes</span>
             </div>
 
@@ -173,11 +192,11 @@ function SubscriptionPage() {
 
             {!selectedPlan || selectedPlan !== 'paid' ? (
               <button
-                onClick={handleSelectPaid}
+                onClick={() => handleSelectPaid('monthly')}
                 disabled={isLoading}
                 style={styles.paidButton}
               >
-                {isLoading ? 'Procesando...' : 'Suscribirme Ahora'}
+                {isLoading ? 'Procesando...' : 'Suscribirme Mensual'}
               </button>
             ) : (
               <button
@@ -188,7 +207,50 @@ function SubscriptionPage() {
                 {isLoading ? 'Verificando...' : '🔍 Verificar Pago'}
               </button>
             )}
-          </div>
+          </PlanCard>
+
+          {/* Plan Anual */}
+          <PlanCard premium>
+            <div style={styles.planHeader}>
+              <div style={{...styles.planIcon, backgroundColor: '#7c3aed'}}>💎</div>
+              <h3 style={styles.planTitle}>Suscripción Anual</h3>
+              <div style={{...styles.planBadge, ...styles.planBadgePremium}}>Recomendado</div>
+            </div>
+            
+            <div style={styles.planPrice}>
+              <span style={styles.priceAmount}>$499.900</span>
+              <span style={styles.pricePeriod}>/ año</span>
+            </div>
+            <p style={{fontSize: '13px', color: '#059669', textAlign: 'center', margin: '0 0 16px'}}>
+              Equivale a $41.658/mes — Ahorra 2 meses
+            </p>
+
+            <ul style={styles.featureList}>
+              <li style={styles.featureItem}>✅ Todo lo del plan mensual</li>
+              <li style={styles.featureItem}>✅ Ahorro de 2 meses</li>
+              <li style={styles.featureItem}>✅ Soporte prioritario</li>
+              <li style={styles.featureItem}>✅ Actualizaciones automáticas</li>
+              <li style={styles.featureItem}>✅ Respaldo en la nube</li>
+            </ul>
+
+            {!selectedPlan || selectedPlan !== 'paid' ? (
+              <button
+                onClick={() => handleSelectPaid('yearly')}
+                disabled={isLoading}
+                style={{...styles.paidButton, backgroundColor: '#7c3aed'}}
+              >
+                {isLoading ? 'Procesando...' : 'Suscribirme Anual'}
+              </button>
+            ) : (
+              <button
+                onClick={handleVerifyPayment}
+                disabled={isLoading}
+                style={styles.verifyButton}
+              >
+                {isLoading ? 'Verificando...' : '🔍 Verificar Pago'}
+              </button>
+            )}
+          </PlanCard>
         </div>
 
         {error && <div style={styles.error}>{error}</div>}
@@ -227,7 +289,7 @@ const styles = {
     borderRadius: '16px',
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
     padding: '40px',
-    maxWidth: '1000px',
+    maxWidth: '1200px',
     width: '100%'
   },
   header: {
@@ -253,16 +315,17 @@ const styles = {
   },
   plansContainer: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-    gap: '24px',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: '20px',
     marginBottom: '32px'
   },
   planCard: {
     border: '2px solid #e5e7eb',
     borderRadius: '12px',
     padding: '32px',
-    transition: 'all 0.3s',
-    backgroundColor: '#fafafa'
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    backgroundColor: '#fafafa',
+    cursor: 'pointer'
   },
   planCardPremium: {
     border: '2px solid #0f766e',

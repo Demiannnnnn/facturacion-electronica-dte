@@ -175,12 +175,6 @@ ipcMain.handle('subscription:activateTrial', async () => {
   }
 });
 
-// Precios por plan (CLP)
-const PLAN_PRICES = {
-  monthly: 19990,
-  yearly: 199900
-};
-
 // Inicializar pago con Flow
 ipcMain.handle('subscription:initializePayment', async (event, { email, plan }) => {
   try {
@@ -188,13 +182,12 @@ ipcMain.handle('subscription:initializePayment', async (event, { email, plan }) 
     const store = new Store();
 
     const selectedPlan = plan || 'monthly';
-    const amount = PLAN_PRICES[selectedPlan] || PLAN_PRICES.monthly;
 
     // Llamar a la API para crear orden de pago en Flow
+    // El monto se determina en la API según el plan (no se envía desde el cliente)
     const response = await axios.post(`${API_URL}/flow/create-order`, {
       email: email || store.get('user_email'),
-      plan: selectedPlan,
-      amount
+      plan: selectedPlan
     }, {
       headers: getAuthHeaders()
     });
