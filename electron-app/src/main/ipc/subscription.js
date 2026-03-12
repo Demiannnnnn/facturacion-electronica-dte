@@ -5,6 +5,9 @@ import tokenStore from '../utils/tokenStore.js';
 // URL de tu API REST (configurable)
 const API_URL = process.env.API_URL || 'http://localhost:3000/api';
 
+// Días máximos que se permite usar el cache offline sin verificar con la API
+const OFFLINE_GRACE_DAYS = 7;
+
 /**
  * Helper para obtener headers de autenticación
  */
@@ -18,6 +21,31 @@ function getAuthHeaders() {
 }
 
 /**
+ * Verificar si el error es de red/conexión (no un error HTTP del servidor)
+ */
+function isNetworkError(error) {
+  if (!error) return false;
+  // Sin respuesta del servidor = problema de red
+  if (!error.response) return true;
+  // Códigos que indican problemas de red/proxy, no de la API
+  if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND' ||
+      error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED' ||
+      error.code === 'ERR_NETWORK') return true;
+  return false;
+}
+
+/**
+ * Calcular días transcurridos desde una fecha ISO
+ */
+function daysSince(isoDate) {
+  if (!isoDate) return Infinity;
+  const then = new Date(isoDate);
+  if (isNaN(then.getTime())) return Infinity;
+  const now = new Date();
+  return Math.floor((now - then) / (1000 * 60 * 60 * 24));
+}
+
+/**
  * Handlers IPC para gestión de suscripciones
  */
 
@@ -28,11 +56,23 @@ ipcMain.handle('subscription:getStatus', async () => {
     const store = new Store();
     const hasAccessToken = !!tokenStore.getAccessToken();
 
-    // Intentar obtener licencia desde la API
+    // Log detallado del estado actual
+    const cachedSub = store.get('subscription');
+    const cachedTrial = store.get('trial_used');
+    console.log('📋 [SUBSCRIPTION:getStatus] Estado actual:', {
+      hasAccessToken,
+      cachedSubscription: cachedSub || null,
+      trialUsed: cachedTrial || false
+    });
+
+    // ═══════════════════════════════════════════════════════════
+    // PASO 1: Si hay token, SIEMPRE intentar la API primero
+    // ═══════════════════════════════════════════════════════════
     if (hasAccessToken) {
       try {
         const response = await axios.get(`${API_URL}/licencias/status`, {
-          headers: getAuthHeaders()
+          headers: getAuthHeaders(),
+          timeout: 10000
         });
 
         if (response.data.success && response.data.licence) {
@@ -41,14 +81,23 @@ ipcMain.handle('subscription:getStatus', async () => {
           const expiresAt = new Date(licence.expiresAt);
           const isActive = licence.status === 'active' && now < expiresAt;
 
-          // Sincronizar a store local
+          console.log('✅ [SUBSCRIPTION:getStatus] Licencia verificada con API:', {
+            type: licence.type,
+            status: licence.status,
+            expiresAt: licence.expiresAt,
+            isActive,
+            licenceKey: licence.licenceKey
+          });
+
+          // Sincronizar a cache local con timestamp de verificación
           const subscription = {
             type: licence.type || (licence.notes === 'trial' ? 'trial' : 'paid'),
             status: licence.status,
             startedAt: licence.issuedAt,
             expiresAt: licence.expiresAt,
             licenceKey: licence.licenceKey,
-            autoRenew: licence.type === 'paid'
+            autoRenew: licence.type === 'paid',
+            lastVerifiedAt: new Date().toISOString()
           };
           store.set('subscription', subscription);
 
@@ -59,51 +108,144 @@ ipcMain.handle('subscription:getStatus', async () => {
             type: subscription.type,
             expiresAt: licence.expiresAt,
             isActive,
+            isOffline: false,
             daysRemaining: Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24))
           };
         }
+
+        // API respondió OK pero sin licencia válida → usuario sin licencia
+        console.log('⚠️ [SUBSCRIPTION:getStatus] API respondió sin licencia activa');
+        store.delete('subscription');
+        store.delete('trial_used');
+        return {
+          success: true,
+          hasActiveSubscription: false,
+          isTrial: false,
+          isOffline: false
+        };
       } catch (apiError) {
+        // La API respondió con un error HTTP (el servidor está vivo)
         if (apiError.response?.status === 404) {
-          // API confirma que no existe licencia — limpiar cache local stale
-          console.log('Usuario sin licencia en la API, limpiando cache local');
+          console.log('⚠️ [SUBSCRIPTION:getStatus] API 404 - Usuario sin licencia, limpiando cache');
           store.delete('subscription');
           store.delete('trial_used');
+          return {
+            success: true,
+            hasActiveSubscription: false,
+            isTrial: false,
+            isOffline: false
+          };
+        }
+
+        // Error de RED (no se pudo conectar) → caer a offline
+        if (isNetworkError(apiError)) {
+          console.log('📴 [SUBSCRIPTION:getStatus] Sin conexión a la API, cayendo a modo offline:', apiError.message);
         } else {
-          console.log('No se pudo consultar licencia en API, usando cache local:', apiError.message);
+          // Error del servidor (500, 401, etc.) pero SÍ hay conexión
+          console.log('⚠️ [SUBSCRIPTION:getStatus] Error del servidor:', apiError.response?.status, apiError.message);
+          // Para errores 401/403, no confiar en cache
+          if (apiError.response?.status === 401 || apiError.response?.status === 403) {
+            return {
+              success: true,
+              hasActiveSubscription: false,
+              isTrial: false,
+              isOffline: false,
+              reason: 'Sesión expirada o no autorizada'
+            };
+          }
+          // Otros errores del servidor → caer a offline como fallback
         }
       }
-    } else {
-      // Sin token en memoria: evitar llamadas a API que devuelven 401 y usar cache local
-      console.log('Sin token de acceso, consultando estado de suscripción local');
     }
 
-    // Fallback: verificar en configuración local
-    const subscription = store.get('subscription');
+    // ═══════════════════════════════════════════════════════════
+    // PASO 2: MODO OFFLINE - Cache local con grace period
+    // (llegamos aquí si: no hay token, o la API no respondió por red)
+    // ═══════════════════════════════════════════════════════════
 
-    if (!subscription) {
+    // Sin token → no hay sesión, no confiar en nada
+    if (!hasAccessToken) {
+      console.log('🔒 [SUBSCRIPTION:getStatus] Sin token de acceso, sin suscripción');
       return {
         success: true,
         hasActiveSubscription: false,
-        isTrial: false
+        isTrial: false,
+        isOffline: true
       };
     }
 
-    // Verificar si está vencida
+    const subscription = store.get('subscription');
+
+    if (!subscription) {
+      console.log('❌ [SUBSCRIPTION:getStatus] Sin cache local de suscripción');
+      return {
+        success: true,
+        hasActiveSubscription: false,
+        isTrial: false,
+        isOffline: true
+      };
+    }
+
+    // Si el cache no tiene lastVerifiedAt (cache viejo), agregar timestamp ahora
+    // para dar un grace period desde este momento
+    if (!subscription.lastVerifiedAt) {
+      console.log('🔄 [SUBSCRIPTION:getStatus] Cache sin lastVerifiedAt, marcando timestamp actual');
+      subscription.lastVerifiedAt = new Date().toISOString();
+      store.set('subscription', subscription);
+    }
+
+    // Verificar grace period: ¿hace cuánto se verificó con la API?
+    const daysOffline = daysSince(subscription.lastVerifiedAt);
+
+    if (daysOffline > OFFLINE_GRACE_DAYS) {
+      console.log(`🚫 [SUBSCRIPTION:getStatus] Grace period expirado (${daysOffline} días sin verificar, máx ${OFFLINE_GRACE_DAYS})`);
+      return {
+        success: true,
+        hasActiveSubscription: false,
+        isTrial: false,
+        isOffline: true,
+        offlineExpired: true,
+        reason: `Se requiere conexión a internet para verificar la licencia. Último contacto con servidor: hace ${daysOffline} días.`
+      };
+    }
+
+    // Verificar si la licencia misma no está vencida
     const now = new Date();
     const expiresAt = new Date(subscription.expiresAt);
-    const isActive = now < expiresAt;
+    const isActive = subscription.status === 'active' && now < expiresAt;
+
+    if (!isActive) {
+      console.log('⏰ [SUBSCRIPTION:getStatus] Licencia expirada en cache local');
+      return {
+        success: true,
+        hasActiveSubscription: false,
+        isTrial: false,
+        isOffline: true
+      };
+    }
+
+    // Cache válido dentro del grace period
+    console.log(`📦 [SUBSCRIPTION:getStatus] Usando cache offline (verificado hace ${daysOffline} día(s), grace: ${OFFLINE_GRACE_DAYS} días):`, {
+      type: subscription.type,
+      status: subscription.status,
+      expiresAt: subscription.expiresAt,
+      lastVerifiedAt: subscription.lastVerifiedAt,
+      isActive
+    });
 
     return {
       success: true,
-      hasActiveSubscription: isActive,
+      hasActiveSubscription: true,
       isTrial: subscription.type === 'trial',
       type: subscription.type,
       expiresAt: subscription.expiresAt,
-      isActive,
-      daysRemaining: Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24))
+      isActive: true,
+      isOffline: true,
+      daysRemaining: Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24)),
+      offlineGraceRemaining: OFFLINE_GRACE_DAYS - daysOffline
     };
   } catch (error) {
-    console.error('Error getting subscription status:', error);
+    console.error('💥 [SUBSCRIPTION:getStatus] Error:', error);
     return {
       success: false,
       error: error.message
@@ -111,15 +253,18 @@ ipcMain.handle('subscription:getStatus', async () => {
   }
 });
 
-// Activar período de prueba
+// Activar período de prueba (REQUIERE conexión a la API)
 ipcMain.handle('subscription:activateTrial', async () => {
   try {
     const { default: Store } = await import('electron-store');
     const store = new Store();
 
+    console.log('🆓 [SUBSCRIPTION:activateTrial] Iniciando activación de trial...');
+
     // Verificar si ya usó el período de prueba
     const hasUsedTrial = store.get('trial_used');
     if (hasUsedTrial) {
+      console.log('⛔ [SUBSCRIPTION:activateTrial] Trial ya fue usado anteriormente');
       return {
         success: false,
         error: 'Ya has utilizado el período de prueba anteriormente'
@@ -130,41 +275,58 @@ ipcMain.handle('subscription:activateTrial', async () => {
     const expiresAt = new Date();
     expiresAt.setMonth(expiresAt.getMonth() + 3);
 
-    let licenceKey = null;
-
-    // Crear licencia trial en la API
+    // Crear licencia trial en la API (obligatorio - sin API no se activa)
+    let response;
     try {
-      const response = await axios.post(`${API_URL}/licencias/activate`, {
+      response = await axios.post(`${API_URL}/licencias/activate`, {
         type: 'trial',
         expiresAt: expiresAt.toISOString(),
         notes: 'Período de prueba gratuito - 3 meses'
       }, {
-        headers: getAuthHeaders()
+        headers: getAuthHeaders(),
+        timeout: 15000
       });
-
-      if (response.data.success && response.data.licence) {
-        licenceKey = response.data.licence.licenceKey;
-        // Usar la fecha de expiración de la API (es la fuente de verdad)
-        if (response.data.licence.expiresAt) {
-          expiresAt.setTime(new Date(response.data.licence.expiresAt).getTime());
-        }
-      }
     } catch (apiError) {
-      console.log('No se pudo crear licencia en la API:', apiError.message);
-      // Continuar con activación local si la API no está disponible
+      if (isNetworkError(apiError)) {
+        return {
+          success: false,
+          error: 'Se requiere conexión a internet para activar el período de prueba'
+        };
+      }
+      return {
+        success: false,
+        error: apiError.response?.data?.message || apiError.message || 'Error al activar el período de prueba'
+      };
     }
+
+    if (!response.data.success || !response.data.licence) {
+      return {
+        success: false,
+        error: response.data.error || 'No se pudo activar el trial en el servidor'
+      };
+    }
+
+    const licence = response.data.licence;
+    const licenceKey = licence.licenceKey;
 
     const subscription = {
       type: 'trial',
       status: 'active',
-      startedAt: new Date().toISOString(),
-      expiresAt: expiresAt.toISOString(),
+      startedAt: licence.issuedAt || new Date().toISOString(),
+      expiresAt: licence.expiresAt || expiresAt.toISOString(),
       autoRenew: false,
-      licenceKey
+      licenceKey,
+      lastVerifiedAt: new Date().toISOString()
     };
 
     store.set('subscription', subscription);
     store.set('trial_used', true);
+
+    console.log('✅ [SUBSCRIPTION:activateTrial] Trial activado via API:', {
+      licenceKey,
+      expiresAt: subscription.expiresAt,
+      type: subscription.type
+    });
 
     return {
       success: true,
@@ -173,10 +335,10 @@ ipcMain.handle('subscription:activateTrial', async () => {
       message: 'Período de prueba activado correctamente'
     };
   } catch (error) {
-    console.error('Error activating trial:', error);
+    console.error('💥 [SUBSCRIPTION:activateTrial] Error:', error);
     return {
       success: false,
-      error: error.message
+      error: error.response?.data?.message || error.message || 'Error al activar el período de prueba'
     };
   }
 });
@@ -188,6 +350,7 @@ ipcMain.handle('subscription:initializePayment', async (event, { email, plan }) 
     const store = new Store();
 
     const selectedPlan = plan || 'monthly';
+    console.log('💳 [SUBSCRIPTION:initializePayment] Creando orden de pago:', { email, plan: selectedPlan });
 
     // Llamar a la API para crear orden de pago en Flow
     // El monto se determina en la API según el plan (no se envía desde el cliente)
@@ -361,19 +524,63 @@ ipcMain.handle('subscription:renew', async () => {
   }
 });
 
-console.log('✅ Subscription IPC handlers registered');
+console.log('✅ Subscription IPC handlers registered (hybrid: API-first + offline grace period)');
 
 export default {
   // Función auxiliar para verificar suscripción desde otros módulos
   async checkSubscription() {
     const { default: Store } = await import('electron-store');
     const store = new Store();
-    
+    const hasAccessToken = !!tokenStore.getAccessToken();
+
+    // Si hay token, intentar verificar con API directamente
+    if (hasAccessToken) {
+      try {
+        const response = await axios.get(`${API_URL}/licencias/status`, {
+          headers: getAuthHeaders(),
+          timeout: 10000
+        });
+        if (response.data.success && response.data.licence) {
+          const licence = response.data.licence;
+          const now = new Date();
+          const expiresAt = new Date(licence.expiresAt);
+          const isActive = licence.status === 'active' && now < expiresAt;
+
+          // Actualizar cache con timestamp
+          store.set('subscription', {
+            type: licence.type,
+            status: licence.status,
+            startedAt: licence.issuedAt,
+            expiresAt: licence.expiresAt,
+            licenceKey: licence.licenceKey,
+            autoRenew: licence.type === 'paid',
+            lastVerifiedAt: new Date().toISOString()
+          });
+
+          return isActive;
+        }
+        return false;
+      } catch (err) {
+        // Solo caer a offline si es error de red
+        if (!isNetworkError(err)) return false;
+      }
+    }
+
+    // Fallback offline con grace period
     const subscription = store.get('subscription');
     if (!subscription) return false;
 
+    // Cache viejo sin lastVerifiedAt → marcamos ahora
+    if (!subscription.lastVerifiedAt) {
+      subscription.lastVerifiedAt = new Date().toISOString();
+      store.set('subscription', subscription);
+    }
+
+    const daysOffline = daysSince(subscription.lastVerifiedAt);
+    if (daysOffline > OFFLINE_GRACE_DAYS) return false;
+
     const now = new Date();
     const expiresAt = new Date(subscription.expiresAt);
-    return now < expiresAt;
+    return subscription.status === 'active' && now < expiresAt;
   }
 };

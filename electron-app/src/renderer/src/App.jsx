@@ -34,6 +34,7 @@ import Usuarios from './pages/Usuarios';
 import CuentasPorCobrar from './pages/Facturacion/CuentasPorCobrar';
 import NotaCredito from './pages/Facturacion/NotaCredito';
 import NotaDebito from './pages/Facturacion/NotaDebito';
+import MiContador from './pages/Configuracion/MiContador';
 import PuntoVenta from './pages/PuntoVenta';
 import Caja from './pages/Caja';
 import Boletas from './pages/Boletas';
@@ -486,6 +487,17 @@ function App() {
               <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
                 <ClienteLayout>
                   <Usuarios />
+                </ClienteLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/cliente/mi-contador"
+            element={
+              <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
+                <ClienteLayout>
+                  <MiContador />
                 </ClienteLayout>
               </ProtectedRoute>
             }

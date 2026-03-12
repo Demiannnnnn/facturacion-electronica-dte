@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { formatearRut } from '@/utils/validaciones';
 
 function Usuarios() {
   const { user, canAccessUsuarios, isOwner } = useAuth();
@@ -54,9 +55,15 @@ function Usuarios() {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
+    let processedValue = value;
+
+    if (name === 'rut') {
+      processedValue = formatearRut(value);
+    }
+
     setFormData({
       ...formData,
-      [name]: type === 'checkbox' ? (checked ? 1 : 0) : value
+      [name]: type === 'checkbox' ? (checked ? 1 : 0) : processedValue
     });
   };
 
@@ -115,7 +122,7 @@ function Usuarios() {
       email: usuario.email,
       password: '',
       nombre: usuario.nombre || '',
-      rut: usuario.rut || '',
+      rut: formatearRut(usuario.rut || ''),
       rol: usuario.rol,
       activo: usuario.activo
     });

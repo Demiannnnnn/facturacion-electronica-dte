@@ -22,6 +22,7 @@ import { registerConfigHandlers } from './ipc/config.js';
 import { registerSyncHandlers } from './ipc/sync.js';
 import { registerSeedHandlers } from './ipc/seed.js';
 import { registerEmpresasHandlers } from './ipc/empresas.js';
+import { registerVinculacionesHandlers } from './ipc/vinculaciones.js';
 import './ipc/subscription.js'; // Importar handlers de suscripción
 import { createMenu } from './menu.js';
 
@@ -92,6 +93,7 @@ app.whenReady().then(() => {
   registerSyncHandlers();
   // registerSeedHandlers(); // Desactivado temporalmente para pruebas de registro desde cero
   registerEmpresasHandlers();
+  registerVinculacionesHandlers();
 
   // Crear menú en español
   createMenu();

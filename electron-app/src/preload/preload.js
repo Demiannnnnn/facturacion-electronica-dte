@@ -181,6 +181,18 @@ contextBridge.exposeInMainWorld('api', {
     getStats: (contadorId) => ipcRenderer.invoke('empresas:getStats', contadorId)
   },
 
+  // Vinculaciones (conexión cliente-contador)
+  vinculaciones: {
+    buscar: (query) => ipcRenderer.invoke('vinculaciones:buscar', query),
+    enviarSolicitud: (targetUserId) => ipcRenderer.invoke('vinculaciones:enviarSolicitud', targetUserId),
+    pendientes: () => ipcRenderer.invoke('vinculaciones:pendientes'),
+    enviadas: () => ipcRenderer.invoke('vinculaciones:enviadas'),
+    activas: () => ipcRenderer.invoke('vinculaciones:activas'),
+    aceptar: (id) => ipcRenderer.invoke('vinculaciones:aceptar', id),
+    rechazar: (id) => ipcRenderer.invoke('vinculaciones:rechazar', id),
+    eliminar: (id) => ipcRenderer.invoke('vinculaciones:eliminar', id)
+  },
+
   // Subscription (suscripciones y pagos)
   subscription: {
     getStatus: () => ipcRenderer.invoke('subscription:getStatus'),

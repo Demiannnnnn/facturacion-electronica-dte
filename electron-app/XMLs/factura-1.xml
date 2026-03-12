@@ -5,40 +5,40 @@
       <IdDoc>
         <TipoDTE>33</TipoDTE>
         <Folio>1</Folio>
-        <FchEmis>2026-02-26</FchEmis>
+        <FchEmis>2026-03-11</FchEmis>
         <FmaPago>1</FmaPago>
       </IdDoc>
       <Emisor>
         <RUTEmisor>213319078</RUTEmisor>
-        <RznSoc>Demian Maturana Paredes</RznSoc>
-        <GiroEmis>aaa</GiroEmis>
+        <RznSoc>dsada</RznSoc>
+        <GiroEmis>asddsa</GiroEmis>
         <Acteco>0</Acteco>
         <DirOrigen>asdasd</DirOrigen>
-        <CmnaOrigen>rengo</CmnaOrigen>
-        <CiudadOrigen>rengo</CiudadOrigen>
+        <CmnaOrigen>Arica</CmnaOrigen>
+        <CiudadOrigen>dassda</CiudadOrigen>
       </Emisor>
       <Receptor>
         <RUTRecep>213319078</RUTRecep>
-        <RznSocRecep>sadsasd</RznSocRecep>
-        <GiroRecep>adsads</GiroRecep>
-        <DirRecep>sddas</DirRecep>
-        <CmnaRecep>Camiña</CmnaRecep>
-        <CiudadRecep>rengo</CiudadRecep>
+        <RznSocRecep>sadsda</RznSocRecep>
+        <GiroRecep>Sin especificar</GiroRecep>
+        <DirRecep>dsad</DirRecep>
+        <CmnaRecep>Sin especificar</CmnaRecep>
+        <CiudadRecep>Sin especificar</CiudadRecep>
       </Receptor>
       <Totales>
-        <MntNeto>14000</MntNeto>
+        <MntNeto>15000</MntNeto>
         <TasaIVA>19</TasaIVA>
-        <IVA>2660</IVA>
-        <MntTotal>16660</MntTotal>
+        <IVA>2850</IVA>
+        <MntTotal>17850</MntTotal>
       </Totales>
     </Encabezado>
     <Detalle>
       <NroLinDet>1</NroLinDet>
-      <NmbItem>asdads</NmbItem>
+      <NmbItem>saddsa</NmbItem>
       <QtyItem>1</QtyItem>
       <UnmdItem>UN</UnmdItem>
-      <PrcItem>14000</PrcItem>
-      <MontoItem>14000</MontoItem>
+      <PrcItem>15000</PrcItem>
+      <MontoItem>15000</MontoItem>
     </Detalle>
   </Documento>
 </DTE>

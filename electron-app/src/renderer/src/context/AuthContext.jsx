@@ -8,6 +8,7 @@ export function AuthProvider({ children }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isFirstRun, setIsFirstRun] = useState(false);
   const [subscription, setSubscription] = useState(null);
+  const [isOffline, setIsOffline] = useState(false);
 
   useEffect(() => {
     checkFirstRun();
@@ -45,6 +46,16 @@ export function AuthProvider({ children }) {
 
       // Verificar suscripción después del login para asegurar que exista token
       const subStatus = await window.api.subscription.getStatus();
+
+      // Si el grace period offline expiró, necesita conexión
+      if (subStatus.offlineExpired) {
+        return {
+          success: false,
+          error: subStatus.reason || 'Se requiere conexión a internet para verificar tu licencia',
+          needsConnection: true
+        };
+      }
+
       if (!subStatus.hasActiveSubscription) {
         return {
           success: false,
@@ -58,7 +69,13 @@ export function AuthProvider({ children }) {
         console.warn(`⚠️ Suscripción vence en ${subStatus.daysRemaining} días`);
       }
 
+      // Informar si estamos en modo offline
+      if (subStatus.isOffline) {
+        console.warn(`📴 Modo offline - grace period: ${subStatus.offlineGraceRemaining} día(s) restante(s)`);
+      }
+
       setSubscription(subStatus);
+      setIsOffline(subStatus.isOffline || false);
       setUser(result.user);
       setIsFirstRun(false);
         
@@ -225,6 +242,7 @@ export function AuthProvider({ children }) {
     isLoading,
     isFirstRun,
     subscription,
+    isOffline,
     login,
     register,
     refreshFirstRun,

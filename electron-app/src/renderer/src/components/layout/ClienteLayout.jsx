@@ -116,7 +116,8 @@ function ClienteLayout({ children }) {
       'nota-credito': canAccessDocumentos,
       'nota-debito': canAccessDocumentos,
       'compras': () => true, // Por ahora todos pueden ver compras
-      'cuentas-por-cobrar': () => canAccessFacturas() || canAccessBoletas() // Requiere acceso a facturas/boletas
+      'cuentas-por-cobrar': () => canAccessFacturas() || canAccessBoletas(), // Requiere acceso a facturas/boletas
+      'mi-contador': () => true // Todos pueden gestionar su vínculo con contador
     };
 
     const permissionCheck = modulePermissions[moduleId];
@@ -140,6 +141,7 @@ function ClienteLayout({ children }) {
     { id: 'cuentas-por-cobrar', path: '/cliente/cuentas-por-cobrar', label: 'Cuentas por Cobrar', icon: '💰', description: 'Control de pagos' },
     { id: 'reportes', path: '/cliente/reportes', label: 'Reportes', icon: '📊', description: 'Análisis y estadísticas' },
     { id: 'folios', path: '/cliente/folios', label: 'Folios', icon: '🔢', description: 'Gestión de folios SII' },
+    { id: 'mi-contador', path: '/cliente/mi-contador', label: 'Mi Contador', icon: '🧑‍💼', description: 'Conexión con contador' },
     { id: 'configuracion', path: '/cliente/configuracion', label: 'Configuración', icon: '⚙️', description: 'Ajustes generales' }
   ];
 
