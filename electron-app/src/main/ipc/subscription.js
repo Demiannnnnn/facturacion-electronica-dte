@@ -1,6 +1,8 @@
 import { ipcMain } from 'electron';
 import axios from 'axios';
 import tokenStore from '../utils/tokenStore.js';
+import { getCurrentUser } from '../utils/session.js';
+import { getMachineId } from '../utils/machineId.js';
 
 // URL de tu API REST (configurable)
 const API_URL = process.env.API_URL || 'http://localhost:3000/api';
@@ -13,11 +15,20 @@ const OFFLINE_GRACE_DAYS = 7;
  */
 function getAuthHeaders() {
   const token = tokenStore.getAccessToken();
-  const headers = { 'Content-Type': 'application/json' };
+  const headers = {
+    'Content-Type': 'application/json',
+    machineid: getMachineId()
+  };
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
   return headers;
+}
+
+function canUseParentSubscriptionCache() {
+  const user = getCurrentUser();
+  if (!user || !user.rol) return false;
+  return user.rol !== 'dueño';
 }
 
 /**
@@ -55,12 +66,14 @@ ipcMain.handle('subscription:getStatus', async () => {
     const { default: Store } = await import('electron-store');
     const store = new Store();
     const hasAccessToken = !!tokenStore.getAccessToken();
+    const allowParentCache = canUseParentSubscriptionCache();
 
     // Log detallado del estado actual
     const cachedSub = store.get('subscription');
     const cachedTrial = store.get('trial_used');
     console.log('📋 [SUBSCRIPTION:getStatus] Estado actual:', {
       hasAccessToken,
+      allowParentCache,
       cachedSubscription: cachedSub || null,
       trialUsed: cachedTrial || false
     });
@@ -158,20 +171,67 @@ ipcMain.handle('subscription:getStatus', async () => {
       }
     }
 
+    if (!hasAccessToken && allowParentCache) {
+      try {
+        const response = await axios.get(`${API_URL}/licencias/status`, {
+          headers: getAuthHeaders(),
+          timeout: 10000
+        });
+
+        if (response.data.success && response.data.licence) {
+          const licence = response.data.licence;
+          const now = new Date();
+          const expiresAt = new Date(licence.expiresAt);
+          const isActive = licence.status === 'active' && now < expiresAt;
+
+          const subscription = {
+            type: licence.type || (licence.notes === 'trial' ? 'trial' : 'paid'),
+            status: licence.status,
+            startedAt: licence.issuedAt,
+            expiresAt: licence.expiresAt,
+            licenceKey: licence.licenceKey,
+            autoRenew: licence.type === 'paid',
+            lastVerifiedAt: new Date().toISOString()
+          };
+          store.set('subscription', subscription);
+
+          console.log('✅ [SUBSCRIPTION:getStatus] Licencia de cuenta principal obtenida por machineid');
+          return {
+            success: true,
+            hasActiveSubscription: isActive,
+            isTrial: subscription.type === 'trial',
+            type: subscription.type,
+            expiresAt: licence.expiresAt,
+            isActive,
+            isOffline: false,
+            daysRemaining: Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24))
+          };
+        }
+      } catch (apiError) {
+        if (!isNetworkError(apiError)) {
+          console.log('⚠️ [SUBSCRIPTION:getStatus] No fue posible validar licencia por machineid:', apiError.response?.status || apiError.message);
+        }
+      }
+    }
+
     // ═══════════════════════════════════════════════════════════
     // PASO 2: MODO OFFLINE - Cache local con grace period
     // (llegamos aquí si: no hay token, o la API no respondió por red)
     // ═══════════════════════════════════════════════════════════
 
-    // Sin token → no hay sesión, no confiar en nada
+    // Sin token y no es cuenta hija asociada: no hay licencia disponible
     if (!hasAccessToken) {
-      console.log('🔒 [SUBSCRIPTION:getStatus] Sin token de acceso, sin suscripción');
-      return {
-        success: true,
-        hasActiveSubscription: false,
-        isTrial: false,
-        isOffline: true
-      };
+      if (!allowParentCache) {
+        console.log('🔒 [SUBSCRIPTION:getStatus] Sin token de acceso, sin suscripción');
+        return {
+          success: true,
+          hasActiveSubscription: false,
+          isTrial: false,
+          isOffline: true
+        };
+      }
+
+      console.log('👥 [SUBSCRIPTION:getStatus] Usuario hijo sin token, evaluando cache de la cuenta principal');
     }
 
     const subscription = store.get('subscription');
@@ -532,6 +592,7 @@ export default {
     const { default: Store } = await import('electron-store');
     const store = new Store();
     const hasAccessToken = !!tokenStore.getAccessToken();
+    const allowParentCache = canUseParentSubscriptionCache();
 
     // Si hay token, intentar verificar con API directamente
     if (hasAccessToken) {
@@ -564,6 +625,10 @@ export default {
         // Solo caer a offline si es error de red
         if (!isNetworkError(err)) return false;
       }
+    }
+
+    if (!hasAccessToken && !allowParentCache) {
+      return false;
     }
 
     // Fallback offline con grace period

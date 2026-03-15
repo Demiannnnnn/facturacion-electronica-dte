@@ -1,5 +1,6 @@
 
 import tokenStore from '../../utils/tokenStore.js';
+import { getMachineId } from '../../utils/machineId.js';
 
 /**
  * API Client - Abstracción para comunicación con backend
@@ -13,7 +14,10 @@ class APIClient {
 
     getAuthHeaders() {
         const token = tokenStore.getAccessToken();
-        const headers = { 'Content-Type': 'application/json' };
+        const headers = {
+            'Content-Type': 'application/json',
+            'machineid': getMachineId()
+        };
 
         if (token) {
             headers.Authorization = `Bearer ${token}`;

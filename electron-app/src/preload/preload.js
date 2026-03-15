@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld('api', {
     getAll: () => ipcRenderer.invoke('usuarios:getAll'),
     getById: (id) => ipcRenderer.invoke('usuarios:getById', id),
     create: (data) => ipcRenderer.invoke('usuarios:create', data),
+    syncTrabajadoresPendientes: () => ipcRenderer.invoke('usuarios:syncTrabajadoresPendientes'),
     update: (data) => ipcRenderer.invoke('usuarios:update', data),
     changePassword: (data) => ipcRenderer.invoke('usuarios:changePassword', data),
     toggleActive: (data) => ipcRenderer.invoke('usuarios:toggleActive', data),

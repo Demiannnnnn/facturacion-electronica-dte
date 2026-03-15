@@ -26,6 +26,7 @@ function ClienteLayout({ children }) {
   const [userSubtype, setUserSubtype] = useState(null);
   const [enabledModules, setEnabledModules] = useState([]);
   const [showAllModules, setShowAllModules] = useState(false);
+  const [syncStatusBanner, setSyncStatusBanner] = useState(null);
 
   useEffect(() => {
     const loadUserProfile = async () => {
@@ -53,6 +54,74 @@ function ClienteLayout({ children }) {
     };
 
     loadUserProfile();
+  }, []);
+
+  useEffect(() => {
+    let intervalId = null;
+    let running = false;
+
+    const updateSyncStatus = async () => {
+      if (running) return;
+      running = true;
+
+      try {
+        const isOnline = navigator.onLine;
+        if (!isOnline) {
+          setSyncStatusBanner({
+            type: 'warning',
+            message: 'Sin conexión a internet. Los cambios se guardan localmente y se sincronizarán cuando vuelva la conexión.'
+          });
+          return;
+        }
+
+        const connectionResult = await window.api.sync.checkConnection();
+        if (!connectionResult?.success || !connectionResult?.connected) {
+          setSyncStatusBanner({
+            type: 'warning',
+            message: 'Sin conexión al servidor. Los cambios pendientes se sincronizarán automáticamente cuando el servidor esté disponible.'
+          });
+          return;
+        }
+
+        const queueSize = Number(connectionResult.queueSize || 0);
+        if (queueSize > 0) {
+          setSyncStatusBanner({
+            type: 'info',
+            message: `Hay ${queueSize} cambio(s) pendiente(s) por sincronizar. Intentando sincronizar...`
+          });
+
+          await window.api.sync.processQueue();
+
+          const refreshedStatus = await window.api.sync.checkConnection();
+          const refreshedQueueSize = Number(refreshedStatus?.queueSize || 0);
+          if (refreshedQueueSize > 0) {
+            setSyncStatusBanner({
+              type: 'info',
+              message: `Quedan ${refreshedQueueSize} cambio(s) pendiente(s) por sincronizar.`
+            });
+          } else {
+            setSyncStatusBanner(null);
+          }
+          return;
+        }
+
+        setSyncStatusBanner(null);
+      } catch (error) {
+        setSyncStatusBanner({
+          type: 'warning',
+          message: 'No se pudo verificar el estado de sincronización. Se reintentará automáticamente.'
+        });
+      } finally {
+        running = false;
+      }
+    };
+
+    updateSyncStatus();
+    intervalId = setInterval(updateSyncStatus, 15000);
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
   }, []);
 
   const handleLogout = async () => {
@@ -229,6 +298,17 @@ function ClienteLayout({ children }) {
           </div>
         </div>
       </header>
+
+      {syncStatusBanner && (
+        <div
+          style={{
+            ...styles.syncBanner,
+            ...(syncStatusBanner.type === 'warning' ? styles.syncBannerWarning : styles.syncBannerInfo)
+          }}
+        >
+          {syncStatusBanner.message}
+        </div>
+      )}
 
       <div style={styles.body}>
         {sidebarOpen && (
@@ -413,6 +493,25 @@ const styles = {
     position: 'relative',
     overflow: 'hidden'
   },
+  syncBanner: {
+    paddingTop: '10px',
+    paddingRight: '16px',
+    paddingBottom: '10px',
+    paddingLeft: '16px',
+    fontSize: '13px',
+    fontWeight: '500',
+    borderBottom: '1px solid'
+  },
+  syncBannerWarning: {
+    backgroundColor: '#fef3c7',
+    color: '#92400e',
+    borderBottomColor: '#f59e0b'
+  },
+  syncBannerInfo: {
+    backgroundColor: '#e0f2fe',
+    color: '#075985',
+    borderBottomColor: '#38bdf8'
+  },
   sidebar: {
     width: '250px',
     backgroundColor: '#ffffff',
@@ -431,7 +530,10 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     width: '100%',
-    padding: '12px 24px',
+    paddingTop: '12px',
+    paddingRight: '24px',
+    paddingBottom: '12px',
+    paddingLeft: '24px',
     borderTop: 'none',
     borderRight: 'none',
     borderBottom: 'none',

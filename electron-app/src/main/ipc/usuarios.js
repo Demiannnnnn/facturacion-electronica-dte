@@ -1,8 +1,20 @@
 import { ipcMain } from 'electron';
 import bcrypt from 'bcrypt';
 import { getDatabase } from '../database/connection.js';
+import { addToSyncQueue } from '../services/api/sync-service.js';
 
 const SALT_ROUNDS = 10;
+
+function isConnectivityError(error) {
+  const message = String(error?.message || '').toLowerCase();
+  return (
+    message.includes('econnrefused') ||
+    message.includes('enotfound') ||
+    message.includes('failed to fetch') ||
+    message.includes('network') ||
+    message.includes('fetch failed')
+  );
+}
 
 /**
  * Sistema de gestión de usuarios, roles y permisos
@@ -65,6 +77,13 @@ export function registerUsuariosHandlers() {
   // Crear nuevo usuario
   ipcMain.handle('usuarios:create', async (event, { email, password, rut, nombre, rol, permisos }) => {
     try {
+      console.log('👤 [USUARIOS:create] Solicitud recibida:', {
+        email,
+        rol,
+        tieneNombre: !!nombre,
+        tieneRut: !!rut
+      });
+
       // Validaciones
       if (!email || !email.includes('@')) {
         return { success: false, error: 'Email válido es requerido' };
@@ -85,6 +104,15 @@ export function registerUsuariosHandlers() {
       if (existingUser) {
         return { success: false, error: 'El email ya está registrado' };
       }
+
+      // Cuentas hijas (empleados) se registran en API externa como trabajador.
+      // Se excluyen dueños y contadores de este flujo.
+      const shouldCreateExternalTrabajador = rol !== 'dueño' && rol !== 'contador';
+
+      console.log('👤 [USUARIOS:create] Evaluación trabajador externo:', {
+        rol,
+        shouldCreateExternalTrabajador
+      });
 
       // Hash de la contraseña
       const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
@@ -120,8 +148,61 @@ export function registerUsuariosHandlers() {
         email, rol, nombre, rut
       });
 
+      let syncPending = false;
+      let syncError = null;
+
+      if (shouldCreateExternalTrabajador) {
+        try {
+          const apiTrabajadores = (await import('../services/api/trabajadores.js')).default;
+          console.log('📤 [USUARIOS:create] Enviando trabajador a API externa...');
+          await apiTrabajadores.createTrabajador({
+            email,
+            password,
+            nombre,
+            rut,
+            cargo: rol,
+            activo: true,
+            local_id: result.lastInsertRowid
+          });
+          console.log('✅ [USUARIOS:create] Trabajador creado en API externa');
+        } catch (apiError) {
+          syncPending = true;
+          syncError = apiError.message || 'No se pudo sincronizar trabajador';
+
+          // Encolar para sync posterior (offline-first)
+          addToSyncQueue({
+            entity_type: 'trabajador',
+            entity_local_id: result.lastInsertRowid,
+            operation: 'update',
+            payload: {
+              local_id: result.lastInsertRowid,
+              nombre: nombre || String(email || '').split('@')[0] || `user-${result.lastInsertRowid}`,
+              rut: rut || '',
+              cargo: rol || null,
+              email,
+              activo: true
+            },
+            queued_at: now
+          });
+
+          if (isConnectivityError(apiError)) {
+            console.warn('📴 [USUARIOS:create] Sin conexión. Trabajador encolado para sincronización posterior.');
+          } else {
+            console.warn('⚠️ [USUARIOS:create] Trabajador encolado para sincronización posterior:', syncError);
+          }
+        }
+      }
+
+      console.log('✅ [USUARIOS:create] Usuario creado localmente:', {
+        id: result.lastInsertRowid,
+        email,
+        rol
+      });
+
       return {
         success: true,
+        syncPending,
+        syncError,
         usuario: {
           id: result.lastInsertRowid,
           email,
@@ -132,6 +213,72 @@ export function registerUsuariosHandlers() {
       };
     } catch (error) {
       console.error('Error creating usuario:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  // Backfill de trabajadores históricos usando /sync/push
+  ipcMain.handle('usuarios:syncTrabajadoresPendientes', async () => {
+    try {
+      const db = getDatabase();
+      const { syncPushOperations } = await import('../services/api/sync-service.js');
+
+      const usuariosHijos = db.prepare(`
+        SELECT id, email, rut, nombre, rol, activo, updated_at, created_at
+        FROM users
+        WHERE rol != 'dueño' AND rol != 'contador'
+        ORDER BY id ASC
+      `).all();
+
+      const operations = usuariosHijos.map((u) => ({
+        entity_type: 'trabajador',
+        entity_local_id: u.id,
+        operation: 'update',
+        queued_at: u.updated_at || u.created_at || new Date().toISOString(),
+        payload: {
+          local_id: u.id,
+          nombre: (u.nombre && String(u.nombre).trim()) || String(u.email || '').split('@')[0] || `user-${u.id}`,
+          rut: u.rut || '',
+          cargo: u.rol || null,
+          email: u.email,
+          activo: Boolean(u.activo)
+        }
+      }));
+
+      if (operations.length === 0) {
+        return {
+          success: true,
+          message: 'No hay trabajadores pendientes para sincronizar',
+          total: 0,
+          synced: 0,
+          conflicts: 0,
+          failed: 0
+        };
+      }
+
+      const pushResult = await syncPushOperations(operations);
+      if (!pushResult.success) {
+        return {
+          success: false,
+          error: pushResult.error || 'No se pudo sincronizar trabajadores',
+          total: operations.length,
+          synced: 0,
+          conflicts: 0,
+          failed: operations.length,
+          details: pushResult
+        };
+      }
+
+      return {
+        success: true,
+        total: operations.length,
+        synced: pushResult.results?.length || 0,
+        conflicts: pushResult.conflicts?.length || 0,
+        failed: pushResult.failed?.length || 0,
+        details: pushResult
+      };
+    } catch (error) {
+      console.error('❌ [USUARIOS:syncTrabajadoresPendientes] Error:', error);
       return { success: false, error: error.message };
     }
   });

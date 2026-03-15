@@ -274,6 +274,7 @@ export function registerAuthHandlers() {
   ipcMain.handle('auth:logout', async () => {
     try {
       clearCurrentUser();
+      tokenStore.setAccessToken(null);
       console.log('User logged out');
       return { success: true };
     } catch (error) {

@@ -78,6 +78,16 @@ export function AuthProvider({ children }) {
       setIsOffline(subStatus.isOffline || false);
       setUser(result.user);
       setIsFirstRun(false);
+
+      // Sincroniza trabajadores históricos en segundo plano para cuentas principales.
+      if (result.user?.rol === 'dueño' || result.user?.rol === 'administrador') {
+        try {
+          const syncResult = await window.api.usuarios.syncTrabajadoresPendientes();
+          console.log('🔄 [AUTH] Resultado sync trabajadores pendientes:', syncResult);
+        } catch (syncError) {
+          console.warn('⚠️ [AUTH] No se pudo ejecutar sync de trabajadores pendientes:', syncError);
+        }
+      }
         
       // Cargar permisos del usuario
       if (result.user?.id) {
