@@ -137,7 +137,7 @@ function UserManual() {
                             <li>Asigna el folio correlativo</li>
                             <li>Calcula el IVA (19%)</li>
                             <li>Genera el PDF</li>
-                            <li>Genera el XML DTE</li>
+                            <li>Envía el documento en formato JSON a la API</li>
                             <li>Descuenta el stock</li>
                         </ul>
                     </div>

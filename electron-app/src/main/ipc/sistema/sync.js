@@ -1,7 +1,6 @@
 import { ipcMain } from 'electron';
 import { 
   syncFacturaToServer, 
-  syncFacturaXML,
   syncVentaToServer,
   syncProductosToServer,
   syncClientesToServer,
@@ -44,20 +43,6 @@ export function registerSyncHandlers() {
       return result;
     } catch (error) {
       console.error('Error syncing factura:', error);
-      return { 
-        success: false, 
-        error: error.message 
-      };
-    }
-  });
-
-  // Sincronizar XML de factura
-  ipcMain.handle('sync:facturaXML', async (event, { facturaId, xmlContent }) => {
-    try {
-      const result = await syncFacturaXML(facturaId, xmlContent);
-      return result;
-    } catch (error) {
-      console.error('Error syncing factura XML:', error);
       return { 
         success: false, 
         error: error.message 

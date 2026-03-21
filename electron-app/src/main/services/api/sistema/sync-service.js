@@ -164,7 +164,7 @@ async function tryRecoverTrabajadorNotFound(failedEntries, operations) {
  */
 
 /**
- * Enviar factura XML al servidor central
+ * Enviar factura al servidor central
  * @param {Object} facturaData - Datos de la factura a enviar
  * @returns {Promise<Object>} Resultado de la operación
  */
@@ -182,30 +182,6 @@ export async function syncFacturaToServer(facturaData) {
     return await syncPushOperations(operations);
   } catch (error) {
     const parsed = toSyncError(error, 'Error al sincronizar factura');
-    return { success: false, error: parsed.message, offline: parsed.offline };
-  }
-}
-
-/**
- * Enviar XML de factura al servidor
- * @param {string} facturaId - ID de la factura
- * @param {string} xmlContent - Contenido XML del DTE
- * @returns {Promise<Object>} Resultado de la operación
- */
-export async function syncFacturaXML(facturaId, xmlContent) {
-  try {
-    const operations = [
-      {
-        entity_type: 'documento',
-        entity_local_id: facturaId,
-        operation: 'update',
-        payload: { xml: xmlContent },
-        queued_at: new Date().toISOString()
-      }
-    ];
-    return await syncPushOperations(operations);
-  } catch (error) {
-    const parsed = toSyncError(error, 'Error al sincronizar XML');
     return { success: false, error: parsed.message, offline: parsed.offline };
   }
 }
@@ -480,7 +456,6 @@ export function getSyncQueueSize() {
 
 export default {
   syncFacturaToServer,
-  syncFacturaXML,
   syncVentaToServer,
   syncProductosToServer,
   syncClientesToServer,

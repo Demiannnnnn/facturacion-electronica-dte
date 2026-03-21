@@ -161,7 +161,6 @@ contextBridge.exposeInMainWorld('api', {
   sync: {
     checkConnection: () => ipcRenderer.invoke('sync:checkConnection'),
     factura: (facturaData) => ipcRenderer.invoke('sync:factura', facturaData),
-    facturaXML: (data) => ipcRenderer.invoke('sync:facturaXML', data),
     venta: (ventaData) => ipcRenderer.invoke('sync:venta', ventaData),
     productos: (productos) => ipcRenderer.invoke('sync:productos', productos),
     clientes: (clientes) => ipcRenderer.invoke('sync:clientes', clientes),
