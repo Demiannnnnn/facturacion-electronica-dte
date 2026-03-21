@@ -6,24 +6,10 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { promises as fs } from 'fs';
 import { initDatabase } from './database/connection.js';
-import { registerAuthHandlers } from './ipc/auth.js';
-import { registerUsuariosHandlers } from './ipc/usuarios.js';
-import { registerClientesHandlers } from './ipc/clientes.js';
-import { registerProductosHandlers } from './ipc/productos.js';
-import { registerFacturasHandlers } from './ipc/facturas.js';
-import { registerVendedoresHandlers } from './ipc/vendedores.js';
-import { registerPagosHandlers } from './ipc/pagos.js';
-import { registerGuiasHandlers } from './ipc/guias.js';
-import { registerFoliosHandlers } from './ipc/folios.js';
-import { registerBackupHandlers, createAutomaticBackup } from './ipc/backup.js';
-import { registerExportHandlers } from './ipc/export.js';
-import { registerImportHandlers } from './ipc/import.js';
-import { registerConfigHandlers } from './ipc/config.js';
-import { registerSyncHandlers } from './ipc/sync.js';
-import { registerSeedHandlers } from './ipc/seed.js';
-import { registerEmpresasHandlers } from './ipc/empresas.js';
-import { registerVinculacionesHandlers } from './ipc/vinculaciones.js';
-import './ipc/subscription.js'; // Importar handlers de suscripción
+import { registerCoreHandlers } from './ipc/core/index.js';
+import { registerFacturacionHandlers } from './ipc/facturacion/index.js';
+import { registerPagosDomainHandlers } from './ipc/pagos/index.js';
+import { registerSistemaHandlers, createAutomaticBackup } from './ipc/sistema/index.js';
 import { createMenu } from './menu.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -77,23 +63,10 @@ app.whenReady().then(() => {
   initDatabase();
 
   // Registrar handlers IPC
-  registerAuthHandlers();
-  registerUsuariosHandlers();
-  registerClientesHandlers();
-  registerProductosHandlers();
-  registerFacturasHandlers();
-  registerVendedoresHandlers();
-  registerPagosHandlers();
-  registerGuiasHandlers();
-  registerFoliosHandlers();
-  registerBackupHandlers();
-  registerExportHandlers();
-  registerImportHandlers();
-  registerConfigHandlers();
-  registerSyncHandlers();
-  // registerSeedHandlers(); // Desactivado temporalmente para pruebas de registro desde cero
-  registerEmpresasHandlers();
-  registerVinculacionesHandlers();
+  registerCoreHandlers();
+  registerFacturacionHandlers();
+  registerPagosDomainHandlers();
+  registerSistemaHandlers({ enableSeed: false });
 
   // Crear menú en español
   createMenu();

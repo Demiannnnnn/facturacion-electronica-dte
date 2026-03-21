@@ -70,26 +70,20 @@ function UserManual() {
             )
         },
         {
-            id: 'vendedores',
-            icon: '👨‍💼',
-            title: 'Gestión de vendedores',
+            id: 'trabajadores',
+            icon: '👥',
+            title: 'Gestión de trabajadores',
             category: 'Gestión de Datos',
             content: (
                 <div>
-                    <h4>Cómo gestionar vendedores:</h4>
+                    <h4>Cómo gestionar trabajadores:</h4>
                     <ol style={styles.stepList}>
-                        <li>Accede a <strong>"Vendedores"</strong></li>
-                        <li>Clic en <strong>"+ Nuevo Vendedor"</strong></li>
-                        <li>Ingresa:
-                            <ul>
-                                <li><strong>Nombre y Apellido</strong></li>
-                                <li><strong>Email y Teléfono</strong></li>
-                                <li><strong>Comisión:</strong> Porcentaje (ej: 5.5 = 5.5%)</li>
-                            </ul>
-                        </li>
-                        <li>Guarda el vendedor</li>
+                        <li>Accede a <strong>"Trabajadores"</strong></li>
+                        <li>Visualiza la lista de todos tus trabajadores registrados en el sistema</li>
+                        <li>Puedes filtrar por rol (vendedor, contador, gerente, etc.)</li>
+                        <li>Observa el estado, email, RUT y fecha de registro de cada trabajador</li>
                     </ol>
-                    <p>Luego puedes asignar vendedores a clientes al crear o editar un cliente.</p>
+                    <p><strong>Nota:</strong> Para crear nuevos trabajadores, accede a <strong>Configuración → Usuarios</strong>. Los trabajadores que crees allí aparecerán automáticamente en esta sección.</p>
                 </div>
             )
         },

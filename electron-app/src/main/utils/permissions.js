@@ -165,13 +165,13 @@ export function getPermisosEstructura() {
         eliminar: 'Eliminar productos'
       }
     },
-    vendedores: {
-      label: 'Vendedores',
+    trabajadores: {
+      label: 'Trabajadores',
       acciones: {
-        crear: 'Crear vendedores',
-        ver: 'Ver vendedores',
-        editar: 'Editar vendedores',
-        eliminar: 'Eliminar vendedores'
+        crear: 'Crear trabajadores',
+        ver: 'Ver trabajadores',
+        editar: 'Editar trabajadores',
+        eliminar: 'Eliminar trabajadores'
       }
     },
     caja: {

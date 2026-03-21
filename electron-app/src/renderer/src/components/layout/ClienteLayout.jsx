@@ -12,7 +12,7 @@ function ClienteLayout({ children }) {
     canAccessBoletas,
     canAccessClientes,
     canAccessProductos,
-    canAccessVendedores,
+    canAccessTrabajadores,
     canAccessCaja,
     canAccessReportes,
     canAccessConfiguracion,
@@ -43,7 +43,7 @@ function ClienteLayout({ children }) {
           setEnabledModules(modulesConfig.value);
         } else {
           // Si no hay configuración, mostrar todos los módulos
-          setEnabledModules(['dashboard', 'pos', 'caja', 'clientes', 'productos', 'vendedores', 
+          setEnabledModules(['dashboard', 'pos', 'caja', 'clientes', 'productos', 'trabajadores', 
                             'compras', 'documentos', 'facturas', 'boletas', 'guias', 
                             'nota-credito', 'nota-debito', 'cuentas-por-cobrar', 'reportes', 
                             'folios', 'configuracion']);
@@ -152,7 +152,7 @@ function ClienteLayout({ children }) {
       return ['/cliente', '/cliente/productos', '/cliente/facturas', '/cliente/clientes'];
     }
     if (userRole === 'empresa') {
-      return ['/cliente', '/cliente/facturas', '/cliente/productos', '/cliente/clientes', '/cliente/vendedores'];
+      return ['/cliente', '/cliente/facturas', '/cliente/productos', '/cliente/clientes', '/cliente/trabajadores'];
     }
     // Por defecto, sugerir los básicos
     return ['/cliente', '/cliente/clientes', '/cliente/facturas'];
@@ -174,7 +174,7 @@ function ClienteLayout({ children }) {
       'boletas': canAccessBoletas,
       'clientes': canAccessClientes,
       'productos': canAccessProductos,
-      'vendedores': canAccessVendedores,
+      'trabajadores': canAccessTrabajadores,
       'caja': canAccessCaja,
       'pos': canAccessCaja, // POS requiere permisos de caja
       'reportes': canAccessReportes,
@@ -199,7 +199,7 @@ function ClienteLayout({ children }) {
     { id: 'caja', path: '/cliente/caja', label: 'Caja', icon: '💵', description: 'Gestión de caja y arqueo' },
     { id: 'clientes', path: '/cliente/clientes', label: 'Clientes', icon: '👥', description: 'Gestión de clientes' },
     { id: 'productos', path: '/cliente/productos', label: 'Productos', icon: '📦', description: 'Catálogo e inventario' },
-    { id: 'vendedores', path: '/cliente/vendedores', label: 'Vendedores', icon: '👨‍💼', description: 'Equipo de ventas' },
+    { id: 'trabajadores', path: '/cliente/trabajadores', label: 'Trabajadores', icon: '👥', description: 'Equipo de trabajo' },
     { id: 'compras', path: '/cliente/compras', label: 'Compras', icon: '🛍️', description: 'Proveedores y compras' },
     { id: 'documentos', path: '/cliente/documentos', label: 'Documentos', icon: '📑', description: 'Todos los documentos' },
     { id: 'facturas', path: '/cliente/facturas', label: 'Facturas', icon: '📄', description: 'Facturas electrónicas' },

@@ -70,10 +70,10 @@ function ClienteDashboard() {
         setEnabledModules(modules);
       } catch (e) {
         console.error('Error parsing enabled_modules:', e);
-        setEnabledModules(['dashboard', 'clientes', 'productos', 'vendedores', 'facturas', 'guias', 'cuentas-por-cobrar', 'reportes', 'folios', 'configuracion']);
+        setEnabledModules(['dashboard', 'clientes', 'productos', 'trabajadores', 'facturas', 'guias', 'cuentas-por-cobrar', 'reportes', 'folios', 'configuracion']);
       }
     } else {
-      setEnabledModules(['dashboard', 'clientes', 'productos', 'vendedores', 'facturas', 'guias', 'cuentas-por-cobrar', 'reportes', 'folios', 'configuracion']);
+      setEnabledModules(['dashboard', 'clientes', 'productos', 'trabajadores', 'facturas', 'guias', 'cuentas-por-cobrar', 'reportes', 'folios', 'configuracion']);
     }
   };
 
@@ -195,7 +195,7 @@ function ClienteDashboard() {
       { id: 'dashboard', label: 'Dashboard', icon: '📊', path: '/cliente', description: 'Vista general' },
       { id: 'clientes', label: 'Clientes', icon: '👥', path: '/cliente/clientes', description: 'Gestión de clientes' },
       { id: 'productos', label: 'Productos', icon: '📦', path: '/cliente/productos', description: 'Catálogo e inventario' },
-      { id: 'vendedores', label: 'Vendedores', icon: '👨‍💼', path: '/cliente/vendedores', description: 'Equipo de ventas' },
+      { id: 'trabajadores', label: 'Trabajadores', icon: '👥', path: '/cliente/trabajadores', description: 'Equipo de trabajadores y vendedores' },
       { id: 'facturas', label: 'Facturas', icon: '📄', path: '/cliente/facturas', description: 'Documentos tributarios' },
       { id: 'guias', label: 'Guías de Despacho', icon: '📦', path: '/cliente/guias', description: 'Guías tipo 52' },
       { id: 'cuentas-por-cobrar', label: 'Cuentas por Cobrar', icon: '💰', path: '/cliente/cuentas-por-cobrar', description: 'Control de pagos' },
@@ -229,7 +229,7 @@ function ClienteDashboard() {
       return {
         icon: '🏪',
         title: 'Panel Comerciante',
-        message: 'Gestiona tu inventario, productos y ventas. Los módulos de vendedores y usuarios están disponibles si tu negocio crece.'
+        message: 'Gestiona tu inventario, productos y ventas. Los módulos de trabajadores y usuarios están disponibles si tu negocio crece.'
       };
     }
     if (userRole === 'empresa') {

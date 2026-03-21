@@ -9,7 +9,7 @@ function Layout({ children }) {
     canAccessFacturas,
     canAccessClientes,
     canAccessProductos,
-    canAccessVendedores,
+    canAccessTrabajadores,
     canAccessReportes,
     canAccessConfiguracion,
     permisos
@@ -41,7 +41,7 @@ function Layout({ children }) {
       'dashboard': () => true, // Siempre disponible
       'clientes': canAccessClientes,
       'productos': canAccessProductos,
-      'vendedores': canAccessVendedores,
+      'trabajadores': canAccessTrabajadores,
       'facturas': canAccessFacturas,
       'cuentas-por-cobrar': () => canAccessFacturas() || canAccessClientes(),
       'reportes': canAccessReportes,
@@ -57,7 +57,7 @@ function Layout({ children }) {
     { id: 'dashboard', path: '/', label: 'Dashboard', icon: '📊' },
     { id: 'clientes', path: '/clientes', label: 'Clientes', icon: '👥' },
     { id: 'productos', path: '/productos', label: 'Productos', icon: '📦' },
-    { id: 'vendedores', path: '/vendedores', label: 'Vendedores', icon: '👨‍💼' },
+    { id: 'trabajadores', path: '/trabajadores', label: 'Trabajadores', icon: '👥' },
     { id: 'facturas', path: '/facturas', label: 'Facturas', icon: '📄' },
     { id: 'cuentas-por-cobrar', path: '/cuentas-por-cobrar', label: 'Cuentas por Cobrar', icon: '💰' },
     { id: 'reportes', path: '/reportes', label: 'Reportes', icon: '📈' },

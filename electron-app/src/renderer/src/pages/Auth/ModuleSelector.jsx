@@ -110,10 +110,10 @@ function ModuleSelector() {
       category: 'Facturación'
     },
     {
-      id: 'vendedores',
-      label: 'Vendedores',
-      icon: '🤝',
-      description: 'Gestión de equipo de ventas y comisiones',
+      id: 'trabajadores',
+      label: 'Trabajadores',
+      icon: '👥',
+      description: 'Gestión de equipo de trabajo y vendedores',
       category: 'Equipo',
       recommendedFor: ['empresa']
     },
@@ -182,7 +182,7 @@ function ModuleSelector() {
       return ['dashboard', 'pos', 'caja', 'productos', 'boletas', 'facturas', 'clientes', 'compras', 'cuentas-por-cobrar', 'documentos', 'configuracion'];
     }
     if (role === 'empresa') {
-      return ['dashboard', 'pos', 'caja', 'facturas', 'boletas', 'productos', 'clientes', 'vendedores', 'compras', 'cuentas-por-cobrar', 'documentos', 'reportes', 'configuracion'];
+      return ['dashboard', 'pos', 'caja', 'facturas', 'boletas', 'productos', 'clientes', 'trabajadores', 'compras', 'cuentas-por-cobrar', 'documentos', 'reportes', 'configuracion'];
     }
     return ['dashboard', 'clientes', 'facturas', 'documentos', 'configuracion'];
   };

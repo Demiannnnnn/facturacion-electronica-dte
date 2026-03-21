@@ -12,7 +12,12 @@ contextBridge.exposeInMainWorld('api', {
     login: (credentials) => ipcRenderer.invoke('auth:login', credentials),
     logout: () => ipcRenderer.invoke('auth:logout'),
     getCurrentUser: () => ipcRenderer.invoke('auth:getCurrentUser'),
-    changePassword: (data) => ipcRenderer.invoke('auth:changePassword', data)
+    changePassword: (data) => ipcRenderer.invoke('auth:changePassword', data),
+    onSessionExpired: (callback) => {
+      const handler = () => callback();
+      ipcRenderer.on('auth:session-expired', handler);
+      return () => ipcRenderer.removeListener('auth:session-expired', handler);
+    }
   },
 
   // Usuarios (gestión de usuarios y permisos)

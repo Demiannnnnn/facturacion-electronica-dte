@@ -14,6 +14,25 @@ export function AuthProvider({ children }) {
     checkFirstRun();
   }, []);
 
+  useEffect(() => {
+    if (!window.api?.auth?.onSessionExpired) {
+      return undefined;
+    }
+
+    const unsubscribe = window.api.auth.onSessionExpired(() => {
+      setUser(null);
+      setPermisos(null);
+      setSubscription(null);
+      setIsOffline(false);
+    });
+
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
+  }, []);
+
   const checkFirstRun = async () => {
     try {
       const result = await window.api.auth.checkFirstRun();
@@ -226,8 +245,8 @@ export function AuthProvider({ children }) {
     return hasPermission('productos', 'ver') || hasPermission('productos', 'crear');
   };
 
-  const canAccessVendedores = () => {
-    return hasPermission('vendedores', 'ver') || hasPermission('vendedores', 'crear');
+  const canAccessTrabajadores = () => {
+    return hasPermission('trabajadores', 'ver') || hasPermission('trabajadores', 'crear');
   };
 
   const canAccessCaja = () => {
@@ -266,7 +285,7 @@ export function AuthProvider({ children }) {
     canAccessBoletas,
     canAccessClientes,
     canAccessProductos,
-    canAccessVendedores,
+    canAccessTrabajadores,
     canAccessCaja,
     canAccessReportes,
     canAccessConfiguracion,

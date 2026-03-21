@@ -34,7 +34,7 @@ function PermissionRoute({ children, requiredPermission, redirectTo = '/cliente'
     'boletas': auth.canAccessBoletas,
     'clientes': auth.canAccessClientes,
     'productos': auth.canAccessProductos,
-    'vendedores': auth.canAccessVendedores,
+    'trabajadores': auth.canAccessTrabajadores,
     'caja': auth.canAccessCaja,
     'reportes': auth.canAccessReportes,
     'configuracion': auth.canAccessConfiguracion,

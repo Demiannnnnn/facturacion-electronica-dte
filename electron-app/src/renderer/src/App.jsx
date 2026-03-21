@@ -22,7 +22,7 @@ import Empresas from './pages/Contador/Empresas';
 import ClienteDashboard from './pages/Cliente/ClienteDashboard';
 import Clientes from './pages/Clientes';
 import Productos from './pages/Productos';
-import Vendedores from './pages/Vendedores';
+import Trabajadores from './pages/Trabajadores';
 import Facturas from './pages/Facturas';
 import Guias from './pages/Guias';
 import Reportes from './pages/Reportes';
@@ -294,12 +294,12 @@ function App() {
           />
 
           <Route
-            path="/cliente/vendedores"
+            path="/cliente/trabajadores"
             element={
               <ProtectedRoute requiredRole={['empresa', 'persona_natural']}>
-                <PermissionRoute requiredPermission="vendedores">
+                <PermissionRoute requiredPermission="trabajadores" requiredAction="ver">
                   <ClienteLayout>
-                    <Vendedores />
+                    <Trabajadores />
                   </ClienteLayout>
                 </PermissionRoute>
               </ProtectedRoute>
