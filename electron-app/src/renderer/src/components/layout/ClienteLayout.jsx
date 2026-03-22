@@ -34,19 +34,30 @@ function ClienteLayout({ children }) {
         const roleConfig = await window.api.config.get('user_role');
         const subtypeConfig = await window.api.config.get('user_subtype');
         const modulesConfig = await window.api.config.get('enabled_modules');
+
+        const defaultModules = ['dashboard', 'pos', 'caja', 'clientes', 'productos', 'trabajadores', 
+          'compras', 'documentos', 'facturas', 'boletas', 'guias', 
+          'nota-credito', 'nota-debito', 'cuentas-por-cobrar', 'reportes', 
+          'folios', 'mi-contador', 'configuracion'];
         
         if (roleConfig?.value) setUserRole(roleConfig.value);
         if (subtypeConfig?.value) setUserSubtype(subtypeConfig.value);
         
         // Cargar módulos habilitados o usar todos por defecto
         if (modulesConfig?.value) {
-          setEnabledModules(modulesConfig.value);
+          try {
+            const parsedModules = JSON.parse(modulesConfig.value);
+            if (Array.isArray(parsedModules) && parsedModules.length > 0) {
+              setEnabledModules(parsedModules);
+            } else {
+              setEnabledModules(defaultModules);
+            }
+          } catch (parseError) {
+            console.warn('Error parseando enabled_modules, se usará configuración por defecto:', parseError);
+            setEnabledModules(defaultModules);
+          }
         } else {
-          // Si no hay configuración, mostrar todos los módulos
-          setEnabledModules(['dashboard', 'pos', 'caja', 'clientes', 'productos', 'trabajadores', 
-                            'compras', 'documentos', 'facturas', 'boletas', 'guias', 
-                            'nota-credito', 'nota-debito', 'cuentas-por-cobrar', 'reportes', 
-                            'folios', 'configuracion']);
+          setEnabledModules(defaultModules);
         }
       } catch (error) {
         console.error('Error loading user profile:', error);
@@ -141,6 +152,10 @@ function ClienteLayout({ children }) {
 
   const handleUsuarios = () => {
     navigate('/cliente/configuracion/usuarios');
+  };
+
+  const handleModules = () => {
+    navigate('/module-selector');
   };
 
   // Definir módulos sugeridos según perfil
@@ -283,6 +298,9 @@ function ClienteLayout({ children }) {
             </span>
             <button onClick={handleUserManual} style={styles.manualBtn}>
               📚 Manual
+            </button>
+            <button onClick={handleModules} style={styles.modulesBtn}>
+              🧩 Módulos
             </button>
             {canAccessUsuarios && canAccessUsuarios() && (
               <button onClick={handleUsuarios} style={styles.usuariosBtn}>
@@ -447,6 +465,16 @@ const styles = {
     fontSize: '14px'
   },
   manualBtn: {
+    padding: '6px 12px',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '13px',
+    transition: 'background 0.2s'
+  },
+  modulesBtn: {
     padding: '6px 12px',
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     color: 'white',

@@ -7,6 +7,7 @@ import RoleSelectionPage from './pages/Auth/RoleSelectionPage';
 import LoginPage from './pages/Auth/LoginPage';
 import RegisterPage from './pages/Auth/RegisterPage';
 import ModuleSelector from './pages/Auth/ModuleSelector';
+import BusinessProfileSetup from './pages/Auth/BusinessProfileSetup';
 import SubscriptionPage from './pages/Auth/SubscriptionPage';
 import DesignSystem from './pages/DesignSystem';
 
@@ -174,6 +175,7 @@ function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/subscription" element={<SubscriptionPage />} />
           <Route path="/module-selector" element={<ModuleSelector />} />
+          <Route path="/business-profile-setup" element={<BusinessProfileSetup />} />
           <Route path="/design-system" element={<DesignSystem />} />
 
           {/* ==================== RUTAS CONTADOR ==================== */}

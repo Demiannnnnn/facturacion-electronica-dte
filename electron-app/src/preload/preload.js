@@ -157,6 +157,20 @@ contextBridge.exposeInMainWorld('api', {
     getNext: (tipoDocumento) => ipcRenderer.invoke('folios:getNext', tipoDocumento)
   },
 
+  // Caja
+  caja: {
+    getEstadoActual: () => ipcRenderer.invoke('caja:getEstadoActual'),
+    abrir: (data) => ipcRenderer.invoke('caja:abrir', data),
+    registrarMovimiento: (data) => ipcRenderer.invoke('caja:registrarMovimiento', data),
+    cerrar: (data) => ipcRenderer.invoke('caja:cerrar', data)
+  },
+
+  // Punto de Venta
+  pos: {
+    createVenta: (data) => ipcRenderer.invoke('pos:createVenta', data),
+    getVentasDelDia: () => ipcRenderer.invoke('pos:getVentasDelDia')
+  },
+
   // Sincronización con servidor (v2.0)
   sync: {
     checkConnection: () => ipcRenderer.invoke('sync:checkConnection'),

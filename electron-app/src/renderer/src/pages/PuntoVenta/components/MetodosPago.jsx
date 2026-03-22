@@ -156,9 +156,11 @@ const styles = {
   container: {
     backgroundColor: 'white',
     borderRadius: '12px',
-    padding: '20px',
+    padding: '16px',
     border: '2px solid #0f766e',
-    marginTop: '20px'
+    marginTop: '8px',
+    maxHeight: '56vh',
+    overflowY: 'auto'
   },
   title: {
     margin: '0 0 16px 0',
@@ -169,11 +171,11 @@ const styles = {
   metodosGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(2, 1fr)',
-    gap: '10px',
-    marginBottom: '20px'
+    gap: '8px',
+    marginBottom: '12px'
   },
   metodoButton: {
-    padding: '16px',
+    padding: '10px',
     border: '2px solid #e5e7eb',
     borderRadius: '10px',
     backgroundColor: 'white',
@@ -189,7 +191,7 @@ const styles = {
     backgroundColor: '#f0fdfa'
   },
   metodoIcon: {
-    fontSize: '32px'
+    fontSize: '24px'
   },
   metodoNombre: {
     fontSize: '14px',
@@ -197,7 +199,7 @@ const styles = {
     color: '#1f2937'
   },
   efectivoSection: {
-    marginBottom: '20px'
+    marginBottom: '12px'
   },
   label: {
     display: 'block',
@@ -208,10 +210,10 @@ const styles = {
   },
   montoInput: {
     width: '100%',
-    padding: '14px',
+    padding: '10px',
     border: '2px solid #e5e7eb',
     borderRadius: '8px',
-    fontSize: '20px',
+    fontSize: '18px',
     fontWeight: '600',
     textAlign: 'center',
     marginBottom: '12px'
@@ -219,15 +221,15 @@ const styles = {
   montosRapidos: {
     display: 'grid',
     gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: '8px',
-    marginBottom: '12px'
+    gap: '6px',
+    marginBottom: '8px'
   },
   montoRapidoButton: {
-    padding: '10px',
+    padding: '8px',
     backgroundColor: '#f3f4f6',
     border: '1px solid #d1d5db',
     borderRadius: '6px',
-    fontSize: '13px',
+    fontSize: '12px',
     fontWeight: '600',
     cursor: 'pointer',
     transition: 'all 0.2s'
@@ -236,20 +238,20 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '16px',
+    padding: '10px',
     backgroundColor: '#fef3c7',
     border: '2px solid #fbbf24',
     borderRadius: '8px',
-    fontSize: '18px',
+    fontSize: '16px',
     fontWeight: '700'
   },
   vueltoMonto: {
     color: '#92400e',
-    fontSize: '24px'
+    fontSize: '20px'
   },
   rutSection: {
-    marginBottom: '20px',
-    padding: '16px',
+    marginBottom: '12px',
+    padding: '10px',
     backgroundColor: '#f9fafb',
     borderRadius: '8px'
   },
@@ -281,11 +283,15 @@ const styles = {
   },
   actions: {
     display: 'flex',
-    gap: '12px'
+    gap: '10px',
+    position: 'sticky',
+    bottom: 0,
+    backgroundColor: 'white',
+    paddingTop: '8px'
   },
   cancelButton: {
     flex: 1,
-    padding: '14px',
+    padding: '12px',
     backgroundColor: 'white',
     border: '2px solid #d1d5db',
     borderRadius: '8px',
@@ -296,7 +302,7 @@ const styles = {
   },
   confirmarButton: {
     flex: 2,
-    padding: '14px',
+    padding: '12px',
     backgroundColor: '#0f766e',
     border: 'none',
     borderRadius: '8px',

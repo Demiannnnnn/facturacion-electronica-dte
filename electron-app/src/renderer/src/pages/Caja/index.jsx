@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 
 function Caja() {
+  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
   const [cajaAbierta, setCajaAbierta] = useState(false);
   const [cajaActual, setCajaActual] = useState(null);
   const [movimientos, setMovimientos] = useState([]);
+  const [resumenCaja, setResumenCaja] = useState(null);
   const [mostrarApertura, setMostrarApertura] = useState(false);
   const [mostrarCierre, setMostrarCierre] = useState(false);
   const [mostrarMovimiento, setMostrarMovimiento] = useState(false);
@@ -33,64 +37,89 @@ function Caja() {
   });
 
   useEffect(() => {
-    verificarEstadoCaja();
-    cargarMovimientos();
+    cargarEstadoCaja();
   }, []);
 
-  const verificarEstadoCaja = () => {
-    // Simular verificación
-    // const cajaAbierta = localStorage.getItem('caja_abierta');
-    setCajaAbierta(false);
+  const cargarEstadoCaja = async () => {
+    try {
+      setIsLoading(true);
+      const result = await window.api.caja.getEstadoActual();
+      if (!result.success) {
+        throw new Error(result.error || 'No se pudo cargar estado de caja');
+      }
+
+      const data = result.data;
+      setCajaAbierta(data.abierta);
+      setCajaActual(data.caja);
+      setMovimientos(data.movimientos || []);
+      setResumenCaja(data.resumen || null);
+    } catch (error) {
+      console.error('Error cargando estado de caja:', error);
+      alert('Error al cargar estado de caja');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const cargarMovimientos = () => {
-    // Simular carga de movimientos
-    setMovimientos([]);
-  };
-
-  const handleAbrirCaja = () => {
+  const handleAbrirCaja = async () => {
     if (!montoInicial || parseFloat(montoInicial) < 0) {
       alert('Ingrese un monto inicial válido');
       return;
     }
 
-    const nuevaCaja = {
-      id: Date.now(),
-      fechaApertura: new Date().toISOString(),
-      montoInicial: parseFloat(montoInicial),
-      observacionesApertura,
-      usuario: 'Usuario Actual'
-    };
+    try {
+      const result = await window.api.caja.abrir({
+        montoInicial: parseFloat(montoInicial),
+        observaciones: observacionesApertura,
+        userId: user?.id || null
+      });
 
-    setCajaActual(nuevaCaja);
-    setCajaAbierta(true);
-    setMostrarApertura(false);
-    setMontoInicial('');
-    setObservacionesApertura('');
-    
-    alert('✅ Caja abierta exitosamente');
+      if (!result.success) {
+        throw new Error(result.error || 'No se pudo abrir la caja');
+      }
+
+      setCajaAbierta(true);
+      setCajaActual(result.data.caja);
+      setMovimientos(result.data.movimientos || []);
+      setResumenCaja(result.data.resumen || null);
+      setMostrarApertura(false);
+      setMontoInicial('');
+      setObservacionesApertura('');
+      alert('✅ Caja abierta exitosamente');
+    } catch (error) {
+      console.error('Error al abrir caja:', error);
+      alert(error.message || 'Error al abrir caja');
+    }
   };
 
-  const handleRegistrarMovimiento = () => {
+  const handleRegistrarMovimiento = async () => {
     if (!montoMovimiento || !conceptoMovimiento) {
       alert('Complete todos los campos');
       return;
     }
 
-    const nuevoMovimiento = {
-      id: Date.now(),
-      tipo: tipoMovimiento,
-      monto: parseFloat(montoMovimiento),
-      concepto: conceptoMovimiento,
-      fecha: new Date().toISOString()
-    };
+    try {
+      const result = await window.api.caja.registrarMovimiento({
+        tipo: tipoMovimiento,
+        monto: parseFloat(montoMovimiento),
+        concepto: conceptoMovimiento,
+        userId: user?.id || null
+      });
 
-    setMovimientos([nuevoMovimiento, ...movimientos]);
-    setMostrarMovimiento(false);
-    setMontoMovimiento('');
-    setConceptoMovimiento('');
-    
-    alert('✅ Movimiento registrado');
+      if (!result.success) {
+        throw new Error(result.error || 'No se pudo registrar el movimiento');
+      }
+
+      setMovimientos(result.data.movimientos || []);
+      setResumenCaja(result.data.resumen || null);
+      setMostrarMovimiento(false);
+      setMontoMovimiento('');
+      setConceptoMovimiento('');
+      alert('✅ Movimiento registrado');
+    } catch (error) {
+      console.error('Error registrando movimiento:', error);
+      alert(error.message || 'Error al registrar movimiento');
+    }
   };
 
   const calcularTotalArqueo = () => {
@@ -110,6 +139,9 @@ function Caja() {
   };
 
   const calcularSaldoSistema = () => {
+    if (resumenCaja?.saldoSistema != null) {
+      return resumenCaja.saldoSistema;
+    }
     if (!cajaActual) return 0;
     
     const ingresos = movimientos
@@ -120,10 +152,10 @@ function Caja() {
       .filter(m => m.tipo === 'egreso')
       .reduce((sum, m) => sum + m.monto, 0);
     
-    return cajaActual.montoInicial + ingresos - egresos;
+    return (cajaActual.montoInicial || cajaActual.monto_inicial || 0) + ingresos - egresos;
   };
 
-  const handleCerrarCaja = () => {
+  const handleCerrarCaja = async () => {
     const saldoSistema = calcularSaldoSistema();
     const saldoFisico = calcularTotalArqueo();
     const diferencia = saldoFisico - saldoSistema;
@@ -136,27 +168,53 @@ function Caja() {
     );
 
     if (confirmacion) {
-      setCajaAbierta(false);
-      setCajaActual(null);
-      setMovimientos([]);
-      setMostrarCierre(false);
-      setArqueoEfectivo({
-        billetes100000: 0,
-        billetes50000: 0,
-        billetes20000: 0,
-        billetes10000: 0,
-        billetes5000: 0,
-        billetes2000: 0,
-        billetes1000: 0,
-        monedas500: 0,
-        monedas100: 0,
-        monedas50: 0,
-        monedas10: 0
-      });
-      
-      alert('✅ Caja cerrada exitosamente');
+      try {
+        const result = await window.api.caja.cerrar({
+          arqueoTotal: saldoFisico,
+          userId: user?.id || null
+        });
+
+        if (!result.success) {
+          throw new Error(result.error || 'No se pudo cerrar la caja');
+        }
+
+        setCajaAbierta(false);
+        setCajaActual(null);
+        setMovimientos([]);
+        setResumenCaja(null);
+        setMostrarCierre(false);
+        setArqueoEfectivo({
+          billetes100000: 0,
+          billetes50000: 0,
+          billetes20000: 0,
+          billetes10000: 0,
+          billetes5000: 0,
+          billetes2000: 0,
+          billetes1000: 0,
+          monedas500: 0,
+          monedas100: 0,
+          monedas50: 0,
+          monedas10: 0
+        });
+
+        alert('✅ Caja cerrada exitosamente');
+      } catch (error) {
+        console.error('Error cerrando caja:', error);
+        alert(error.message || 'Error al cerrar caja');
+      }
     }
   };
+
+  if (isLoading) {
+    return (
+      <div style={styles.container}>
+        <div style={styles.emptyState}>
+          <div style={styles.emptyIcon}>⏳</div>
+          <h2 style={styles.emptyTitle}>Cargando caja...</h2>
+        </div>
+      </div>
+    );
+  }
 
   if (!cajaAbierta && !mostrarApertura) {
     return (
@@ -415,6 +473,13 @@ function Caja() {
 
   // Vista principal con caja abierta
   const saldoActual = calcularSaldoSistema();
+  const ingresosManuales = movimientos
+    .filter(m => m.tipo === 'ingreso')
+    .reduce((sum, m) => sum + m.monto, 0);
+  const egresosManuales = movimientos
+    .filter(m => m.tipo === 'egreso')
+    .reduce((sum, m) => sum + m.monto, 0);
+  const ventasEfectivo = resumenCaja?.ventasEfectivo || 0;
 
   return (
     <div style={styles.container}>
@@ -422,7 +487,7 @@ function Caja() {
         <div>
           <h1 style={styles.title}>💰 Gestión de Caja</h1>
           <p style={styles.subtitle}>
-            Caja abierta desde: {new Date(cajaActual?.fechaApertura).toLocaleString('es-CL')}
+            Caja abierta desde: {new Date(cajaActual?.fecha_apertura).toLocaleString('es-CL')}
           </p>
         </div>
         <div style={styles.headerActions}>
@@ -447,7 +512,7 @@ function Caja() {
           <div>
             <div style={styles.statLabel}>Monto Inicial</div>
             <div style={styles.statValue}>
-              ${cajaActual?.montoInicial.toLocaleString('es-CL')}
+              ${(cajaActual?.monto_inicial || 0).toLocaleString('es-CL')}
             </div>
           </div>
         </div>
@@ -457,10 +522,7 @@ function Caja() {
           <div>
             <div style={styles.statLabel}>Ingresos</div>
             <div style={styles.statValueGreen}>
-              ${movimientos
-                .filter(m => m.tipo === 'ingreso')
-                .reduce((sum, m) => sum + m.monto, 0)
-                .toLocaleString('es-CL')}
+              ${(ingresosManuales + ventasEfectivo).toLocaleString('es-CL')}
             </div>
           </div>
         </div>
@@ -470,10 +532,7 @@ function Caja() {
           <div>
             <div style={styles.statLabel}>Egresos</div>
             <div style={styles.statValueRed}>
-              ${movimientos
-                .filter(m => m.tipo === 'egreso')
-                .reduce((sum, m) => sum + m.monto, 0)
-                .toLocaleString('es-CL')}
+              ${egresosManuales.toLocaleString('es-CL')}
             </div>
           </div>
         </div>
@@ -502,20 +561,24 @@ function Caja() {
             {movimientos.map(mov => (
               <div key={mov.id} style={styles.movimientoItem}>
                 <div style={styles.movimientoIcon}>
-                  {mov.tipo === 'ingreso' ? '💰' : '💸'}
+                  {mov.tipo === 'ingreso' && '💰'}
+                  {mov.tipo === 'egreso' && '💸'}
+                  {mov.tipo === 'venta' && '🛒'}
+                  {mov.tipo === 'apertura' && '🔓'}
+                  {mov.tipo === 'cierre' && '🔒'}
                 </div>
                 <div style={styles.movimientoInfo}>
-                  <div style={styles.movimientoConcepto}>{mov.concepto}</div>
+                  <div style={styles.movimientoConcepto}>{mov.descripcion || 'Movimiento de caja'}</div>
                   <div style={styles.movimientoFecha}>
-                    {new Date(mov.fecha).toLocaleString('es-CL')}
+                    {new Date(mov.created_at).toLocaleString('es-CL')}
                   </div>
                 </div>
                 <div style={{
                   ...styles.movimientoMonto,
-                  color: mov.tipo === 'ingreso' ? '#059669' : '#dc2626'
+                  color: mov.tipo === 'egreso' ? '#dc2626' : '#059669'
                 }}>
-                  {mov.tipo === 'ingreso' ? '+' : '-'}
-                  ${mov.monto.toLocaleString('es-CL')}
+                  {mov.tipo === 'egreso' ? '-' : '+'}
+                  ${(mov.monto || 0).toLocaleString('es-CL')}
                 </div>
               </div>
             ))}

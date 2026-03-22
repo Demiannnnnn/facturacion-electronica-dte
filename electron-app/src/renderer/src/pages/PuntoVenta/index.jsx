@@ -4,8 +4,10 @@ import CarritoVenta from './components/CarritoVenta';
 import TecladoNumerico from './components/TecladoNumerico';
 import MetodosPago from './components/MetodosPago';
 import ResumenVenta from './components/ResumenVenta';
+import { useAuth } from '../../context/AuthContext';
 
 function PuntoVenta() {
+  const { user } = useAuth();
   const [productos, setProductos] = useState([]);
   const [carrito, setCarrito] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -15,9 +17,13 @@ function PuntoVenta() {
   const [ventaCompletada, setVentaCompletada] = useState(null);
   const [hoveredProduct, setHoveredProduct] = useState(null);
   const [hoveredButton, setHoveredButton] = useState(null);
+  const [cajaAbierta, setCajaAbierta] = useState(false);
+  const [resumenVentasDia, setResumenVentasDia] = useState({ cantidad: 0, total: 0 });
 
   useEffect(() => {
     cargarProductos();
+    cargarEstadoCaja();
+    cargarVentasDelDia();
   }, []);
 
   useEffect(() => {
@@ -44,6 +50,31 @@ function PuntoVenta() {
     }
   };
 
+  const cargarEstadoCaja = async () => {
+    try {
+      const result = await window.api.caja.getEstadoActual();
+      if (result.success) {
+        setCajaAbierta(Boolean(result.data?.abierta));
+      }
+    } catch (error) {
+      console.error('Error verificando caja:', error);
+    }
+  };
+
+  const cargarVentasDelDia = async () => {
+    try {
+      const result = await window.api.pos.getVentasDelDia();
+      if (result.success) {
+        setResumenVentasDia({
+          cantidad: result.data?.cantidad || 0,
+          total: result.data?.total || 0
+        });
+      }
+    } catch (error) {
+      console.error('Error cargando ventas del día:', error);
+    }
+  };
+
   const handleEscanear = (codigo) => {
     const producto = productos.find(p => 
       p.codigo_barra === codigo || 
@@ -65,9 +96,20 @@ function PuntoVenta() {
       return;
     }
 
+    if ((producto.stock || 0) <= 0) {
+      alert('⚠️ Este producto no tiene stock disponible');
+      return;
+    }
+
     const itemExistente = carrito.find(item => item.id === producto.id);
     
     if (itemExistente) {
+      const stockDisponible = Number(producto.stock || 0);
+      if (itemExistente.cantidad + 1 > stockDisponible) {
+        alert('⚠️ No hay stock suficiente para agregar más unidades');
+        return;
+      }
+
       setCarrito(carrito.map(item =>
         item.id === producto.id
           ? { ...item, cantidad: item.cantidad + 1 }
@@ -79,7 +121,8 @@ function PuntoVenta() {
         nombre: producto.nombre,
         precio: parseFloat(producto.precio) || 0,
         cantidad: 1,
-        codigo: producto.codigo
+        codigo: producto.codigo,
+        stockDisponible: Number(producto.stock || 0)
       }]);
     }
   };
@@ -88,6 +131,12 @@ function PuntoVenta() {
     if (cantidad <= 0) {
       eliminarDelCarrito(productoId);
     } else {
+      const item = carrito.find(i => i.id === productoId);
+      if (item && cantidad > Number(item.stockDisponible || 0)) {
+        alert('⚠️ La cantidad supera el stock disponible');
+        return;
+      }
+
       setCarrito(carrito.map(item =>
         item.id === productoId ? { ...item, cantidad } : item
       ));
@@ -118,29 +167,50 @@ function PuntoVenta() {
       alert('El carrito está vacío');
       return;
     }
+
+    if (!cajaAbierta) {
+      alert('Debes abrir la caja antes de cobrar una venta');
+      window.location.hash = '/cliente/caja';
+      return;
+    }
+
     setMostrarPago(true);
   };
 
   const handleConfirmarVenta = async (datosPago) => {
     try {
-      // Aquí se integraría con el backend
-      const ventaData = {
+      const result = await window.api.pos.createVenta({
         items: carrito,
-        totales: calcularTotales(),
         pago: datosPago,
-        fecha: new Date().toISOString()
-      };
+        userId: user?.id || null
+      });
 
-      // Simular guardado
-      console.log('Venta confirmada:', ventaData);
+      if (!result.success) {
+        throw new Error(result.error || 'No se pudo registrar la venta');
+      }
+
+      const ventaPersistida = result.data?.venta;
+      const ventaData = {
+        id: ventaPersistida?.id,
+        folio: ventaPersistida?.folio,
+        items: carrito,
+        totales: {
+          subtotal: Number(ventaPersistida?.subtotal || 0),
+          iva: Number(ventaPersistida?.iva || 0),
+          total: Number(ventaPersistida?.total || 0)
+        },
+        pago: datosPago,
+        fecha: ventaPersistida?.fecha || new Date().toISOString()
+      };
       
       setVentaCompletada(ventaData);
       setMostrarPago(false);
       setMostrarResumen(true);
+      await Promise.all([cargarProductos(), cargarVentasDelDia()]);
       
     } catch (error) {
       console.error('Error al procesar venta:', error);
-      alert('Error al procesar la venta');
+      alert(error.message || 'Error al procesar la venta');
     }
   };
 
@@ -168,11 +238,19 @@ function PuntoVenta() {
       <div style={styles.header}>
         <h1 style={styles.title}>🛒 Punto de Venta</h1>
         <div style={styles.headerActions}>
-          <button style={styles.headerButton}>
-            💰 Abrir Caja
+          <button
+            style={{
+              ...styles.headerButton,
+              ...(cajaAbierta ? styles.headerButtonSuccess : styles.headerButtonWarning)
+            }}
+            onClick={() => {
+              window.location.hash = '/cliente/caja';
+            }}
+          >
+            {cajaAbierta ? '✅ Caja Abierta' : '💰 Abrir Caja'}
           </button>
           <button style={styles.headerButton}>
-            📊 Ventas del Día
+            📊 {resumenVentasDia.cantidad} ventas | ${Math.round(resumenVentasDia.total).toLocaleString('es-CL')}
           </button>
         </div>
       </div>
@@ -301,7 +379,8 @@ function PuntoVenta() {
 
 const styles = {
   container: {
-    height: '100vh',
+    height: '100%',
+    minHeight: 0,
     display: 'flex',
     flexDirection: 'column',
     backgroundColor: '#f5f5f5',
@@ -338,7 +417,8 @@ const styles = {
   mainContent: {
     flex: 1,
     display: 'flex',
-    overflow: 'hidden'
+    overflow: 'hidden',
+    minHeight: 0
   },
   leftColumn: {
     flex: '1',
@@ -348,12 +428,24 @@ const styles = {
   },
   rightColumn: {
     width: '420px',
+    maxWidth: '100%',
     backgroundColor: '#f9fafb',
     padding: '20px',
     display: 'flex',
     flexDirection: 'column',
+    gap: '12px',
+    overflowY: 'auto',
+    minHeight: 0,
     borderLeft: '2px solid #e5e7eb',
     boxShadow: '-2px 0 8px rgba(0,0,0,0.05)'
+  },
+  headerButtonSuccess: {
+    backgroundColor: 'rgba(16, 185, 129, 0.35)',
+    borderColor: 'rgba(16, 185, 129, 0.55)'
+  },
+  headerButtonWarning: {
+    backgroundColor: 'rgba(245, 158, 11, 0.35)',
+    borderColor: 'rgba(245, 158, 11, 0.55)'
   },
   carritoHeader: {
     display: 'flex',
@@ -469,7 +561,6 @@ const styles = {
     backgroundColor: 'white',
     borderRadius: '12px',
     padding: '20px',
-    marginTop: '16px',
     border: '2px solid #e5e7eb'
   },
   totalRow: {
@@ -493,7 +584,6 @@ const styles = {
     color: '#0f766e'
   },
   pagarButton: {
-    marginTop: '20px',
     padding: '18px',
     backgroundColor: '#0f766e',
     color: 'white',

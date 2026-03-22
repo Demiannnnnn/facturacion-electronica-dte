@@ -63,7 +63,11 @@ function LoginPage() {
       // Obtener el rol del usuario para redirigir correctamente
       try {
         const roleConfig = await window.api.config.get('user_role');
+        const onboardingConfig = await window.api.config.get('onboarding_completed');
+        const businessProfileConfig = await window.api.config.get('business_profile_completed');
         let userRole = roleConfig?.value;
+        const onboardingCompleted = onboardingConfig?.value === 'true';
+        const businessProfileCompleted = businessProfileConfig?.value === 'true';
 
         // Si no existe rol de cuenta en configuración (usuarios antiguos / login directo),
         // inferir uno por defecto para evitar bucle login -> / -> login.
@@ -87,7 +91,15 @@ function LoginPage() {
         if (userRole === 'contador') {
           navigate('/contador');
         } else if (userRole === 'empresa' || userRole === 'persona_natural') {
-          navigate('/cliente');
+          if (!onboardingCompleted) {
+            if (businessProfileCompleted) {
+              navigate('/module-selector');
+            } else {
+              navigate('/business-profile-setup');
+            }
+          } else {
+            navigate('/cliente');
+          }
         } else {
           // Último fallback seguro
           navigate('/cliente');

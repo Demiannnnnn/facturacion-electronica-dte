@@ -531,6 +531,86 @@ function createTables() {
     )
   `);
 
+  // Tabla de sesiones de caja
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS cajas (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      estado TEXT NOT NULL DEFAULT 'abierta',
+      fecha_apertura TEXT NOT NULL,
+      fecha_cierre TEXT,
+      monto_inicial REAL NOT NULL DEFAULT 0,
+      monto_cierre_sistema REAL,
+      monto_cierre_fisico REAL,
+      diferencia_cierre REAL,
+      observaciones_apertura TEXT,
+      observaciones_cierre TEXT,
+      user_apertura_id INTEGER,
+      user_cierre_id INTEGER,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (user_apertura_id) REFERENCES users(id),
+      FOREIGN KEY (user_cierre_id) REFERENCES users(id)
+    )
+  `);
+
+  // Tabla de movimientos de caja
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS caja_movimientos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      caja_id INTEGER NOT NULL,
+      tipo TEXT NOT NULL,
+      monto REAL NOT NULL,
+      metodo_pago TEXT,
+      descripcion TEXT,
+      referencia_id INTEGER,
+      user_id INTEGER,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (caja_id) REFERENCES cajas(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `);
+
+  // Tabla de ventas del Punto de Venta
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS ventas_pos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      caja_id INTEGER NOT NULL,
+      folio INTEGER NOT NULL,
+      fecha TEXT NOT NULL,
+      subtotal REAL NOT NULL,
+      iva REAL NOT NULL,
+      total REAL NOT NULL,
+      metodo_pago TEXT NOT NULL,
+      monto_recibido REAL,
+      vuelto REAL DEFAULT 0,
+      rut_cliente TEXT,
+      nombre_cliente TEXT,
+      user_id INTEGER,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      UNIQUE(folio),
+      FOREIGN KEY (caja_id) REFERENCES cajas(id),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `);
+
+  // Tabla de items de ventas POS
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS venta_pos_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      venta_id INTEGER NOT NULL,
+      producto_id INTEGER NOT NULL,
+      nombre_producto TEXT NOT NULL,
+      codigo_producto TEXT,
+      cantidad REAL NOT NULL,
+      precio_unitario REAL NOT NULL,
+      subtotal REAL NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (venta_id) REFERENCES ventas_pos(id) ON DELETE CASCADE,
+      FOREIGN KEY (producto_id) REFERENCES productos(id)
+    )
+  `);
+
   // Migración: Eliminar columna subtotal de factura_items si existe (columna antigua)
   try {
     // Verificar si la columna existe

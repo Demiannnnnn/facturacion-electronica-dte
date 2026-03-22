@@ -21,7 +21,7 @@ function ResumenVenta({ venta, onNuevaVenta }) {
           <div style={styles.ticketHeader}>
             <h2 style={styles.ticketTitle}>BOLETA ELECTRÓNICA</h2>
             <div style={styles.ticketInfo}>
-              <div>Folio: <strong>#12345</strong></div>
+              <div>Folio: <strong>#{venta.folio || 'N/D'}</strong></div>
               <div>Fecha: <strong>{new Date(venta.fecha).toLocaleString('es-CL')}</strong></div>
             </div>
           </div>

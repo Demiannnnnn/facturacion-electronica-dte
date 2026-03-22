@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 function ModuleSelector() {
@@ -11,7 +11,7 @@ function ModuleSelector() {
   const [selectedModules, setSelectedModules] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Definición de todos los módulos disponibles
+  // Definición de módulos clave para un inicio simple.
   const allModules = [
     {
       id: 'dashboard',
@@ -52,21 +52,6 @@ function ModuleSelector() {
       category: 'Gestión'
     },
     {
-      id: 'compras',
-      label: 'Compras',
-      icon: '🛍️',
-      description: 'Gestión de proveedores, órdenes de compra y cuentas por pagar',
-      category: 'Gestión',
-      recommendedFor: ['empresa', 'comerciante']
-    },
-    {
-      id: 'documentos',
-      label: 'Documentos',
-      icon: '📑',
-      description: 'Vista unificada de todos los documentos tributarios',
-      category: 'Facturación'
-    },
-    {
       id: 'facturas',
       label: 'Facturas',
       icon: '📄',
@@ -80,27 +65,6 @@ function ModuleSelector() {
       description: 'Emisión de boletas electrónicas para ventas al público (DTE 39)',
       category: 'Facturación',
       recommendedFor: ['empresa', 'comerciante']
-    },
-    {
-      id: 'guias',
-      label: 'Guías de Despacho',
-      icon: '📦',
-      description: 'Guías de despacho tipo 52 para envíos',
-      category: 'Facturación'
-    },
-    {
-      id: 'nota-credito',
-      label: 'Notas de Crédito',
-      icon: '📉',
-      description: 'Anulaciones y correcciones de facturas (DTE 61)',
-      category: 'Facturación'
-    },
-    {
-      id: 'nota-debito',
-      label: 'Notas de Débito',
-      icon: '📈',
-      description: 'Aumentos a facturas existentes (DTE 56)',
-      category: 'Facturación'
     },
     {
       id: 'cuentas-por-cobrar',
@@ -125,13 +89,6 @@ function ModuleSelector() {
       category: 'Análisis'
     },
     {
-      id: 'folios',
-      label: 'Folios',
-      icon: '🔢',
-      description: 'Control de numeración de documentos tributarios',
-      category: 'Configuración'
-    },
-    {
       id: 'configuracion',
       label: 'Configuración',
       icon: '⚙️',
@@ -149,23 +106,46 @@ function ModuleSelector() {
     try {
       const roleResult = await window.api.config.get('user_role');
       const subtypeResult = await window.api.config.get('user_subtype');
+      const onboardingConfig = await window.api.config.get('onboarding_completed');
+      const businessProfileConfig = await window.api.config.get('business_profile_completed');
       
       const role = roleResult?.value || roleResult;
       const subtype = subtypeResult?.value || subtypeResult;
       const name = user?.nombre || user?.email || 'Usuario';
+      const savedModules = await window.api.config.get('enabled_modules');
+      const onboardingCompleted = onboardingConfig?.value === 'true';
+      const businessProfileCompleted = businessProfileConfig?.value === 'true';
+
+      // Durante onboarding inicial no permitir saltarse el paso de perfil de negocio.
+      if (!onboardingCompleted && !businessProfileCompleted) {
+        navigate('/business-profile-setup');
+        return;
+      }
       
       setUserRole(role);
       setUserSubtype(subtype);
       setUserName(name);
 
-      // Obtener módulos recomendados según el perfil
-      const recommended = getRecommendedModules(role, subtype);
-      
-      // Seleccionar módulos recomendados + requeridos por defecto
-      const defaultSelection = allModules
-        .filter(m => m.required || recommended.includes(m.id))
-        .map(m => m.id);
-      
+      let defaultSelection = [];
+
+      if (savedModules?.value) {
+        try {
+          const parsed = JSON.parse(savedModules.value);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            defaultSelection = parsed.filter((id) => allModules.some((m) => m.id === id));
+          }
+        } catch (error) {
+          console.warn('No se pudo parsear enabled_modules previo:', error);
+        }
+      }
+
+      if (defaultSelection.length === 0) {
+        const recommended = getRecommendedModules(role, subtype);
+        defaultSelection = allModules
+          .filter(m => m.required || recommended.includes(m.id))
+          .map(m => m.id);
+      }
+
       setSelectedModules(defaultSelection);
     } catch (error) {
       console.error('Error cargando perfil:', error);
@@ -179,10 +159,10 @@ function ModuleSelector() {
       return ['dashboard', 'clientes', 'facturas', 'cuentas-por-cobrar', 'reportes', 'configuracion'];
     }
     if (role === 'persona_natural' && subtype === 'comerciante') {
-      return ['dashboard', 'pos', 'caja', 'productos', 'boletas', 'facturas', 'clientes', 'compras', 'cuentas-por-cobrar', 'documentos', 'configuracion'];
+      return ['dashboard', 'pos', 'caja', 'productos', 'boletas', 'facturas', 'clientes', 'cuentas-por-cobrar', 'configuracion'];
     }
     if (role === 'empresa') {
-      return ['dashboard', 'pos', 'caja', 'facturas', 'boletas', 'productos', 'clientes', 'trabajadores', 'compras', 'cuentas-por-cobrar', 'documentos', 'reportes', 'configuracion'];
+      return ['dashboard', 'pos', 'caja', 'facturas', 'boletas', 'productos', 'clientes', 'trabajadores', 'cuentas-por-cobrar', 'reportes', 'configuracion'];
     }
     return ['dashboard', 'clientes', 'facturas', 'documentos', 'configuracion'];
   };
@@ -218,8 +198,8 @@ function ModuleSelector() {
         console.warn('No se pudo refrescar firstRun:', e);
       }
 
-      // Redirigir al login después de la personalización
-      navigate('/login');
+      // Finalizar onboarding y entrar al dashboard.
+      navigate('/cliente');
     } catch (error) {
       console.error('Error guardando configuración:', error);
       alert('Error al guardar la configuración');
@@ -279,6 +259,10 @@ function ModuleSelector() {
     );
   }
 
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
   return (
     <div style={styles.container}>
       <div style={styles.content}>
@@ -292,7 +276,7 @@ function ModuleSelector() {
             </div>
           </div>
           <p style={styles.subtitle}>
-            Selecciona los módulos que aparecerán como accesos rápidos en tu dashboard. Todos los módulos estarán siempre disponibles en el menú lateral.
+            Revisa y ajusta los módulos que quieres ver en tu navegación principal.
           </p>
         </div>
 
@@ -322,9 +306,8 @@ function ModuleSelector() {
         <div style={styles.infoBanner}>
           <span style={{ fontSize: '20px' }}>💡</span>
           <div style={styles.infoBannerText}>
-            <strong>Los módulos seleccionados aparecerán como botones de acceso rápido en tu dashboard.</strong>
-            {' '}Los recomendados están marcados con <span style={styles.starBadge}>⭐</span>
-            {' '}según tu tipo de negocio. Todos los módulos siguen disponibles en el menú lateral.
+            <strong>Este es el paso final de configuración inicial.</strong>
+            {' '}Podrás volver a ajustar estos módulos cuando quieras desde el header.
           </div>
         </div>
 
@@ -394,7 +377,7 @@ function ModuleSelector() {
             style={styles.continueButton}
             disabled={selectedModules.length === 0}
           >
-            Continuar al Dashboard →
+            Finalizar y entrar al sistema →
           </button>
           <p style={styles.footerNote}>
             Podrás modificar estos módulos más tarde desde Configuración

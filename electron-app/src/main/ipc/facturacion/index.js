@@ -4,6 +4,8 @@ import { registerFacturasHandlers } from './facturas.js';
 import { registerVendedoresHandlers } from './vendedores.js';
 import { registerGuiasHandlers } from './guias.js';
 import { registerFoliosHandlers } from './folios.js';
+import { registerCajaHandlers } from './caja.js';
+import { registerPosHandlers } from './pos.js';
 
 export function registerFacturacionHandlers() {
   registerClientesHandlers();
@@ -12,4 +14,6 @@ export function registerFacturacionHandlers() {
   registerVendedoresHandlers();
   registerGuiasHandlers();
   registerFoliosHandlers();
+  registerCajaHandlers();
+  registerPosHandlers();
 }
