@@ -163,9 +163,21 @@ npm run build:renderer  # Build del frontend (Vite)
 npm run build           # Build completo + instalador
 npm start               # Ejecutar versión empaquetada
 
+# Tests
+npm test                # Tests unitarios (Vitest, carpeta electron-app/tests)
+npm run test:watch      # Modo watch
+
 # Utilidades
 npx electron-rebuild -f -w better-sqlite3  # Recompilar nativos
 ```
+
+> **Tests y módulos nativos:** los tests corren con Node (no con Electron), por lo que
+> `better-sqlite3` y `bcrypt` deben estar compilados para Node. Si ejecutaste
+> `electron-rebuild`, vuelve a compilarlos con `npm rebuild better-sqlite3 bcrypt`
+> antes de `npm test`. Electron se mockea en `electron-app/tests/mocks/electron.js`
+> y cada test usa una base SQLite temporal con el esquema real de la app.
+>
+> El CI (`.github/workflows/ci.yml`) ejecuta build del renderer + tests en cada push y PR.
 
 ---
 
