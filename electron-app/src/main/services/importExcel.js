@@ -325,7 +325,7 @@ export async function generarTemplateClientes() {
         // Datos de ejemplo
         const datosEjemplo = [
             {
-                'RUT': '12.345.678-9',
+                'RUT': '12.345.678-5',
                 'Razón Social': 'Empresa Ejemplo S.A.',
                 'Giro': 'Comercio al por menor',
                 'Dirección': 'Av. Principal 123',
@@ -336,7 +336,7 @@ export async function generarTemplateClientes() {
                 'Email': 'contacto@ejemplo.cl'
             },
             {
-                'RUT': '98.765.432-1',
+                'RUT': '98.765.432-5',
                 'Razón Social': 'Comercial Demo Ltda.',
                 'Giro': 'Servicios profesionales',
                 'Dirección': 'Calle Secundaria 456',
