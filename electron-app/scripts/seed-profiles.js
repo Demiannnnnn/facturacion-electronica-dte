@@ -19,7 +19,7 @@ const profiles = [
     },
     config: {
       user_role: 'contador',
-      contador_rut: '12.345.678-9',
+      contador_rut: '12.345.678-5',
       contador_razon_social: 'Contador Test SpA',
       contador_email: 'contador@test.cl',
       contador_telefono: '+56912345678'
@@ -36,7 +36,7 @@ const profiles = [
       user_role: 'empresa'
     },
     emisor: {
-      rut: '76.123.456-7',
+      rut: '76.123.456-0',
       razon_social: 'Empresa Test Ltda',
       nombre_fantasia: 'Test Company',
       giro: 'Comercio al por mayor',
@@ -59,7 +59,7 @@ const profiles = [
       user_subtype: 'honorarios'
     },
     emisor: {
-      rut: '18.765.432-1',
+      rut: '18.765.432-7',
       razon_social: 'Juan Pérez González',
       nombre_fantasia: 'Consultorías JP',
       giro: 'Servicios profesionales de consultoría',
@@ -82,7 +82,7 @@ const profiles = [
       user_subtype: 'comerciante'
     },
     emisor: {
-      rut: '19.876.543-2',
+      rut: '19.876.543-0',
       razon_social: 'María González López',
       nombre_fantasia: 'Emprendimientos MG',
       giro: 'Comercio menor de productos varios',

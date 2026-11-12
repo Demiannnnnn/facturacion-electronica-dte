@@ -17,7 +17,7 @@ const profiles = [
     },
     config: {
       user_role: 'contador',
-      contador_rut: '12.345.678-9',
+      contador_rut: '12.345.678-5',
       contador_razon_social: 'Contador Test SpA',
       contador_email: 'contador@test.cl',
       contador_telefono: '+56912345678'
@@ -34,7 +34,7 @@ const profiles = [
       user_role: 'empresa'
     },
     emisor: {
-      rut: '76.123.456-7',
+      rut: '76.123.456-0',
       razon_social: 'Empresa Test Ltda',
       nombre_fantasia: 'Test Company',
       giro: 'Comercio al por mayor',
@@ -57,7 +57,7 @@ const profiles = [
       user_subtype: 'honorarios'
     },
     emisor: {
-      rut: '18.765.432-1',
+      rut: '18.765.432-7',
       razon_social: 'Juan Pérez González',
       nombre_fantasia: 'Consultorías JP',
       giro: 'Servicios profesionales de consultoría',
@@ -80,7 +80,7 @@ const profiles = [
       user_subtype: 'comerciante'
     },
     emisor: {
-      rut: '19.876.543-2',
+      rut: '19.876.543-0',
       razon_social: 'María González López',
       nombre_fantasia: 'Emprendimientos MG',
       giro: 'Comercio menor de productos varios',
@@ -317,7 +317,7 @@ async function seedProfile(profile) {
 
       const empresasEjemplo = [
         {
-          rut: '76.555.666-7',
+          rut: '76.555.666-K',
           razon_social: 'Comercial ABC S.A.',
           nombre_fantasia: 'ABC Store',
           giro: 'Comercio al por menor',
@@ -330,7 +330,7 @@ async function seedProfile(profile) {
           estado: 'activa'
         },
         {
-          rut: '77.888.999-0',
+          rut: '77.888.999-4',
           razon_social: 'Servicios XYZ Ltda.',
           nombre_fantasia: 'XYZ Servicios',
           giro: 'Servicios de consultoría',
@@ -343,7 +343,7 @@ async function seedProfile(profile) {
           estado: 'activa'
         },
         {
-          rut: '78.111.222-3',
+          rut: '78.111.222-4',
           razon_social: 'Distribuidora DEF SpA',
           nombre_fantasia: 'DEF Distribución',
           giro: 'Distribución mayorista',
