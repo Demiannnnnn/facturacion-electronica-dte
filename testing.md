@@ -23,7 +23,7 @@ Contraseña: contador123
 Email:      contador@test.cl
 
 Rol:        Contador
-RUT:        12.345.678-9
+RUT:        12.345.678-5
 Empresa:    Contador Test SpA
 ```
 
@@ -34,7 +34,7 @@ Contraseña: empresa123
 Email:      empresa@test.cl
 
 Rol:        Empresa
-RUT:        76.123.456-7
+RUT:        76.123.456-0
 Razón Social: Empresa Test Ltda
 Nombre Fantasía: Test Company
 Giro:       Comercio al por mayor
@@ -48,7 +48,7 @@ Email:      honorarios@test.cl
 
 Rol:        Persona Natural
 Subtipo:    Honorarios (Segunda categoría)
-RUT:        18.765.432-1
+RUT:        18.765.432-7
 Nombre:     Juan Pérez González
 Nombre Fantasía: Consultorías JP
 Giro:       Servicios profesionales de consultoría
@@ -62,7 +62,7 @@ Email:      comerciante@test.cl
 
 Rol:        Persona Natural
 Subtipo:    Comerciante (Primera categoría Pro-Pyme)
-RUT:        19.876.543-2
+RUT:        19.876.543-0
 Nombre:     María González López
 Nombre Fantasía: Emprendimientos MG
 Giro:       Comercio menor de productos varios

@@ -66,6 +66,13 @@ describe('RUT', () => {
     expect(validarTipoRut('', 'sin_identificacion')).toBe(true);
     expect(validarTipoRut('12.345.678-9', 'rut_persona')).toBe(false);
   });
+
+  it('validarTipoRut: comportamiento actual pendiente de decisión donde un RUT 55.x valida como empresa y como extranjero', () => {
+    const rutExtranjero = '55123456' + calcularDV('55123456');
+    expect(validarTipoRut(rutExtranjero, 'rut_extranjero')).toBe(true);
+    expect(validarTipoRut(rutExtranjero, 'rut_empresa')).toBe(true);
+    expect(validarTipoRut(rutExtranjero, 'rut_persona')).toBe(false);
+  });
 });
 
 describe('Teléfono', () => {

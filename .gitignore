@@ -1,6 +1,5 @@
 # Dependencies
 node_modules/
-package-lock.json
 yarn.lock
 
 # Build outputs
@@ -47,3 +46,4 @@ coverage/
 # Temporary files
 tmp/
 temp/
+XMLs/

@@ -117,6 +117,7 @@ export function validarTipoRut(rut, tipo) {
   switch (tipo) {
     case 'rut_empresa':
       // RUTs de empresa empiezan con 50-99 (millones)
+      // TODO(dueño): Solapamiento: el rango de rut_extranjero (55.000.000–55.999.999) está contenido dentro de rut_empresa (50.000.000–99.999.999), por lo que un RUT 55.x valida como empresa y como extranjero. Pendiente decisión de regla de negocio si deben ser mutuamente excluyentes.
       return numero >= 50000000 && numero < 100000000;
 
     case 'rut_persona':
