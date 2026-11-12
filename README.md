@@ -1,5 +1,7 @@
 # Sistema de Facturación Electrónica B2B para Chile
 
+[![CI](https://github.com/Demiannnnnn/facturacion-electronica-dte/actions/workflows/ci.yml/badge.svg?branch=tests/unitarios-y-ci)](https://github.com/Demiannnnnn/facturacion-electronica-dte/actions/workflows/ci.yml)
+
 Sistema de escritorio multiplataforma para gestión de facturación electrónica, diseñado específicamente para PyMEs chilenas que necesitan emitir documentos tributarios electrónicos (DTE) cumpliendo con las normativas del SII.
 
 **Versión:** 1.1.0  
@@ -48,12 +50,12 @@ Sistema de escritorio multiplataforma para gestión de facturación electrónica
 
 ```bash
 # 1. Clonar repositorio
-git clone <tu-repo>
-cd Sistema-facturaje-inventario
+git clone https://github.com/Demiannnnnn/facturacion-electronica-dte.git
+cd facturacion-electronica-dte
 
 # 2. Instalar dependencias de la app
 cd electron-app
-npm install
+npm ci
 
 # 3. Ejecutar en modo desarrollo
 npm run dev
@@ -98,12 +100,15 @@ La aplicación se abrirá automáticamente.
 - **Vite** 5.0.8 - Build tool y dev server
 
 ### Backend (Main Process)
-- **Electron** 28.1.0 - Framework desktop
+- **Electron** 28.3.3 - Framework desktop
 - **better-sqlite3** 9.2.2 - Base de datos SQLite
 - **bcrypt** 6.0.0 - Hash de contraseñas
 - **jsPDF** 2.5.2 - Generación de PDFs
 - **xlsx** 0.18.5 - Exportación a Excel
 - **xml2js** 0.6.2 - Procesamiento de XML
+
+### Testing
+- **Vitest** 1.6.1 - Tests unitarios
 
 ---
 
@@ -164,8 +169,8 @@ npm run build           # Build completo + instalador
 npm start               # Ejecutar versión empaquetada
 
 # Tests
-npm test                # Tests unitarios (Vitest, carpeta electron-app/tests)
-npm run test:watch      # Modo watch
+cd electron-app && npm ci && npm test  # Tests unitarios (Vitest, carpeta electron-app/tests)
+npm run test:watch                    # Modo watch (dentro de electron-app)
 
 # Utilidades
 npx electron-rebuild -f -w better-sqlite3  # Recompilar nativos
@@ -184,7 +189,7 @@ npx electron-rebuild -f -w better-sqlite3  # Recompilar nativos
 ## 📁 Estructura del Proyecto
 
 ```
-Sistema-facturaje-inventario/
+facturacion-electronica-dte/
 ├── electron-app/              # Aplicación Electron
 │   ├── src/
 │   │   ├── main/             # Proceso principal (Node.js)
@@ -199,13 +204,11 @@ Sistema-facturaje-inventario/
 │   │           ├── components/ # Componentes reutilizables
 │   │           ├── context/  # Context API
 │   │           └── utils/    # Utilidades de frontend
+│   ├── tests/                # Tests unitarios con Vitest
+│   ├── scripts/              # Scripts de utilidades y seed
 │   ├── vite.config.js
 │   ├── electron-builder.yml
 │   └── package.json
-│
-├── server/                    # Backend (Node.js/Express)
-│   └── src/
-│       └── index.js          # API server (en desarrollo)
 │
 ├── docs/                      # Documentación completa
 │   ├── 00-INDICE.md          # Índice maestro
@@ -216,6 +219,8 @@ Sistema-facturaje-inventario/
 │   └── CHANGELOG.md          # Historial de cambios
 │
 ├── README.md                  # Este archivo
+├── README_V2.md               # Documentación complementaria
+├── testing.md                 # Perfiles y credenciales de prueba
 └── PROXIMOS_PASOS.md         # Próximos pasos de desarrollo
 ```
 
