@@ -17,15 +17,16 @@ jobs:
       # Solo se necesita el build de Vite y los tests; no se descarga el binario de Electron
       ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 20
+          cache: npm
+          cache-dependency-path: electron-app/package-lock.json
 
-      # El repo no versiona package-lock.json (ver .gitignore), por eso npm install
       - name: Instalar dependencias
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Build del renderer (Vite)
         run: npm run build:renderer
