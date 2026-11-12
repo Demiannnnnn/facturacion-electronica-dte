@@ -20,7 +20,9 @@
     "build:renderer": "vite build",
     "build": "npm run build:renderer && electron-builder",
     "start": "electron .",
-    "reset": "bash scripts/reset-dev.sh"
+    "reset": "bash scripts/reset-dev.sh",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [
     "facturacion",
@@ -37,6 +39,7 @@
     "chart.js": "^4.5.1",
     "jspdf": "^2.5.2",
     "jspdf-autotable": "^5.0.2",
+    "node-fetch": "^2.7.0",
     "react": "^18.2.0",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "^18.2.0",
@@ -54,6 +57,7 @@
     "electron-builder": "^24.9.1",
     "electron-rebuild": "^3.2.9",
     "vite": "^5.0.8",
+    "vitest": "^1.6.1",
     "wait-on": "^7.2.0"
   },
   "build": {

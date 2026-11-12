@@ -66,18 +66,23 @@ function convertirMenorMil(numero) {
   return resultado.trim();
 }
 
+// Delante de "MIL", "MILLONES" y "PESOS" el uno se apocopa: "VEINTIÚN MIL", "CIENTO UN PESOS"
+function apocopar(texto) {
+  return texto.replace(/VEINTIUNO$/, 'VEINTIÚN').replace(/UNO$/, 'UN');
+}
+
 function convertirMiles(numero) {
   if (numero === 0) return '';
   if (numero === 1) return 'MIL';
 
-  return convertirMenorMil(numero) + ' MIL';
+  return apocopar(convertirMenorMil(numero)) + ' MIL';
 }
 
 function convertirMillones(numero) {
   if (numero === 0) return '';
   if (numero === 1) return 'UN MILLÓN';
 
-  return convertirMenorMil(numero) + ' MILLONES';
+  return apocopar(convertirMenorMil(numero)) + ' MILLONES';
 }
 
 export function numeroAPalabras(numero) {
@@ -87,6 +92,7 @@ export function numeroAPalabras(numero) {
   // Casos especiales
   if (numero === 0) return 'CERO PESOS';
   if (numero < 0) return 'NÚMERO INVÁLIDO';
+  if (numero === 1) return 'UN PESO';
 
   // Limitar a 999,999,999 (999 millones)
   if (numero > 999999999) {
@@ -114,7 +120,7 @@ export function numeroAPalabras(numero) {
     resultado += convertirMenorMil(numero);
   }
 
-  return resultado.trim() + ' PESOS';
+  return apocopar(resultado.trim()) + ' PESOS';
 }
 
 // Función para formatear con decimales (opcional)
